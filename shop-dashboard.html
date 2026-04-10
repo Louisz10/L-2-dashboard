@@ -2759,8 +2759,8 @@ const PASTE_HINTS = {
   <code>Date | Amount | Category | Description/Note</code><br>
   Minimum required: <strong>Date</strong> + <strong>Amount</strong>. Category and description are optional.`,
   costs: `<strong>Costs / Expenses format:</strong><br>
-  <code>Date | Amount | Category | Description/Note</code><br>
-  Minimum required: <strong>Date</strong> + <strong>Amount</strong>. Category (e.g. "Supplies", "Shipping") and note are optional.`
+  <code>Date | Cost (or Amount / Expenses) | Category | Description/Note</code><br>
+  Minimum required: <strong>Date</strong> + any amount column (<strong>Cost, Amount, Expenses, Price, Value</strong> all work). Category and description are optional.`
 };
 
 let _pasteType = 'square';
@@ -2849,12 +2849,13 @@ function findCol(row, candidates) {
   return null;
 }
 
-const DATE_COLS  = ['date','transaction_date','sale_date','day','created_at'];
-const GROSS_COLS = ['gross_sales','gross','total','amount','sale_amount','revenue','gross_revenue'];
+const DATE_COLS  = ['date','transaction_date','sale_date','day','created_at','time'];
+const GROSS_COLS = ['gross_sales','gross','total','amount','sale_amount','revenue','gross_revenue',
+                    'cost','costs','price','value','expense','expenses','subtotal','payment'];
 const FEE_COLS   = ['fees','fee','processing_fee','square_fees','processing_fees'];
 const NET_COLS   = ['net_sales','net','net_total','net_amount','net_revenue'];
-const CAT_COLS   = ['category','type','item_type','sale_type','payment_method'];
-const DESC_COLS  = ['description','note','notes','item','items','memo','details'];
+const CAT_COLS   = ['category','type','item_type','sale_type','payment_method','expense_type','expenses'];
+const DESC_COLS  = ['description','note','notes','item','items','memo','details','name','product','label'];
 
 function previewPaste() {
   const ta = document.getElementById('paste-textarea');
