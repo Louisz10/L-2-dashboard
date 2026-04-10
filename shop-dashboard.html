@@ -3148,12 +3148,15 @@ function _importPasteCosts(rows) {
     if (!dateC || !amtC) return;
     const amount = parseMoney(r[amtC]);
     if (!amount) return;
+    // Name = first non-empty value from desc col, then cat col, then fallback
+    const name  = (descC && r[descC]?.trim()) || (catC && r[catC]?.trim()) || 'Expense';
+    const notes = (descC && catC && r[descC]?.trim()) ? r[catC] : ''; // if both exist, cat becomes notes
     S.costs.push({
       id: genId(),
       date: normalizeDate(r[dateC]),
       amount,
-      category: catC ? r[catC] : 'Expense',
-      note: descC ? r[descC] : '',
+      name,
+      notes,
       source: 'paste'
     });
     added++;
