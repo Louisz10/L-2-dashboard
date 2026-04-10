@@ -2738,11 +2738,14 @@ function normalizeDate(str) {
   if (!str) return new Date().toISOString();
   // Already ISO
   if (/^\d{4}-\d{2}-\d{2}/.test(str)) return str.length === 10 ? str + 'T12:00:00Z' : str;
-  // M/D/YYYY or MM/DD/YYYY
+  // M/D/YY or M/D/YYYY
   const parts = str.split('/');
   if (parts.length === 3) {
     const [m, d, y] = parts;
-    return y.padStart(4,'0') + '-' + m.padStart(2,'0') + '-' + d.padStart(2,'0') + 'T12:00:00Z';
+    // 2-digit year: treat 00-49 as 2000s, 50-99 as 1900s
+    let year = parseInt(y, 10);
+    if (year < 100) year += year < 50 ? 2000 : 1900;
+    return String(year) + '-' + m.padStart(2,'0') + '-' + d.padStart(2,'0') + 'T12:00:00Z';
   }
   return new Date(str).toISOString() || new Date().toISOString();
 }
@@ -2896,8 +2899,11 @@ function previewPaste() {
   const dateC  = findCol(first, DATE_COLS);
   const amtC   = findCol(first, [...GROSS_COLS, ...NET_COLS]);
   if (!dateC || !amtC) {
-    html += `<div class="alert alert-error" style="font-size:12px">⚠ Could not auto-detect a <strong>Date</strong> column or an <strong>Amount</strong> column in your headers.<br>
-    Rename your columns to match the expected format shown in the hint above.</div>`;
+    const missing = [!dateC && 'Date', !amtC && 'Amount'].filter(Boolean).join(' and ');
+    const found = Object.keys(_pasteRows[0] || {}).join(', ');
+    html += `<div class="alert alert-error" style="font-size:12px">⚠ Could not detect a <strong>${missing}</strong> column.<br>
+    Your headers after normalization: <code>${esc(found)}</code><br>
+    Rename the column to one of: ${!dateC ? '<strong>date, sale_date, day</strong>' : ''} ${!amtC ? '<strong>cost, amount, total, price, expenses</strong>' : ''}</div>`;
     document.getElementById('paste-preview-content').innerHTML = html;
     document.getElementById('paste-preview').style.display = 'block';
     document.getElementById('paste-confirm-btn').disabled = true;
