@@ -1632,17 +1632,21 @@ function renderAnalytics() {
 function buildItemMap() {
   const map = {};
   filteredSqSales().forEach(sale => {
-    // Also handle sales where description is stored top-level (paste imports)
-    const itemList = (sale.items && sale.items.length)
-      ? sale.items
-      : (sale.description ? [{ name: sale.description, qty: 1, price: sale.gross }] : []);
+    // Build item list — re-parse descriptions to handle "2 x Item" stored in old imports
+    let itemList = (sale.items && sale.items.length) ? sale.items : [];
+    if (!itemList.length && sale.description) {
+      itemList = parseSqItemDesc(sale.description, sale.gross);
+    }
     itemList.forEach(item => {
       if (!item.name) return;
-      const displayName = normalizeSqDesc(item.name);
-      const k = displayName.toLowerCase().trim();
-      if (!map[k]) map[k] = { name: displayName, units: 0, revenue: 0, src: 'Square' };
-      map[k].units   += item.qty || 1;
-      map[k].revenue += item.price || 0;
+      // Re-parse name in case old data still has "2 x Item" prefix
+      const parsed = parseSqItemDesc(item.name, (item.qty || 1) * (item.price || 0));
+      parsed.forEach(p => {
+        const k = p.name.toLowerCase().trim();
+        if (!map[k]) map[k] = { name: p.name, units: 0, revenue: 0, src: 'Square' };
+        map[k].units   += p.qty;
+        map[k].revenue += p.qty * p.price;
+      });
     });
   });
   filteredCashSales().forEach(sale => {
@@ -2720,6 +2724,21 @@ function normalizeSqDesc(desc) {
   return SQ_DESC_MAP[desc.toLowerCase().trim()] || desc;
 }
 
+// Parse "2 x Celebrations Pack (Regular)" → { name, qty, unitPrice }
+// Also handles "2x", "2 ×", plain names with no quantity prefix
+function parseSqItemDesc(rawDesc, totalPrice) {
+  if (!rawDesc) return [{ name: 'Sale', qty: 1, price: totalPrice }];
+  // Match leading quantity: "2 x Name", "2x Name", "2 × Name"
+  const m = rawDesc.match(/^(\d+)\s*[x×]\s*(.+)/i);
+  if (m) {
+    const qty  = parseInt(m[1], 10);
+    const name = normalizeSqDesc(m[2].trim());
+    const unitPrice = parseFloat((totalPrice / qty).toFixed(2));
+    return [{ name, qty, price: unitPrice }];
+  }
+  return [{ name: normalizeSqDesc(rawDesc), qty: 1, price: totalPrice }];
+}
+
 function importSquareCSV(event) {
   const file = event.target.files[0];
   if (!file) return;
@@ -2778,8 +2797,8 @@ function importSquareCSV(event) {
         // Parse date — Square uses M/D/YYYY or YYYY-MM-DD
         const dateISO = normalizeDate(dateRaw);
 
-        const desc = normalizeSqDesc(descCol ? row[descCol]?.trim() : '');
-        const items = desc ? [{ name: desc, qty: 1, price: grossRaw }] : [];
+        const rawDesc = descCol ? row[descCol]?.trim() : '';
+        const items   = parseSqItemDesc(rawDesc, grossRaw);
 
         S.squareSales.push({
           id, date: dateISO, dateStr: dateISO.slice(0, 10),
@@ -3087,8 +3106,8 @@ function _importPasteSquare(rows) {
       gross,
       fees,
       net,
+      items: parseSqItemDesc(descC ? r[descC] : '', gross),
       category: catC ? r[catC] : 'Sales',
-      description: normalizeSqDesc(descC ? r[descC] : ''),
       source: 'paste'
     });
     added++;
