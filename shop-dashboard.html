@@ -368,6 +368,18 @@ hr.divider{border:none;border-top:2px dashed var(--border);margin:14px 0}
 /* ── COSTS TOTAL ── */
 .costs-total-bar{padding:14px 18px;border-top:2px dashed var(--border);text-align:right}
 
+/* ── PASTE TYPE BUTTONS ── */
+.paste-type-btn.active{background:var(--accent);border-color:var(--accent2);color:#000;box-shadow:3px 3px 0 #806000}
+
+/* ── PASTE PREVIEW TABLE ── */
+.paste-preview-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:10px}
+.paste-preview-table th{padding:6px 10px;background:var(--bg3);color:var(--text3);font-size:10px;text-transform:uppercase;letter-spacing:0.5px;border-bottom:2px solid var(--border);white-space:nowrap}
+.paste-preview-table td{padding:6px 10px;border-bottom:1px solid rgba(90,47,160,0.3);color:var(--text)}
+.paste-preview-table tr:last-child td{border-bottom:none}
+.col-map-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:13px}
+.col-map-row label{color:var(--text2);width:130px;flex-shrink:0;font-weight:700}
+.col-map-row select{flex:1}
+
 /* ── PRINT ── */
 .print-only{display:none}
 @media print{
@@ -434,6 +446,7 @@ hr.divider{border:none;border-top:2px dashed var(--border);margin:14px 0}
     <div class="nav-actions">
       <span id="sync-status"></span>
       <button class="btn btn-primary btn-sm" onclick="showTab('sales');setTimeout(()=>document.getElementById('csv-import-section')?.scrollIntoView({behavior:'smooth'}),100)">📥 Import Square CSV</button>
+      <button class="btn btn-secondary btn-sm" onclick="openPasteModal()">📋 Paste from Excel</button>
       <div class="settings-wrap">
         <button class="btn btn-secondary btn-sm btn-icon" onclick="toggleSettings(event)" title="Settings">⚙</button>
         <div class="settings-panel" id="settings-panel">
@@ -682,6 +695,50 @@ hr.divider{border:none;border-top:2px dashed var(--border);margin:14px 0}
     </div>
     <div class="modal-body" id="modal-body"></div>
     <div class="modal-footer" id="modal-footer"></div>
+  </div>
+</div>
+
+<!-- PASTE MODAL -->
+<div class="modal-overlay" id="paste-modal-overlay" onclick="closePasteModalIfOutside(event)">
+  <div class="modal" style="max-width:680px">
+    <div class="modal-header">
+      <h3>📋 Paste Data from Excel</h3>
+      <button class="btn btn-secondary btn-sm btn-icon" onclick="closePasteModal()">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Step 1: Type selector -->
+      <div style="margin-bottom:16px">
+        <label class="field-label">What type of data are you pasting?</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
+          <button class="paste-type-btn btn btn-secondary btn-sm active" data-type="square" onclick="setPasteType('square')">⬛ Square Sales</button>
+          <button class="paste-type-btn btn btn-secondary btn-sm" data-type="cash" onclick="setPasteType('cash')">💵 Cash Sales</button>
+          <button class="paste-type-btn btn btn-secondary btn-sm" data-type="costs" onclick="setPasteType('costs')">💸 Costs / Expenses</button>
+        </div>
+      </div>
+
+      <!-- Column format hint -->
+      <div id="paste-hint" class="alert alert-info" style="margin-bottom:14px;font-size:12px;line-height:1.7"></div>
+
+      <!-- Textarea -->
+      <div class="form-row">
+        <label class="field-label">Paste your data here (copy straight from Excel)</label>
+        <textarea id="paste-textarea" rows="8" placeholder="Copy cells from Excel and paste here..." style="font-family:monospace;font-size:12px;resize:vertical" oninput="clearPastePreview()"></textarea>
+      </div>
+
+      <button class="btn btn-primary" onclick="previewPaste()" style="margin-bottom:16px">🔍 Preview Import</button>
+
+      <!-- Preview area -->
+      <div id="paste-preview" style="display:none">
+        <hr class="divider">
+        <div id="paste-preview-content"></div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closePasteModal()">Cancel</button>
+      <button class="btn btn-primary" id="paste-confirm-btn" onclick="confirmPasteImport()" disabled>✅ Import All</button>
+    </div>
   </div>
 </div>
 
@@ -2688,6 +2745,265 @@ function normalizeDate(str) {
     return y.padStart(4,'0') + '-' + m.padStart(2,'0') + '-' + d.padStart(2,'0') + 'T12:00:00Z';
   }
   return new Date(str).toISOString() || new Date().toISOString();
+}
+
+// ============================================================
+// PASTE FROM EXCEL MODAL
+// ============================================================
+
+const PASTE_HINTS = {
+  square: `<strong>Square Sales format:</strong> Copy from Excel/Sheets with these columns (order flexible):<br>
+  <code>Date | Gross Sales | Fees | Net Sales | Category | Description</code><br>
+  Minimum required: <strong>Date</strong> + <strong>Gross Sales</strong> (or Net Sales). Fees optional — will be estimated if missing.`,
+  cash: `<strong>Cash Sales format:</strong><br>
+  <code>Date | Amount | Category | Description/Note</code><br>
+  Minimum required: <strong>Date</strong> + <strong>Amount</strong>. Category and description are optional.`,
+  costs: `<strong>Costs / Expenses format:</strong><br>
+  <code>Date | Amount | Category | Description/Note</code><br>
+  Minimum required: <strong>Date</strong> + <strong>Amount</strong>. Category (e.g. "Supplies", "Shipping") and note are optional.`
+};
+
+let _pasteType = 'square';
+let _pasteRows  = [];   // parsed preview rows
+
+function openPasteModal() {
+  _pasteType = 'square';
+  _pasteRows  = [];
+  document.querySelectorAll('.paste-type-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.type === 'square')
+  );
+  const hint = document.getElementById('paste-hint');
+  if (hint) hint.innerHTML = PASTE_HINTS.square;
+  const ta = document.getElementById('paste-textarea');
+  if (ta) ta.value = '';
+  clearPastePreview();
+  const overlay = document.getElementById('paste-modal-overlay');
+  if (overlay) overlay.style.display = 'flex';
+}
+
+function closePasteModal() {
+  const overlay = document.getElementById('paste-modal-overlay');
+  if (overlay) overlay.style.display = 'none';
+}
+
+function closePasteModalIfOutside(e) {
+  if (e.target === document.getElementById('paste-modal-overlay')) closePasteModal();
+}
+
+function setPasteType(type) {
+  _pasteType = type;
+  document.querySelectorAll('.paste-type-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.type === type)
+  );
+  const hint = document.getElementById('paste-hint');
+  if (hint) hint.innerHTML = PASTE_HINTS[type] || '';
+  clearPastePreview();
+}
+
+function clearPastePreview() {
+  _pasteRows = [];
+  const preview = document.getElementById('paste-preview');
+  if (preview) preview.style.display = 'none';
+  const btn = document.getElementById('paste-confirm-btn');
+  if (btn) btn.disabled = true;
+}
+
+// ── TSV / CSV smart parser ──────────────────────────────────
+function parsePasteText(text) {
+  const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim().split('\n');
+  if (!lines.length) return [];
+  // Detect delimiter: tabs = Excel paste, commas = CSV
+  const delim = lines[0].includes('\t') ? '\t' : ',';
+  const splitRow = (line) => {
+    if (delim === '\t') return line.split('\t').map(c => c.trim());
+    // Quoted CSV splitting
+    const r = []; let cur = '', inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"' && !inQ) { inQ = true; continue; }
+      if (ch === '"' && inQ && line[i+1] === '"') { cur += '"'; i++; continue; }
+      if (ch === '"' && inQ) { inQ = false; continue; }
+      if (ch === ',' && !inQ) { r.push(cur.trim()); cur = ''; continue; }
+      cur += ch;
+    }
+    r.push(cur.trim());
+    return r;
+  };
+  const headers = splitRow(lines[0]).map(h => h.toLowerCase().replace(/[^a-z0-9]+/g,'_'));
+  const rows = [];
+  for (let i = 1; i < lines.length; i++) {
+    if (!lines[i].trim()) continue;
+    const vals = splitRow(lines[i]);
+    const obj = {};
+    headers.forEach((h, idx) => { obj[h] = vals[idx] !== undefined ? vals[idx] : ''; });
+    rows.push(obj);
+  }
+  return rows;
+}
+
+// ── Column auto-detect helpers ──────────────────────────────
+function findCol(row, candidates) {
+  for (const c of candidates) {
+    if (row[c] !== undefined && row[c] !== '') return c;
+  }
+  return null;
+}
+
+const DATE_COLS  = ['date','transaction_date','sale_date','day','created_at'];
+const GROSS_COLS = ['gross_sales','gross','total','amount','sale_amount','revenue','gross_revenue'];
+const FEE_COLS   = ['fees','fee','processing_fee','square_fees','processing_fees'];
+const NET_COLS   = ['net_sales','net','net_total','net_amount','net_revenue'];
+const CAT_COLS   = ['category','type','item_type','sale_type','payment_method'];
+const DESC_COLS  = ['description','note','notes','item','items','memo','details'];
+
+function previewPaste() {
+  const ta = document.getElementById('paste-textarea');
+  const raw = ta ? ta.value.trim() : '';
+  if (!raw) { alert('Nothing pasted yet — copy cells from Excel first.'); return; }
+
+  const rows = parsePasteText(raw);
+  if (!rows.length) { alert('Could not parse any rows. Make sure you copy with headers included.'); return; }
+
+  _pasteRows = rows;
+
+  // Build preview table
+  const sampleKeys = Object.keys(rows[0]);
+  let html = `<p style="color:var(--text2);font-size:12px;margin-bottom:8px">
+    Detected <strong style="color:var(--accent)">${rows.length}</strong> row(s) with
+    <strong style="color:var(--accent)">${sampleKeys.length}</strong> column(s):
+    <em>${sampleKeys.join(', ')}</em></p>`;
+
+  // Show what will be imported
+  html += '<div style="overflow-x:auto;max-height:220px;overflow-y:auto;margin-bottom:10px"><table class="data-table" style="font-size:11px">';
+  html += '<thead><tr>';
+  // Show first 6 cols max to avoid overflow
+  const showKeys = sampleKeys.slice(0, 6);
+  showKeys.forEach(k => { html += `<th>${esc(k)}</th>`; });
+  if (sampleKeys.length > 6) html += `<th>+${sampleKeys.length - 6} more</th>`;
+  html += '</tr></thead><tbody>';
+  rows.slice(0, 8).forEach(r => {
+    html += '<tr>';
+    showKeys.forEach(k => { html += `<td>${esc(r[k] || '')}</td>`; });
+    if (sampleKeys.length > 6) html += '<td>…</td>';
+    html += '</tr>';
+  });
+  if (rows.length > 8) html += `<tr><td colspan="${showKeys.length + (sampleKeys.length > 6 ? 1 : 0)}" style="color:var(--text3);text-align:center">… and ${rows.length - 8} more rows</td></tr>`;
+  html += '</tbody></table></div>';
+
+  // Validation check
+  const first = rows[0];
+  const dateC  = findCol(first, DATE_COLS);
+  const amtC   = findCol(first, [...GROSS_COLS, ...NET_COLS]);
+  if (!dateC || !amtC) {
+    html += `<div class="alert alert-error" style="font-size:12px">⚠ Could not auto-detect a <strong>Date</strong> column or an <strong>Amount</strong> column in your headers.<br>
+    Rename your columns to match the expected format shown in the hint above.</div>`;
+    document.getElementById('paste-preview-content').innerHTML = html;
+    document.getElementById('paste-preview').style.display = 'block';
+    document.getElementById('paste-confirm-btn').disabled = true;
+    return;
+  }
+
+  html += `<div class="alert" style="background:rgba(0,230,118,0.1);border-color:var(--green);color:var(--green);font-size:12px">
+    ✅ Ready to import — detected Date column: <strong>${dateC}</strong>, Amount column: <strong>${amtC}</strong></div>`;
+
+  document.getElementById('paste-preview-content').innerHTML = html;
+  document.getElementById('paste-preview').style.display = 'block';
+  document.getElementById('paste-confirm-btn').disabled = false;
+}
+
+function confirmPasteImport() {
+  if (!_pasteRows.length) return;
+
+  if (_pasteType === 'square') _importPasteSquare(_pasteRows);
+  else if (_pasteType === 'cash') _importPasteCash(_pasteRows);
+  else if (_pasteType === 'costs') _importPasteCosts(_pasteRows);
+
+  closePasteModal();
+  saveState();
+  refreshCurrentTab();
+}
+
+function _importPasteSquare(rows) {
+  let added = 0, dupes = 0;
+  rows.forEach(r => {
+    const dateC  = findCol(r, DATE_COLS);
+    const grossC = findCol(r, GROSS_COLS);
+    const netC   = findCol(r, NET_COLS);
+    const feeC   = findCol(r, FEE_COLS);
+    const catC   = findCol(r, CAT_COLS);
+    const descC  = findCol(r, DESC_COLS);
+    if (!dateC) return;
+    const rawAmt = grossC ? r[grossC] : (netC ? r[netC] : '');
+    const gross  = parseMoney(rawAmt);
+    if (!gross) return;
+    const fees   = feeC ? parseMoney(r[feeC]) : Math.round((gross * 0.026 + 0.10) * 100) / 100;
+    const net    = netC ? parseMoney(r[netC]) : gross - fees;
+    const date   = normalizeDate(r[dateC]);
+    // Dedupe key
+    const id = 'paste_sq_' + btoa(date.slice(0,10) + '_' + gross).replace(/[^a-zA-Z0-9]/g,'').slice(0,20) + '_' + S.squareSales.length;
+    const existing = S.squareSales.some(s =>
+      s.date && s.date.slice(0,10) === date.slice(0,10) && Math.abs(s.gross - gross) < 0.01
+    );
+    if (existing) { dupes++; return; }
+    S.squareSales.push({
+      id,
+      date,
+      gross,
+      fees,
+      net,
+      category: catC ? r[catC] : 'Sales',
+      description: descC ? r[descC] : '',
+      source: 'paste'
+    });
+    added++;
+  });
+  alert(`✅ Square Sales: imported ${added} row(s).${dupes ? ` Skipped ${dupes} duplicate(s).` : ''}`);
+}
+
+function _importPasteCash(rows) {
+  let added = 0;
+  rows.forEach(r => {
+    const dateC = findCol(r, DATE_COLS);
+    const amtC  = findCol(r, [...GROSS_COLS, ...NET_COLS]);
+    const catC  = findCol(r, CAT_COLS);
+    const descC = findCol(r, DESC_COLS);
+    if (!dateC || !amtC) return;
+    const amount = parseMoney(r[amtC]);
+    if (!amount) return;
+    S.cashSales.push({
+      id: genId(),
+      date: normalizeDate(r[dateC]),
+      amount,
+      category: catC ? r[catC] : 'Cash',
+      note: descC ? r[descC] : '',
+      source: 'paste'
+    });
+    added++;
+  });
+  alert(`✅ Cash Sales: imported ${added} row(s).`);
+}
+
+function _importPasteCosts(rows) {
+  let added = 0;
+  rows.forEach(r => {
+    const dateC = findCol(r, DATE_COLS);
+    const amtC  = findCol(r, [...GROSS_COLS, ...NET_COLS]);
+    const catC  = findCol(r, CAT_COLS);
+    const descC = findCol(r, DESC_COLS);
+    if (!dateC || !amtC) return;
+    const amount = parseMoney(r[amtC]);
+    if (!amount) return;
+    S.costs.push({
+      id: genId(),
+      date: normalizeDate(r[dateC]),
+      amount,
+      category: catC ? r[catC] : 'Expense',
+      note: descC ? r[descC] : '',
+      source: 'paste'
+    });
+    added++;
+  });
+  alert(`✅ Costs / Expenses: imported ${added} row(s).`);
 }
 
 // ============================================================
