@@ -516,15 +516,9 @@ input[type=checkbox].row-cb{width:16px;height:16px;accent-color:var(--accent);cu
       </div>
       <canvas id="revenue-chart" style="width:100%;height:200px"></canvas>
     </div>
-    <div class="two-col">
-      <div class="section">
-        <div class="section-header"><span class="section-title">⬛ Recent Square Sales</span></div>
-        <div id="ov-sq-recent"></div>
-      </div>
-      <div class="section">
-        <div class="section-header"><span class="section-title">💵 Recent Cash Sales</span></div>
-        <div id="ov-cash-recent"></div>
-      </div>
+    <div class="section">
+      <div class="section-header"><span class="section-title">💰 Recent Sales</span></div>
+      <div id="ov-recent-sales"></div>
     </div>
     <div class="two-col" style="margin-top:16px">
       <div class="section">
@@ -568,8 +562,6 @@ input[type=checkbox].row-cb{width:16px;height:16px;accent-color:var(--accent);cu
           </label>
         </div>
       </div>
-
-      <!-- How-to guide -->
       <div style="padding:16px 18px;border-bottom:2px dashed var(--border)">
         <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:0.6px;color:var(--text3);margin-bottom:10px">How to export your Square transactions:</div>
         <div style="display:flex;flex-direction:column;gap:8px">
@@ -579,32 +571,27 @@ input[type=checkbox].row-cb{width:16px;height:16px;accent-color:var(--accent);cu
           </div>
           <div style="display:flex;gap:10px;align-items:flex-start">
             <span style="background:var(--poke-red);color:#fff;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0;margin-top:1px">2</span>
-            <span style="font-size:13px;color:var(--text2)">Click <strong style="color:var(--text)">Reports</strong> in the left sidebar</span>
+            <span style="font-size:13px;color:var(--text2)">Click <strong style="color:var(--text)">Sales</strong> → set your date range → click <strong style="color:var(--text)">Export</strong> → <strong style="color:var(--text)">Transactions CSV</strong></span>
           </div>
           <div style="display:flex;gap:10px;align-items:flex-start">
             <span style="background:var(--poke-red);color:#fff;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0;margin-top:1px">3</span>
-            <span style="font-size:13px;color:var(--text2)">Click <strong style="color:var(--text)">Sales</strong> → set your date range → click <strong style="color:var(--text)">Export</strong> (top right) → <strong style="color:var(--text)">Transactions CSV</strong></span>
+            <span style="font-size:13px;color:var(--text2)">Click <strong style="color:var(--accent)">📥 Choose CSV File</strong> above — duplicates are automatically skipped</span>
           </div>
-          <div style="display:flex;gap:10px;align-items:flex-start">
-            <span style="background:var(--poke-red);color:#fff;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0;margin-top:1px">4</span>
-            <span style="font-size:13px;color:var(--text2)">Click <strong style="color:var(--accent)">📥 Choose CSV File</strong> above and select the downloaded file — transactions import instantly</span>
-          </div>
-        </div>
-        <div class="alert alert-info" style="margin-top:12px;margin-bottom:0">
-          💡 Re-import any time to pick up new sales — duplicates are automatically skipped.
         </div>
       </div>
-
       <div id="sq-sync-error"></div>
-      <div id="sq-sales-table"></div>
     </div>
 
-    <div class="section">
+    <!-- UNIFIED SALES TABLE -->
+    <div class="section" style="margin-top:16px">
       <div class="section-header">
-        <span class="section-title">💵 Cash Sales</span>
-        <button class="btn btn-primary btn-sm" onclick="openModal('add-cash')">+ Add Cash Sale</button>
+        <span class="section-title">💰 All Sales</span>
+        <div class="flex-gap">
+          <span id="all-sales-count" class="text-muted fs12"></span>
+          <button class="btn btn-primary btn-sm" onclick="openModal('add-cash')">+ Add Sale</button>
+        </div>
       </div>
-      <div id="cash-sales-table"></div>
+      <div id="all-sales-table"></div>
     </div>
   </div>
 
@@ -1197,12 +1184,13 @@ function refreshCurrentTab() { renderTab(S.tab); }
 function renderOverview() {
   const t = calcTotals();
 
+  const totalTx = t.sqCount + t.cashCount;
   const metrics = [
-    { icon: '💰', label: 'Total Gross Revenue',    value: fmtMoney(t.totalGross), cls: 'accent' },
-    { icon: '⬛', label: 'Square Sales',            value: fmtMoney(t.sqGross),    sub: t.sqCount + ' transactions' },
-    { icon: '💵', label: 'Cash Sales',              value: fmtMoney(t.cashGross),  sub: t.cashCount + ' entries' },
+    { icon: '💰', label: 'Total Revenue',          value: fmtMoney(t.totalGross), cls: 'accent', sub: totalTx + ' transactions' },
+    { icon: '⬛', label: 'Square Card Sales',       value: fmtMoney(t.sqGross),    sub: t.sqCount + ' transactions' },
+    { icon: '💵', label: 'Cash / Other Sales',      value: fmtMoney(t.cashGross),  sub: t.cashCount + ' entries' },
     { icon: '🏦', label: 'Square Processing Fees',  value: fmtMoney(t.sqFees),     cls: 'red' },
-    { icon: '🏛',  label: 'WI Tax Collected',        value: fmtMoney(t.totalTax),   sub: 'Square + cash combined' },
+    { icon: '🏛',  label: 'WI Tax Collected',        value: fmtMoney(t.totalTax) },
     { icon: '📋', label: 'Business Expenses',       value: fmtMoney(t.totalCosts), cls: 'amber' },
     { icon: '📈', label: 'Net Profit',              value: fmtMoney(t.netProfit),  cls: t.netProfit >= 0 ? 'green' : 'red' }
   ];
@@ -1221,39 +1209,23 @@ function renderOverview() {
 
   requestAnimationFrame(() => drawRevenueChart());
 
-  // Recent Square
-  const sqRecent = filteredSqSales().slice().reverse().slice(0, 6);
-  const elSq = document.getElementById('ov-sq-recent');
-  if (elSq) {
-    if (!sqRecent.length) {
-      elSq.innerHTML = emptyHTML('No Square sales this period',
-        S.apiKey ? 'Click Sync Square to pull transactions.' : 'Connect Square in Settings or add cash sales.');
+  // Recent combined sales
+  const sqRecent   = filteredSqSales().map(s => ({ date: s.date, desc: normalizeSqDesc(s.description || (s.items && s.items.length ? s.items.map(i=>normalizeSqDesc(i.name)).join(', ') : '—')), amount: s.gross, net: s.net, src: 'Square' }));
+  const cashRecent = filteredCashSales().map(s => ({ date: s.date, desc: s.category || '—', amount: s.amount, net: s.amount - (s.tax||0), src: 'Cash' }));
+  const recent = [...sqRecent, ...cashRecent].sort((a,b) => new Date(b.date)-new Date(a.date)).slice(0, 10);
+  const elRecent = document.getElementById('ov-recent-sales');
+  if (elRecent) {
+    if (!recent.length) {
+      elRecent.innerHTML = emptyHTML('No sales this period', 'Import a Square CSV or click "+ Add Sale" in the Sales tab.');
     } else {
-      elSq.innerHTML = '<div class="table-wrap"><table>' +
-        '<thead><tr><th>Date</th><th>Gross</th><th>Fee</th><th>Net</th></tr></thead><tbody>' +
-        sqRecent.map(s =>
+      elRecent.innerHTML = '<div class="table-wrap"><table>' +
+        '<thead><tr><th>Date</th><th>Description</th><th>Amount</th><th>Net</th><th>Source</th></tr></thead><tbody>' +
+        recent.map(s =>
           '<tr><td>' + fmtDate(s.date) + '</td>' +
-          '<td class="right green">' + fmtMoney(s.gross) + '</td>' +
-          '<td class="right red">' + fmtMoney(s.fee) + '</td>' +
-          '<td class="right">' + fmtMoney(s.net) + '</td></tr>'
-        ).join('') + '</tbody></table></div>';
-    }
-  }
-
-  // Recent Cash
-  const cashRecent = filteredCashSales().slice().reverse().slice(0, 6);
-  const elCash = document.getElementById('ov-cash-recent');
-  if (elCash) {
-    if (!cashRecent.length) {
-      elCash.innerHTML = emptyHTML('No cash sales this period', 'Go to Sales tab → Add Cash Sale.');
-    } else {
-      elCash.innerHTML = '<div class="table-wrap"><table>' +
-        '<thead><tr><th>Date</th><th>Category</th><th>Amount</th><th>Tax</th></tr></thead><tbody>' +
-        cashRecent.map(s =>
-          '<tr><td>' + fmtDate(s.date) + '</td>' +
-          '<td class="muted">' + esc(s.category || '—') + '</td>' +
+          '<td class="muted">' + esc(s.desc) + '</td>' +
           '<td class="right green">' + fmtMoney(s.amount) + '</td>' +
-          '<td class="right">' + fmtMoney(s.tax) + '</td></tr>'
+          '<td class="right">' + fmtMoney(s.net) + '</td>' +
+          '<td><span class="tag ' + (s.src==='Square' ? 'tag-blue' : 'tag-green') + '">' + s.src + '</span></td></tr>'
         ).join('') + '</tbody></table></div>';
     }
   }
@@ -1435,95 +1407,104 @@ function shortNum(n) {
 // RENDER: SALES
 // ============================================================
 function renderSales() {
-  renderSqSalesTable();
-  renderCashSalesTable();
+  renderAllSalesTable();
 }
 
-function renderSqSalesTable() {
-  const el = document.getElementById('sq-sales-table');
+function renderAllSalesTable() {
+  const el = document.getElementById('all-sales-table');
   if (!el) return;
 
-  const sales = filteredSqSales().slice().reverse();
-  const lbl = document.getElementById('sq-count-label');
-  if (lbl) lbl.textContent = sales.length ? sales.length + ' transactions' : '';
+  // Merge Square + Cash, tag each with source, sort newest first
+  const sqSales   = filteredSqSales().map(s => ({
+    _src: 'square', _id: s.id,
+    date: s.date,
+    desc: normalizeSqDesc(s.description || (s.items && s.items.length
+      ? s.items.map(i => normalizeSqDesc(i.name) + (i.qty > 1 ? ' ×'+i.qty : '')).join(', ')
+      : '—')),
+    gross: s.gross,
+    fee:   s.fee,
+    feeEst: s.feeEstimated,
+    tax:   s.tax,
+    net:   s.net,
+    note:  ''
+  }));
+  const cashSales = filteredCashSales().map(s => ({
+    _src: 'cash', _id: s.id,
+    date: s.date,
+    desc: s.category || '—',
+    gross: s.amount,
+    fee:   0,
+    feeEst: false,
+    tax:   s.tax || 0,
+    net:   s.amount - (s.tax || 0),
+    note:  s.notes || ''
+  }));
 
-  if (!sales.length) {
-    el.innerHTML = emptyHTML('No Square transactions this period',
-      'Export a Transactions CSV from squareup.com/dashboard → Reports → Sales → Export, then click "📥 Choose CSV File" above.');
+  const all = [...sqSales, ...cashSales].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  const lbl = document.getElementById('all-sales-count');
+  if (lbl) lbl.textContent = all.length ? all.length + ' transactions' : '';
+
+  if (!all.length) {
+    el.innerHTML = emptyHTML('No sales this period', 'Import a Square CSV or click "+ Add Sale" to record a cash transaction.');
     return;
   }
 
   el.innerHTML =
-    '<div class="bulk-bar" id="bulk-bar-sq">' +
-      '<span class="sel-count" id="bulk-count-sq">0 selected</span>' +
-      '<button class="btn btn-danger btn-sm" onclick="deleteSelected(\'sq\')">🗑 Delete Selected</button>' +
-      '<button class="btn btn-secondary btn-sm" onclick="clearSelection(\'sq-tbl\',\'bulk-bar-sq\',\'bulk-count-sq\')">✕ Clear</button>' +
+    '<div class="bulk-bar" id="bulk-bar-all">' +
+      '<span class="sel-count" id="bulk-count-all">0 selected</span>' +
+      '<button class="btn btn-danger btn-sm" onclick="deleteSelectedAll()">🗑 Delete Selected</button>' +
+      '<button class="btn btn-secondary btn-sm" onclick="clearSelection(\'all-tbl\',\'bulk-bar-all\',\'bulk-count-all\')">✕ Clear</button>' +
     '</div>' +
-    '<div class="table-wrap"><table id="sq-tbl">' +
+    '<div class="table-wrap"><table id="all-tbl">' +
     '<thead><tr>' +
-    '<th class="cb-col"><input type="checkbox" class="select-all-cb" onchange="toggleSelectAll(\'sq-tbl\',this,\'bulk-bar-sq\',\'bulk-count-sq\')" title="Select all"></th>' +
-    '<th onclick="sortTable(\'sq-tbl\',1)">Date</th>' +
-    '<th onclick="sortTable(\'sq-tbl\',2)">Description</th>' +
-    '<th onclick="sortTable(\'sq-tbl\',3,true)">Gross</th>' +
-    '<th onclick="sortTable(\'sq-tbl\',4,true)">Sq. Fee</th>' +
-    '<th onclick="sortTable(\'sq-tbl\',5,true)">Tax</th>' +
-    '<th onclick="sortTable(\'sq-tbl\',6,true)">Net</th>' +
+    '<th class="cb-col"><input type="checkbox" class="select-all-cb" onchange="toggleSelectAll(\'all-tbl\',this,\'bulk-bar-all\',\'bulk-count-all\')" title="Select all"></th>' +
+    '<th onclick="sortTable(\'all-tbl\',1)">Date</th>' +
+    '<th onclick="sortTable(\'all-tbl\',2)">Description</th>' +
+    '<th onclick="sortTable(\'all-tbl\',3,true)">Amount</th>' +
+    '<th onclick="sortTable(\'all-tbl\',4,true)">Fee</th>' +
+    '<th onclick="sortTable(\'all-tbl\',5,true)">Tax</th>' +
+    '<th onclick="sortTable(\'all-tbl\',6,true)">Net</th>' +
+    '<th onclick="sortTable(\'all-tbl\',7)">Source</th>' +
     '<th>Actions</th>' +
     '</tr></thead><tbody>' +
-    sales.map(s => {
-      const desc = normalizeSqDesc(s.description || (s.items && s.items.length ? s.items.map(i => normalizeSqDesc(i.name) + (i.qty > 1 ? ' ×' + i.qty : '')).join(', ') : '—'));
+    all.map(s => {
+      const srcTag = s._src === 'square'
+        ? '<span class="tag tag-blue">Square</span>'
+        : '<span class="tag tag-green">Cash</span>';
+      const feeCell = s._src === 'square'
+        ? fmtMoney(s.fee) + (s.feeEst ? '<span title="Estimated" style="color:var(--text3);font-size:10px;margin-left:3px">est</span>' : '')
+        : '<span style="color:var(--text3)">—</span>';
+      const editBtn = s._src === 'square'
+        ? '<button class="btn btn-secondary btn-sm" onclick="openModal(\'edit-sq-sale\',\'' + escA(s._id) + '\')">Edit</button>'
+        : '<button class="btn btn-secondary btn-sm" onclick="openModal(\'edit-cash-sale\',\'' + escA(s._id) + '\')">Edit</button>';
       return '<tr>' +
-        '<td class="cb-col"><input type="checkbox" class="row-cb" data-id="' + escA(s.id) + '" onchange="onRowCbChange(\'bulk-bar-sq\',\'bulk-count-sq\',\'sq-tbl\')"></td>' +
+        '<td class="cb-col"><input type="checkbox" class="row-cb" data-id="' + escA(s._id) + '" data-src="' + s._src + '" onchange="onRowCbChange(\'bulk-bar-all\',\'bulk-count-all\',\'all-tbl\')"></td>' +
         '<td>' + fmtDate(s.date) + '</td>' +
-        '<td class="muted">' + esc(desc) + '</td>' +
+        '<td class="muted">' + esc(s.desc) + (s.note ? ' <span style="color:var(--text3);font-size:11px">— ' + esc(s.note) + '</span>' : '') + '</td>' +
         '<td class="right green">' + fmtMoney(s.gross) + '</td>' +
-        '<td class="right red">' + fmtMoney(s.fee) + (s.feeEstimated ? '<span title="Estimated" style="color:var(--text3);font-size:10px;margin-left:3px">est</span>' : '') + '</td>' +
+        '<td class="right red">' + feeCell + '</td>' +
         '<td class="right">' + fmtMoney(s.tax) + '</td>' +
         '<td class="right">' + fmtMoney(s.net) + '</td>' +
-        '<td><button class="btn btn-secondary btn-sm" onclick="openModal(\'edit-sq-sale\',\'' + escA(s.id) + '\')">Edit</button></td>' +
+        '<td>' + srcTag + '</td>' +
+        '<td>' + editBtn + '</td>' +
         '</tr>';
     }).join('') +
     '</tbody></table></div>';
 }
 
-function renderCashSalesTable() {
-  const el = document.getElementById('cash-sales-table');
-  if (!el) return;
-  const sales = filteredCashSales().slice().reverse();
-
-  if (!sales.length) {
-    el.innerHTML = emptyHTML('No cash sales this period', 'Click "+ Add Cash Sale" to record a cash transaction.');
-    return;
-  }
-
-  el.innerHTML =
-    '<div class="bulk-bar" id="bulk-bar-cash">' +
-      '<span class="sel-count" id="bulk-count-cash">0 selected</span>' +
-      '<button class="btn btn-danger btn-sm" onclick="deleteSelected(\'cash\')">🗑 Delete Selected</button>' +
-      '<button class="btn btn-secondary btn-sm" onclick="clearSelection(\'cash-tbl\',\'bulk-bar-cash\',\'bulk-count-cash\')">✕ Clear</button>' +
-    '</div>' +
-    '<div class="table-wrap"><table id="cash-tbl">' +
-    '<thead><tr>' +
-    '<th class="cb-col"><input type="checkbox" class="select-all-cb" onchange="toggleSelectAll(\'cash-tbl\',this,\'bulk-bar-cash\',\'bulk-count-cash\')" title="Select all"></th>' +
-    '<th onclick="sortTable(\'cash-tbl\',1)">Date</th>' +
-    '<th onclick="sortTable(\'cash-tbl\',2)">Category</th>' +
-    '<th onclick="sortTable(\'cash-tbl\',3,true)">Amount</th>' +
-    '<th onclick="sortTable(\'cash-tbl\',4,true)">Tax</th>' +
-    '<th onclick="sortTable(\'cash-tbl\',5)">Notes</th>' +
-    '<th>Action</th>' +
-    '</tr></thead><tbody>' +
-    sales.map(s =>
-      '<tr>' +
-      '<td class="cb-col"><input type="checkbox" class="row-cb" data-id="' + escA(s.id) + '" onchange="onRowCbChange(\'bulk-bar-cash\',\'bulk-count-cash\',\'cash-tbl\')"></td>' +
-      '<td>' + fmtDate(s.date) + '</td>' +
-      '<td>' + esc(s.category || '—') + '</td>' +
-      '<td class="right green">' + fmtMoney(s.amount) + '</td>' +
-      '<td class="right">' + fmtMoney(s.tax) + '</td>' +
-      '<td class="muted">' + esc(s.notes || '—') + '</td>' +
-      '<td><button class="btn btn-danger btn-sm" onclick="deleteCashSale(\'' + escA(s.id) + '\')">Del</button></td>' +
-      '</tr>'
-    ).join('') +
-    '</tbody></table></div>';
+function deleteSelectedAll() {
+  const tbl = document.getElementById('all-tbl');
+  if (!tbl) return;
+  const checked = [...tbl.querySelectorAll('input.row-cb:checked')];
+  if (!checked.length) return;
+  const sqIds   = new Set(checked.filter(c => c.dataset.src === 'square').map(c => c.dataset.id));
+  const cashIds = new Set(checked.filter(c => c.dataset.src === 'cash').map(c => c.dataset.id));
+  appConfirm('Delete ' + checked.length + ' selected sale(s)? This cannot be undone.', 'Delete All', () => {
+    if (sqIds.size)   S.squareSales = S.squareSales.filter(x => !sqIds.has(x.id));
+    if (cashIds.size) S.cashSales   = S.cashSales.filter(x => !cashIds.has(x.id));
+    saveState(); refreshCurrentTab();
+  });
 }
 
 // ============================================================
@@ -2205,6 +2186,17 @@ function openModal(type, id) {
       footer.innerHTML = '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveCost(\'' + escA(id) + '\')">Update Expense</button>';
       break;
     }
+
+    case 'edit-cash-sale': {
+      const sale = S.cashSales.find(x => x.id === id);
+      if (!sale) { closeModal(); return; }
+      title.textContent = '✏️ Edit Cash Sale';
+      body.innerHTML = buildCashForm(sale);
+      footer.innerHTML = '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button>' +
+        '<button class="btn btn-danger btn-sm" onclick="deleteCashSale(\'' + escA(id) + '\')" style="margin-right:auto">Delete</button>' +
+        '<button class="btn btn-primary" onclick="saveCashSale(\'' + escA(id) + '\')">Save Changes</button>';
+      break;
+    }
   }
 }
 
@@ -2220,31 +2212,27 @@ function closeModalIfOutside(e) {
 // ============================================================
 // FORM BUILDERS
 // ============================================================
-function buildCashForm() {
+function buildCashForm(d) {
   const sealedOpts = S.inventory.map(i =>
-    '<option value="' + escA(i.name) + '">' + esc(i.name) + '</option>'
+    '<option value="' + escA(i.name) + '"' + (d?.category === i.name ? ' selected' : '') + '>' + esc(i.name) + '</option>'
   ).join('');
+  const dateVal = d ? d.date.slice(0,10) : todayISO();
   return `
 <div id="form-err" class="alert alert-error" style="display:none"></div>
 <div class="form-grid">
   <div class="form-row">
     <label class="field-label">Date *</label>
-    <input type="date" id="cf-date" value="${todayISO()}" />
+    <input type="date" id="cf-date" value="${dateVal}" />
   </div>
   <div class="form-row">
-    <label class="field-label">Category *</label>
-    <select id="cf-cat">
-      <option value="">— Select —</option>
-      <option value="Singles">Singles</option>
-      ${sealedOpts ? '<optgroup label="Sealed Products">' + sealedOpts + '</optgroup>' : ''}
-      <option value="Other">Other</option>
-    </select>
+    <label class="field-label">Description / Category *</label>
+    <input type="text" id="cf-cat" value="${escA(d?.category||'')}" placeholder="e.g. Singles, Vending, ETB" />
   </div>
 </div>
 <div class="form-grid">
   <div class="form-row">
     <label class="field-label">Sale Amount ($) *</label>
-    <input type="number" id="cf-amt" placeholder="0.00" step="0.01" min="0" />
+    <input type="number" id="cf-amt" value="${d?.amount||''}" placeholder="0.00" step="0.01" min="0" />
   </div>
   <div class="form-row">
     <label class="field-label">Tax Collected ($) — blank = auto</label>
@@ -2253,7 +2241,7 @@ function buildCashForm() {
 </div>
 <div class="form-row">
   <label class="field-label">Notes</label>
-  <input type="text" id="cf-notes" placeholder="e.g. Card show — Milwaukee" />
+  <input type="text" id="cf-notes" value="${escA(d?.notes||'')}" placeholder="e.g. Card show — Milwaukee" />
 </div>
 <p class="text-muted mt8" style="font-size:11px">Tax auto-calculates at ${S.taxRate}% if left blank. Override for different rates (e.g., county/city).</p>`;
 }
@@ -2358,22 +2346,24 @@ function showFormErr(msg) {
 function v(id) { return document.getElementById(id)?.value?.trim() || ''; }
 function vn(id) { const n = parseFloat(document.getElementById(id)?.value); return isNaN(n) ? null : n; }
 
-function saveCashSale() {
+function saveCashSale(editId) {
   const date = v('cf-date'), cat = v('cf-cat'), amtRaw = vn('cf-amt');
   if (!date) { showFormErr('Date is required.'); return; }
-  if (!cat)  { showFormErr('Category is required.'); return; }
+  if (!cat)  { showFormErr('Description is required.'); return; }
   if (amtRaw === null || amtRaw <= 0) { showFormErr('Enter a valid sale amount.'); return; }
 
-  const amt = amtRaw;
   const taxRaw = vn('cf-tax');
-  const tax = taxRaw !== null ? taxRaw : parseFloat((amt * S.taxRate / 100).toFixed(2));
+  const tax = taxRaw !== null ? taxRaw : parseFloat((amtRaw * S.taxRate / 100).toFixed(2));
 
-  const sale = { id: genId(), date, category: cat, amount: amt, tax, notes: v('cf-notes') };
-  S.cashSales.push(sale);
-
-  // Auto-deduct sealed inventory
-  const inv = S.inventory.find(i => i.name && i.name.toLowerCase().trim() === cat.toLowerCase().trim());
-  if (inv) inv.qty = Math.max(0, (inv.qty || 0) - 1);
+  if (editId) {
+    const idx = S.cashSales.findIndex(x => x.id === editId);
+    if (idx >= 0) S.cashSales[idx] = { ...S.cashSales[idx], date, category: cat, amount: amtRaw, tax, notes: v('cf-notes') };
+  } else {
+    S.cashSales.push({ id: genId(), date, category: cat, amount: amtRaw, tax, notes: v('cf-notes') });
+    // Auto-deduct sealed inventory on new sale
+    const inv = S.inventory.find(i => i.name && i.name.toLowerCase().trim() === cat.toLowerCase().trim());
+    if (inv) inv.qty = Math.max(0, (inv.qty || 0) - 1);
+  }
 
   saveState(); closeModal(); updateLowStockBadge(); refreshCurrentTab();
 }
