@@ -757,6 +757,18 @@ input[type=checkbox].row-cb{width:16px;height:16px;accent-color:var(--accent);cu
 
 </div><!-- /app -->
 
+<!-- CUSTOM CONFIRM DIALOG -->
+<div id="confirm-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.82);z-index:500;align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--bg2);border:3px solid var(--poke-red);border-radius:22px;padding:28px 28px 22px;max-width:400px;width:100%;box-shadow:6px 6px 0 #0d0020;text-align:center">
+    <div style="font-size:28px;margin-bottom:10px">⚠️</div>
+    <div id="confirm-msg" style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:20px;line-height:1.5"></div>
+    <div style="display:flex;gap:10px;justify-content:center">
+      <button class="btn btn-secondary" id="confirm-cancel-btn" style="min-width:90px">Cancel</button>
+      <button class="btn btn-danger" id="confirm-ok-btn" style="min-width:90px">Delete</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ============================================================
 // STATE
@@ -2447,27 +2459,31 @@ function saveCost(editId) {
 // DELETE HANDLERS
 // ============================================================
 function deleteCashSale(id) {
-  if (!confirm('Delete this cash sale? This cannot be undone.')) return;
-  S.cashSales = S.cashSales.filter(s => s.id !== id);
-  saveState(); refreshCurrentTab();
+  appConfirm('Delete this cash sale? This cannot be undone.', 'Delete', () => {
+    S.cashSales = S.cashSales.filter(s => s.id !== id);
+    saveState(); refreshCurrentTab();
+  });
 }
 
 function deleteInvItem(id) {
-  if (!confirm('Delete this inventory item?')) return;
-  S.inventory = S.inventory.filter(i => i.id !== id);
-  saveState(); updateLowStockBadge(); renderInventory();
+  appConfirm('Delete this inventory item?', 'Delete', () => {
+    S.inventory = S.inventory.filter(i => i.id !== id);
+    saveState(); updateLowStockBadge(); renderInventory();
+  });
 }
 
 function deleteSinglesSet(id) {
-  if (!confirm('Delete this singles set?')) return;
-  S.singles = S.singles.filter(s => s.id !== id);
-  saveState(); renderInventory();
+  appConfirm('Delete this singles set?', 'Delete', () => {
+    S.singles = S.singles.filter(s => s.id !== id);
+    saveState(); renderInventory();
+  });
 }
 
 function deleteCost(id) {
-  if (!confirm('Delete this expense?')) return;
-  S.costs = S.costs.filter(c => c.id !== id);
-  saveState(); renderCosts();
+  appConfirm('Delete this expense?', 'Delete', () => {
+    S.costs = S.costs.filter(c => c.id !== id);
+    saveState(); renderCosts();
+  });
 }
 
 // ============================================================
@@ -2538,21 +2554,23 @@ function updateTaxRate(val) {
 function disconnectSquare() {
   const panel = document.getElementById('settings-panel');
   if (panel) panel.classList.remove('open');
-  if (!confirm('Disconnect Square? Your cash sales, inventory, and cost data will be kept.')) return;
-  S.apiKey = null;
-  S.locationId = null;
-  S.squareSales = [];
-  saveState();
-  updateSqStatusLabel();
-  refreshCurrentTab();
+  appConfirm('Disconnect Square? Your cash sales, inventory, and cost data will be kept.', 'Disconnect', () => {
+    S.apiKey = null;
+    S.locationId = null;
+    S.squareSales = [];
+    saveState();
+    updateSqStatusLabel();
+    refreshCurrentTab();
+  });
 }
 
 function clearAllData() {
   const panel = document.getElementById('settings-panel');
   if (panel) panel.classList.remove('open');
-  if (!confirm('⚠ CLEAR ALL LOCAL DATA? This will delete all your sales, inventory, and cost data. This cannot be undone.')) return;
-  localStorage.clear();
-  location.reload();
+  appConfirm('⚠ CLEAR ALL LOCAL DATA? This will delete all sales, inventory, and cost data. Cannot be undone.', 'Clear Everything', () => {
+    localStorage.clear();
+    location.reload();
+  });
 }
 
 function exportData() {
@@ -2605,29 +2623,25 @@ function importData(event) {
         return;
       }
 
-      if (!confirm('Restore from backup dated ' + (backup.exportedAt ? fmtDate(backup.exportedAt) : 'unknown') + '?\n\nThis will REPLACE all current data with the backup. This cannot be undone.')) return;
-
-      // Restore all fields
-      S.businessName     = backup.businessName     || S.businessName;
-      S.taxRate          = backup.taxRate           ?? S.taxRate;
-      S.squareSales      = backup.squareSales       || [];
-      S.cashSales        = backup.cashSales         || [];
-      S.inventory        = backup.inventory         || [];
-      S.singles          = backup.singles           || [];
-      S.costs            = backup.costs             || [];
-      S.processedSaleIds = new Set(backup.processedSaleIds || []);
-
-      saveState();
-      updateLowStockBadge();
-      updateSqStatusLabel();
-      refreshCurrentTab();
-
-      // Show success
-      const status = document.getElementById('sync-status');
-      if (status) {
-        status.innerHTML = '<span style="color:var(--green)">✓ Backup restored successfully</span>';
-        setTimeout(() => { if (status) status.textContent = ''; }, 4000);
-      }
+      appConfirm('Restore from backup dated ' + (backup.exportedAt ? fmtDate(backup.exportedAt) : 'unknown') + '? This will REPLACE all current data. Cannot be undone.', 'Restore', () => {
+        S.businessName     = backup.businessName     || S.businessName;
+        S.taxRate          = backup.taxRate           ?? S.taxRate;
+        S.squareSales      = backup.squareSales       || [];
+        S.cashSales        = backup.cashSales         || [];
+        S.inventory        = backup.inventory         || [];
+        S.singles          = backup.singles           || [];
+        S.costs            = backup.costs             || [];
+        S.processedSaleIds = new Set(backup.processedSaleIds || []);
+        saveState();
+        updateLowStockBadge();
+        updateSqStatusLabel();
+        refreshCurrentTab();
+        const status = document.getElementById('sync-status');
+        if (status) {
+          status.innerHTML = '<span style="color:var(--green)">✓ Backup restored successfully</span>';
+          setTimeout(() => { if (status) status.textContent = ''; }, 4000);
+        }
+      });
     } catch(err) {
       alert('Failed to read backup file: ' + err.message);
     }
@@ -3159,11 +3173,12 @@ function deleteSelected(section) {
   const m = map[section]; if (!m) return;
   const ids = getSelectedIds(m.tbl);
   if (!ids.length) return;
-  if (!confirm('Delete ' + ids.length + ' selected record(s)? This cannot be undone.')) return;
-  const idSet = new Set(ids);
-  S[m.arr] = S[m.arr].filter(x => !idSet.has(x.id));
-  saveState();
-  refreshCurrentTab();
+  appConfirm('Delete ' + ids.length + ' selected record(s)? This cannot be undone.', 'Delete All', () => {
+    const idSet = new Set(ids);
+    S[m.arr] = S[m.arr].filter(x => !idSet.has(x.id));
+    saveState();
+    refreshCurrentTab();
+  });
 }
 
 // ============================================================
@@ -3238,9 +3253,10 @@ function saveSqSaleEdit(id) {
 }
 
 function deleteSqSale(id) {
-  if (!confirm('Delete this Square transaction? This cannot be undone.')) return;
-  S.squareSales = S.squareSales.filter(x => x.id !== id);
-  saveState(); closeModal(); refreshCurrentTab();
+  appConfirm('Delete this Square transaction? This cannot be undone.', 'Delete', () => {
+    S.squareSales = S.squareSales.filter(x => x.id !== id);
+    saveState(); closeModal(); refreshCurrentTab();
+  });
 }
 
 // ============================================================
@@ -3291,6 +3307,21 @@ function showApp() {
 // ============================================================
 function genId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+
+// Custom confirm — replaces browser confirm() which can be blocked
+function appConfirm(msg, okLabel, onOk) {
+  const overlay  = document.getElementById('confirm-overlay');
+  const msgEl    = document.getElementById('confirm-msg');
+  const okBtn    = document.getElementById('confirm-ok-btn');
+  const cancelBtn= document.getElementById('confirm-cancel-btn');
+  if (!overlay) { if (window.confirm(msg)) onOk(); return; } // fallback
+  msgEl.textContent = msg;
+  okBtn.textContent = okLabel || 'Delete';
+  overlay.style.display = 'flex';
+  const cleanup = () => { overlay.style.display = 'none'; okBtn.onclick = null; cancelBtn.onclick = null; };
+  okBtn.onclick    = () => { cleanup(); onOk(); };
+  cancelBtn.onclick= () => { cleanup(); };
 }
 
 function esc(s) {
