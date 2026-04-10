@@ -1478,7 +1478,7 @@ function renderSqSalesTable() {
     '<th>Actions</th>' +
     '</tr></thead><tbody>' +
     sales.map(s => {
-      const desc = s.description || (s.items && s.items.length ? s.items.map(i => i.name + (i.qty > 1 ? ' ×' + i.qty : '')).join(', ') : '—');
+      const desc = normalizeSqDesc(s.description || (s.items && s.items.length ? s.items.map(i => normalizeSqDesc(i.name) + (i.qty > 1 ? ' ×' + i.qty : '')).join(', ') : '—'));
       return '<tr>' +
         '<td class="cb-col"><input type="checkbox" class="row-cb" data-id="' + escA(s.id) + '" onchange="onRowCbChange(\'bulk-bar-sq\',\'bulk-count-sq\',\'sq-tbl\')"></td>' +
         '<td>' + fmtDate(s.date) + '</td>' +
@@ -1632,10 +1632,15 @@ function renderAnalytics() {
 function buildItemMap() {
   const map = {};
   filteredSqSales().forEach(sale => {
-    (sale.items || []).forEach(item => {
+    // Also handle sales where description is stored top-level (paste imports)
+    const itemList = (sale.items && sale.items.length)
+      ? sale.items
+      : (sale.description ? [{ name: sale.description, qty: 1, price: sale.gross }] : []);
+    itemList.forEach(item => {
       if (!item.name) return;
-      const k = item.name.toLowerCase().trim();
-      if (!map[k]) map[k] = { name: item.name, units: 0, revenue: 0, src: 'Square' };
+      const displayName = normalizeSqDesc(item.name);
+      const k = displayName.toLowerCase().trim();
+      if (!map[k]) map[k] = { name: displayName, units: 0, revenue: 0, src: 'Square' };
       map[k].units   += item.qty || 1;
       map[k].revenue += item.price || 0;
     });
@@ -2702,6 +2707,19 @@ function finishSetup() {
 // ============================================================
 // SQUARE CSV IMPORT
 // ============================================================
+
+// Maps Square's generic labels to meaningful names
+const SQ_DESC_MAP = {
+  'custom amount': 'Singles',
+  'custom sale':   'Singles',
+  'custom item':   'Singles',
+  'manual entry':  'Singles',
+};
+function normalizeSqDesc(desc) {
+  if (!desc) return desc;
+  return SQ_DESC_MAP[desc.toLowerCase().trim()] || desc;
+}
+
 function importSquareCSV(event) {
   const file = event.target.files[0];
   if (!file) return;
@@ -2760,7 +2778,7 @@ function importSquareCSV(event) {
         // Parse date — Square uses M/D/YYYY or YYYY-MM-DD
         const dateISO = normalizeDate(dateRaw);
 
-        const desc = descCol ? row[descCol]?.trim() : '';
+        const desc = normalizeSqDesc(descCol ? row[descCol]?.trim() : '');
         const items = desc ? [{ name: desc, qty: 1, price: grossRaw }] : [];
 
         S.squareSales.push({
@@ -3070,7 +3088,7 @@ function _importPasteSquare(rows) {
       fees,
       net,
       category: catC ? r[catC] : 'Sales',
-      description: descC ? r[descC] : '',
+      description: normalizeSqDesc(descC ? r[descC] : ''),
       source: 'paste'
     });
     added++;
