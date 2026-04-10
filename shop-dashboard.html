@@ -393,31 +393,25 @@ hr.divider{border:none;border-top:2px dashed var(--border);margin:14px 0}
   <div class="setup-box">
     <div class="setup-logo">🎴</div>
     <h1>Pokemon Card Shop Dashboard</h1>
-    <p class="subtitle">Complete business management for your card shop and show vendor operations. Connect Square to pull transactions automatically, or start in cash-only mode.</p>
+    <p class="subtitle">Track your card shop revenue, inventory, and costs. Import Square sales via CSV, log cash sales manually, and export PDF reports.</p>
     <div class="setup-step">
       <div class="setup-num">1</div>
-      <p>Create a free account at <a href="https://developer.squareup.com" target="_blank">developer.squareup.com</a> and create an Application.</p>
+      <p>Enter your business name below — used on PDF reports.</p>
     </div>
     <div class="setup-step">
       <div class="setup-num">2</div>
-      <p>In your app's <strong>Credentials</strong> tab, copy your <strong>Production Access Token</strong> (or Sandbox for testing).</p>
+      <p>After setup, import your Square sales from <strong>squareup.com/dashboard → Reports → Sales → Export CSV.</strong></p>
     </div>
     <div class="setup-step">
       <div class="setup-num">3</div>
-      <p>Paste it below and click Connect. Your key is stored only in this browser — never sent anywhere except Square's API.</p>
+      <p>Log cash sales manually in the <strong>Sales</strong> tab. All data is saved in your browser.</p>
     </div>
     <hr class="divider">
     <div class="form-row">
-      <label class="field-label">Square Access Token (optional)</label>
-      <div class="setup-sandbox-row">
-        <input type="checkbox" id="setup-sandbox" />
-        <span>Use Sandbox mode (for testing)</span>
-      </div>
-      <input type="password" id="setup-api-key" placeholder="EAAAl..." style="margin-bottom:10px" />
-      <div id="setup-error" class="alert alert-error" style="display:none"></div>
+      <label class="field-label">Business Name</label>
+      <input type="text" id="setup-biz-name" placeholder="Pokemon Card Shop" style="margin-bottom:10px" />
       <div class="flex-gap" style="margin-top:12px">
-        <button class="btn btn-primary" id="setup-connect-btn" onclick="connectSquare()">⚡ Connect to Square</button>
-        <button class="btn btn-secondary" onclick="skipSquare()">Skip — Cash Only Mode</button>
+        <button class="btn btn-primary" onclick="finishSetup()">🚀 Get Started</button>
       </div>
     </div>
   </div>
@@ -439,20 +433,10 @@ hr.divider{border:none;border-top:2px dashed var(--border);margin:14px 0}
     </div>
     <div class="nav-actions">
       <span id="sync-status"></span>
-      <button class="btn btn-secondary btn-sm" id="sync-btn" onclick="syncSquare()">⟳ Sync Square</button>
+      <button class="btn btn-primary btn-sm" onclick="showTab('sales');setTimeout(()=>document.getElementById('csv-import-section')?.scrollIntoView({behavior:'smooth'}),100)">📥 Import Square CSV</button>
       <div class="settings-wrap">
         <button class="btn btn-secondary btn-sm btn-icon" onclick="toggleSettings(event)" title="Settings">⚙</button>
         <div class="settings-panel" id="settings-panel">
-          <div class="settings-item">
-            <span>Square</span>
-            <span id="sq-status-label" class="tag tag-red">Not Connected</span>
-          </div>
-          <div class="settings-item">
-            <button class="link" onclick="openChangeKeyModal()">Change API Key →</button>
-          </div>
-          <div class="settings-item">
-            <button class="link danger" onclick="disconnectSquare()">Disconnect Square ✕</button>
-          </div>
           <div class="settings-item" style="gap:8px">
             <span>WI Tax Rate</span>
             <div class="flex-gap" style="gap:4px">
@@ -515,17 +499,50 @@ hr.divider{border:none;border-top:2px dashed var(--border);margin:14px 0}
 
   <!-- ── TAB: SALES ── -->
   <div class="tab-content" id="tab-sales">
-    <div class="section">
+
+    <!-- CSV IMPORT INSTRUCTIONS -->
+    <div class="section" id="csv-import-section">
       <div class="section-header">
-        <span class="section-title">⬛ Square Transactions</span>
+        <span class="section-title">⬛ Import Square Transactions (CSV)</span>
         <div class="flex-gap">
           <span id="sq-count-label" class="text-muted fs12"></span>
-          <button class="btn btn-secondary btn-sm" onclick="syncSquare()">⟳ Sync</button>
+          <label class="btn btn-primary btn-sm" style="cursor:pointer">
+            📥 Choose CSV File
+            <input type="file" id="csv-file-input" accept=".csv" style="display:none" onchange="importSquareCSV(event)" />
+          </label>
         </div>
       </div>
+
+      <!-- How-to guide -->
+      <div style="padding:16px 18px;border-bottom:2px dashed var(--border)">
+        <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:0.6px;color:var(--text3);margin-bottom:10px">How to export your Square transactions:</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;gap:10px;align-items:flex-start">
+            <span style="background:var(--poke-red);color:#fff;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0;margin-top:1px">1</span>
+            <span style="font-size:13px;color:var(--text2)">Go to <strong style="color:var(--text)">squareup.com/dashboard</strong> and sign in</span>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start">
+            <span style="background:var(--poke-red);color:#fff;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0;margin-top:1px">2</span>
+            <span style="font-size:13px;color:var(--text2)">Click <strong style="color:var(--text)">Reports</strong> in the left sidebar</span>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start">
+            <span style="background:var(--poke-red);color:#fff;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0;margin-top:1px">3</span>
+            <span style="font-size:13px;color:var(--text2)">Click <strong style="color:var(--text)">Sales</strong> → set your date range → click <strong style="color:var(--text)">Export</strong> (top right) → <strong style="color:var(--text)">Transactions CSV</strong></span>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start">
+            <span style="background:var(--poke-red);color:#fff;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0;margin-top:1px">4</span>
+            <span style="font-size:13px;color:var(--text2)">Click <strong style="color:var(--accent)">📥 Choose CSV File</strong> above and select the downloaded file — transactions import instantly</span>
+          </div>
+        </div>
+        <div class="alert alert-info" style="margin-top:12px;margin-bottom:0">
+          💡 Re-import any time to pick up new sales — duplicates are automatically skipped.
+        </div>
+      </div>
+
       <div id="sq-sync-error"></div>
       <div id="sq-sales-table"></div>
     </div>
+
     <div class="section">
       <div class="section-header">
         <span class="section-title">💵 Cash Sales</span>
@@ -1351,21 +1368,13 @@ function renderSqSalesTable() {
   const el = document.getElementById('sq-sales-table');
   if (!el) return;
 
-  if (!S.apiKey) {
-    el.innerHTML = '<div class="alert alert-info" style="margin:12px 16px">Square is not connected. ' +
-      '<button class="btn btn-sm btn-secondary" onclick="openChangeKeyModal()">Connect Square</button></div>';
-    const lbl = document.getElementById('sq-count-label');
-    if (lbl) lbl.textContent = '';
-    return;
-  }
-
   const sales = filteredSqSales().slice().reverse();
   const lbl = document.getElementById('sq-count-label');
-  if (lbl) lbl.textContent = sales.length + ' transactions';
+  if (lbl) lbl.textContent = sales.length ? sales.length + ' transactions' : '';
 
   if (!sales.length) {
     el.innerHTML = emptyHTML('No Square transactions this period',
-      'Click Sync Square to pull the latest data from your account.');
+      'Export a Transactions CSV from squareup.com/dashboard → Reports → Sales → Export, then click "📥 Choose CSV File" above.');
     return;
   }
 
@@ -2517,37 +2526,169 @@ async function applyNewKey() {
 // ============================================================
 // SETUP SCREEN HANDLERS
 // ============================================================
-async function connectSquare() {
-  const key     = document.getElementById('setup-api-key')?.value?.trim();
-  const sandbox = document.getElementById('setup-sandbox')?.checked || false;
-  const errEl   = document.getElementById('setup-error');
-  const btn     = document.getElementById('setup-connect-btn');
-  if (errEl) errEl.style.display = 'none';
-
-  if (!key) {
-    if (errEl) { errEl.textContent = 'Please paste your Access Token.'; errEl.style.display = 'flex'; }
-    return;
-  }
-
-  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Connecting...'; }
-  try {
-    const loc = await validateApiKey(key, sandbox);
-    saveState();
-    showApp();
-    const status = document.getElementById('sync-status');
-    if (status) {
-      status.innerHTML = '<span style="color:var(--green)">✓ Connected to ' + esc(loc.name || 'Square') + '</span>';
-      setTimeout(() => { if (status) status.textContent = ''; }, 5000);
-    }
-  } catch(e) {
-    if (errEl) { errEl.textContent = 'Connection failed: ' + e.message; errEl.style.display = 'flex'; }
-    S.apiKey = null;
-  } finally {
-    if (btn) { btn.disabled = false; btn.innerHTML = '⚡ Connect to Square'; }
-  }
+function finishSetup() {
+  const name = document.getElementById('setup-biz-name')?.value?.trim();
+  if (name) { S.businessName = name; saveState(); }
+  showApp();
 }
 
-function skipSquare() { showApp(); }
+// ============================================================
+// SQUARE CSV IMPORT
+// ============================================================
+function importSquareCSV(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const errEl = document.getElementById('sq-sync-error');
+  if (errEl) errEl.innerHTML = '';
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const text    = e.target.result;
+      const records = parseCSV(text);
+
+      if (!records.length) {
+        setInlineError('sq-sync-error', 'No rows found in this CSV. Make sure you exported a Transactions CSV from Square.', false);
+        return;
+      }
+
+      // Detect column names (Square uses slightly different names depending on export type)
+      const headers = Object.keys(records[0]).map(h => h.trim());
+      const col = name => {
+        const h = headers.find(h => h.toLowerCase().includes(name.toLowerCase()));
+        return h || null;
+      };
+
+      const dateCol  = col('date');
+      const grossCol = col('gross') || col('total collected') || col('amount');
+      const feeCol   = col('fee');
+      const netCol   = col('net');
+      const taxCol   = col('tax');
+      const descCol  = col('description') || col('detail') || col('item');
+
+      if (!dateCol || !grossCol) {
+        setInlineError('sq-sync-error',
+          'Could not find required columns (Date, Gross Sales/Total Collected). ' +
+          'Make sure you exported a <strong>Transactions CSV</strong> from Square Reports → Sales.', false);
+        return;
+      }
+
+      let imported = 0, skipped = 0;
+      const existingIds = new Set(S.squareSales.map(s => s.id));
+
+      records.forEach((row, idx) => {
+        const dateRaw  = row[dateCol]?.trim();
+        const grossRaw = parseMoney(row[grossCol]);
+        if (!dateRaw || isNaN(grossRaw) || grossRaw <= 0) { skipped++; return; }
+
+        // Build a deterministic ID from date + gross + row index
+        const id = 'csv_' + dateRaw.replace(/\W/g,'') + '_' + grossRaw.toFixed(2).replace('.','') + '_' + idx;
+        if (existingIds.has(id)) { skipped++; return; }
+
+        const fee = feeCol ? Math.abs(parseMoney(row[feeCol])) : parseFloat((grossRaw * 0.026 + 0.10).toFixed(2));
+        const tax = taxCol ? Math.abs(parseMoney(row[taxCol])) : 0;
+        const net = netCol ? parseMoney(row[netCol]) : parseFloat((grossRaw - fee - tax).toFixed(2));
+
+        // Parse date — Square uses M/D/YYYY or YYYY-MM-DD
+        const dateISO = normalizeDate(dateRaw);
+
+        const desc = descCol ? row[descCol]?.trim() : '';
+        const items = desc ? [{ name: desc, qty: 1, price: grossRaw }] : [];
+
+        S.squareSales.push({
+          id, date: dateISO, dateStr: dateISO.slice(0, 10),
+          gross: parseFloat(grossRaw.toFixed(2)),
+          fee:   parseFloat(fee.toFixed(2)),   feeEstimated: !feeCol,
+          tax:   parseFloat(tax.toFixed(2)),
+          net:   parseFloat(net.toFixed(2)),
+          items, status: 'COMPLETED'
+        });
+        existingIds.add(id);
+        imported++;
+      });
+
+      // Auto-deduct inventory for newly imported sales
+      autoDeductFromSquare(S.squareSales.filter(s => s.id.startsWith('csv_') && !S.processedSaleIds.has(s.id)));
+
+      saveState();
+      updateLowStockBadge();
+      renderSales();
+      refreshCurrentTab();
+
+      const status = document.getElementById('sync-status');
+      if (status) {
+        status.innerHTML = '<span style="color:var(--green)">✓ Imported ' + imported + ' transactions' + (skipped ? ' (' + skipped + ' skipped)' : '') + '</span>';
+        setTimeout(() => { if (status) status.textContent = ''; }, 5000);
+      }
+
+    } catch(err) {
+      setInlineError('sq-sync-error', 'Failed to parse CSV: ' + err.message, false);
+    }
+
+    // Reset file input so same file can be re-selected
+    event.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+// Parse a CSV string into array of objects keyed by header
+function parseCSV(text) {
+  const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+  if (lines.length < 2) return [];
+
+  const headers = splitCSVRow(lines[0]);
+  const rows = [];
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    const vals = splitCSVRow(line);
+    const obj = {};
+    headers.forEach((h, j) => { obj[h.trim()] = vals[j]?.trim() || ''; });
+    rows.push(obj);
+  }
+  return rows;
+}
+
+// Handle quoted fields with commas inside
+function splitCSVRow(line) {
+  const result = [];
+  let cur = '', inQuote = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      if (inQuote && line[i+1] === '"') { cur += '"'; i++; }
+      else inQuote = !inQuote;
+    } else if (ch === ',' && !inQuote) {
+      result.push(cur); cur = '';
+    } else {
+      cur += ch;
+    }
+  }
+  result.push(cur);
+  return result;
+}
+
+// Parse money strings like "$1,234.56" or "-50.00"
+function parseMoney(str) {
+  if (!str) return 0;
+  const n = parseFloat(String(str).replace(/[$,\s]/g, ''));
+  return isNaN(n) ? 0 : n;
+}
+
+// Normalize date strings to ISO format YYYY-MM-DD
+function normalizeDate(str) {
+  if (!str) return new Date().toISOString();
+  // Already ISO
+  if (/^\d{4}-\d{2}-\d{2}/.test(str)) return str.length === 10 ? str + 'T12:00:00Z' : str;
+  // M/D/YYYY or MM/DD/YYYY
+  const parts = str.split('/');
+  if (parts.length === 3) {
+    const [m, d, y] = parts;
+    return y.padStart(4,'0') + '-' + m.padStart(2,'0') + '-' + d.padStart(2,'0') + 'T12:00:00Z';
+  }
+  return new Date(str).toISOString() || new Date().toISOString();
+}
 
 // ============================================================
 // DATE PERIOD
@@ -2650,8 +2791,7 @@ window.addEventListener('resize', () => {
 // ============================================================
 function init() {
   loadState();
-  const launched = localStorage.getItem('app_launched');
-  if (launched || S.apiKey) {
+  if (localStorage.getItem('app_launched')) {
     showApp();
   } else {
     showSetup();
