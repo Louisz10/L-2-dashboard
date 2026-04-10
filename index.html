@@ -3118,6 +3118,7 @@ function _importPasteSquare(rows) {
 function _importPasteCash(rows) {
   let added = 0;
   rows.forEach(r => {
+    const keys  = Object.keys(r);
     const dateC = findCol(r, DATE_COLS);
     const amtC  = findCol(r, [...GROSS_COLS, ...NET_COLS]);
     const catC  = findCol(r, CAT_COLS);
@@ -3125,12 +3126,24 @@ function _importPasteCash(rows) {
     if (!dateC || !amtC) return;
     const amount = parseMoney(r[amtC]);
     if (!amount) return;
+
+    // Category: cat col → any leftover text col → fallback
+    const usedCols = new Set([dateC, amtC].filter(Boolean));
+    const labelC = (catC && r[catC]?.trim() ? catC : null)
+                || (descC && r[descC]?.trim() ? descC : null)
+                || keys.find(k => !usedCols.has(k) && r[k]?.trim());
+    const category = (labelC ? r[labelC]?.trim() : '') || 'Cash';
+
+    usedCols.add(labelC);
+    const noteC = keys.find(k => !usedCols.has(k) && r[k]?.trim());
+    const note  = noteC ? r[noteC]?.trim() : '';
+
     S.cashSales.push({
       id: genId(),
       date: normalizeDate(r[dateC]),
       amount,
-      category: catC ? r[catC] : 'Cash',
-      note: descC ? r[descC] : '',
+      category,
+      note,
       source: 'paste'
     });
     added++;
@@ -3141,6 +3154,7 @@ function _importPasteCash(rows) {
 function _importPasteCosts(rows) {
   let added = 0;
   rows.forEach(r => {
+    const keys  = Object.keys(r);
     const dateC = findCol(r, DATE_COLS);
     const amtC  = findCol(r, [...GROSS_COLS, ...NET_COLS]);
     const catC  = findCol(r, CAT_COLS);
@@ -3148,9 +3162,19 @@ function _importPasteCosts(rows) {
     if (!dateC || !amtC) return;
     const amount = parseMoney(r[amtC]);
     if (!amount) return;
-    // Name = first non-empty value from desc col, then cat col, then fallback
-    const name  = (descC && r[descC]?.trim()) || (catC && r[catC]?.trim()) || 'Expense';
-    const notes = (descC && catC && r[descC]?.trim()) ? r[catC] : ''; // if both exist, cat becomes notes
+
+    // Find name: try desc → cat → any remaining column that isn't date/amount
+    const usedCols = new Set([dateC, amtC].filter(Boolean));
+    const nameC = (descC && r[descC]?.trim() ? descC : null)
+               || (catC  && r[catC]?.trim()  ? catC  : null)
+               || keys.find(k => !usedCols.has(k) && r[k]?.trim());
+    const name = (nameC ? r[nameC]?.trim() : '') || 'Expense';
+
+    // Notes: any remaining text column after name is chosen
+    usedCols.add(nameC);
+    const notesC = keys.find(k => !usedCols.has(k) && r[k]?.trim());
+    const notes  = notesC ? r[notesC]?.trim() : '';
+
     S.costs.push({
       id: genId(),
       date: normalizeDate(r[dateC]),
