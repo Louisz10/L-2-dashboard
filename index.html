@@ -380,6 +380,19 @@ hr.divider{border:none;border-top:2px dashed var(--border);margin:14px 0}
 .col-map-row label{color:var(--text2);width:130px;flex-shrink:0;font-weight:700}
 .col-map-row select{flex:1}
 
+/* ── BULK SELECT ── */
+.cb-col{width:36px;text-align:center!important;padding:6px 4px!important}
+input[type=checkbox].row-cb{width:16px;height:16px;accent-color:var(--accent);cursor:pointer;vertical-align:middle}
+.bulk-bar{
+  display:none;align-items:center;gap:10px;flex-wrap:wrap;
+  background:var(--bg3);border:2px solid var(--accent);border-radius:14px;
+  padding:8px 14px;margin:0 0 10px 0;font-size:13px;font-weight:700;
+  box-shadow:3px 3px 0 rgba(0,0,0,0.4);
+}
+.bulk-bar.visible{display:flex}
+.bulk-bar .sel-count{color:var(--accent);min-width:90px}
+.select-all-cb{accent-color:var(--accent);width:16px;height:16px;cursor:pointer;vertical-align:middle}
+
 /* ── PRINT ── */
 .print-only{display:none}
 @media print{
@@ -909,8 +922,8 @@ function buildSaleRecord(payment, order) {
     const a = sqCents(f.amount_money);
     return s + (a < 0 ? -a : a); // handle refunded fees (negative amounts)
   }, 0);
-  // Fallback: estimate 2.6% + $0.10
-  const estFee = parseFloat((gross * 0.026 + 0.10).toFixed(2));
+  // Fallback: estimate 2.6% + $0.15
+  const estFee = parseFloat((gross * 0.026 + 0.15).toFixed(2));
   const fee = realFee > 0 ? parseFloat(realFee.toFixed(2)) : estFee;
   const feeEstimated = realFee === 0;
 
@@ -1435,25 +1448,36 @@ function renderSqSalesTable() {
     return;
   }
 
-  el.innerHTML = '<div class="table-wrap"><table id="sq-tbl">' +
+  el.innerHTML =
+    '<div class="bulk-bar" id="bulk-bar-sq">' +
+      '<span class="sel-count" id="bulk-count-sq">0 selected</span>' +
+      '<button class="btn btn-danger btn-sm" onclick="deleteSelected(\'sq\')">🗑 Delete Selected</button>' +
+      '<button class="btn btn-secondary btn-sm" onclick="clearSelection(\'sq-tbl\',\'bulk-bar-sq\',\'bulk-count-sq\')">✕ Clear</button>' +
+    '</div>' +
+    '<div class="table-wrap"><table id="sq-tbl">' +
     '<thead><tr>' +
-    '<th onclick="sortTable(\'sq-tbl\',0)">Date</th>' +
-    '<th onclick="sortTable(\'sq-tbl\',1)">Items</th>' +
-    '<th onclick="sortTable(\'sq-tbl\',2,true)">Gross</th>' +
-    '<th onclick="sortTable(\'sq-tbl\',3,true)">Sq. Fee</th>' +
-    '<th onclick="sortTable(\'sq-tbl\',4,true)">Tax</th>' +
-    '<th onclick="sortTable(\'sq-tbl\',5,true)">Net</th>' +
+    '<th class="cb-col"><input type="checkbox" class="select-all-cb" onchange="toggleSelectAll(\'sq-tbl\',this,\'bulk-bar-sq\',\'bulk-count-sq\')" title="Select all"></th>' +
+    '<th onclick="sortTable(\'sq-tbl\',1)">Date</th>' +
+    '<th onclick="sortTable(\'sq-tbl\',2)">Description</th>' +
+    '<th onclick="sortTable(\'sq-tbl\',3,true)">Gross</th>' +
+    '<th onclick="sortTable(\'sq-tbl\',4,true)">Sq. Fee</th>' +
+    '<th onclick="sortTable(\'sq-tbl\',5,true)">Tax</th>' +
+    '<th onclick="sortTable(\'sq-tbl\',6,true)">Net</th>' +
+    '<th>Actions</th>' +
     '</tr></thead><tbody>' +
-    sales.map(s =>
-      '<tr>' +
-      '<td>' + fmtDate(s.date) + '</td>' +
-      '<td class="muted">' + esc(s.items && s.items.length ? s.items.map(i => i.name + ' ×' + i.qty).join(', ') : '—') + '</td>' +
-      '<td class="right green">' + fmtMoney(s.gross) + '</td>' +
-      '<td class="right red">' + fmtMoney(s.fee) + (s.feeEstimated ? '<span title="Estimated" style="color:var(--text3);font-size:10px;margin-left:3px">est</span>' : '') + '</td>' +
-      '<td class="right">' + fmtMoney(s.tax) + '</td>' +
-      '<td class="right">' + fmtMoney(s.net) + '</td>' +
-      '</tr>'
-    ).join('') +
+    sales.map(s => {
+      const desc = s.description || (s.items && s.items.length ? s.items.map(i => i.name + (i.qty > 1 ? ' ×' + i.qty : '')).join(', ') : '—');
+      return '<tr>' +
+        '<td class="cb-col"><input type="checkbox" class="row-cb" data-id="' + escA(s.id) + '" onchange="onRowCbChange(\'bulk-bar-sq\',\'bulk-count-sq\',\'sq-tbl\')"></td>' +
+        '<td>' + fmtDate(s.date) + '</td>' +
+        '<td class="muted">' + esc(desc) + '</td>' +
+        '<td class="right green">' + fmtMoney(s.gross) + '</td>' +
+        '<td class="right red">' + fmtMoney(s.fee) + (s.feeEstimated ? '<span title="Estimated" style="color:var(--text3);font-size:10px;margin-left:3px">est</span>' : '') + '</td>' +
+        '<td class="right">' + fmtMoney(s.tax) + '</td>' +
+        '<td class="right">' + fmtMoney(s.net) + '</td>' +
+        '<td><button class="btn btn-secondary btn-sm" onclick="openModal(\'edit-sq-sale\',\'' + escA(s.id) + '\')">Edit</button></td>' +
+        '</tr>';
+    }).join('') +
     '</tbody></table></div>';
 }
 
@@ -1467,23 +1491,31 @@ function renderCashSalesTable() {
     return;
   }
 
-  el.innerHTML = '<div class="table-wrap"><table id="cash-tbl">' +
+  el.innerHTML =
+    '<div class="bulk-bar" id="bulk-bar-cash">' +
+      '<span class="sel-count" id="bulk-count-cash">0 selected</span>' +
+      '<button class="btn btn-danger btn-sm" onclick="deleteSelected(\'cash\')">🗑 Delete Selected</button>' +
+      '<button class="btn btn-secondary btn-sm" onclick="clearSelection(\'cash-tbl\',\'bulk-bar-cash\',\'bulk-count-cash\')">✕ Clear</button>' +
+    '</div>' +
+    '<div class="table-wrap"><table id="cash-tbl">' +
     '<thead><tr>' +
-    '<th onclick="sortTable(\'cash-tbl\',0)">Date</th>' +
-    '<th onclick="sortTable(\'cash-tbl\',1)">Category</th>' +
-    '<th onclick="sortTable(\'cash-tbl\',2,true)">Amount</th>' +
-    '<th onclick="sortTable(\'cash-tbl\',3,true)">Tax Collected</th>' +
-    '<th onclick="sortTable(\'cash-tbl\',4)">Notes</th>' +
+    '<th class="cb-col"><input type="checkbox" class="select-all-cb" onchange="toggleSelectAll(\'cash-tbl\',this,\'bulk-bar-cash\',\'bulk-count-cash\')" title="Select all"></th>' +
+    '<th onclick="sortTable(\'cash-tbl\',1)">Date</th>' +
+    '<th onclick="sortTable(\'cash-tbl\',2)">Category</th>' +
+    '<th onclick="sortTable(\'cash-tbl\',3,true)">Amount</th>' +
+    '<th onclick="sortTable(\'cash-tbl\',4,true)">Tax</th>' +
+    '<th onclick="sortTable(\'cash-tbl\',5)">Notes</th>' +
     '<th>Action</th>' +
     '</tr></thead><tbody>' +
     sales.map(s =>
       '<tr>' +
+      '<td class="cb-col"><input type="checkbox" class="row-cb" data-id="' + escA(s.id) + '" onchange="onRowCbChange(\'bulk-bar-cash\',\'bulk-count-cash\',\'cash-tbl\')"></td>' +
       '<td>' + fmtDate(s.date) + '</td>' +
       '<td>' + esc(s.category || '—') + '</td>' +
       '<td class="right green">' + fmtMoney(s.amount) + '</td>' +
       '<td class="right">' + fmtMoney(s.tax) + '</td>' +
       '<td class="muted">' + esc(s.notes || '—') + '</td>' +
-      '<td><button class="btn btn-danger btn-sm" onclick="deleteCashSale(\'' + escA(s.id) + '\')">Delete</button></td>' +
+      '<td><button class="btn btn-danger btn-sm" onclick="deleteCashSale(\'' + escA(s.id) + '\')">Del</button></td>' +
       '</tr>'
     ).join('') +
     '</tbody></table></div>';
@@ -1858,21 +1890,32 @@ function renderCosts() {
     return;
   }
 
-  el.innerHTML = '<div class="table-wrap"><table id="costs-tbl">' +
+  el.innerHTML =
+    '<div class="bulk-bar" id="bulk-bar-costs">' +
+      '<span class="sel-count" id="bulk-count-costs">0 selected</span>' +
+      '<button class="btn btn-danger btn-sm" onclick="deleteSelected(\'costs\')">🗑 Delete Selected</button>' +
+      '<button class="btn btn-secondary btn-sm" onclick="clearSelection(\'costs-tbl\',\'bulk-bar-costs\',\'bulk-count-costs\')">✕ Clear</button>' +
+    '</div>' +
+    '<div class="table-wrap"><table id="costs-tbl">' +
     '<thead><tr>' +
-    '<th onclick="sortTable(\'costs-tbl\',0)">Date</th>' +
-    '<th onclick="sortTable(\'costs-tbl\',1)">Name</th>' +
-    '<th onclick="sortTable(\'costs-tbl\',2,true)">Amount</th>' +
-    '<th onclick="sortTable(\'costs-tbl\',3)">Notes</th>' +
-    '<th>Action</th>' +
+    '<th class="cb-col"><input type="checkbox" class="select-all-cb" onchange="toggleSelectAll(\'costs-tbl\',this,\'bulk-bar-costs\',\'bulk-count-costs\')" title="Select all"></th>' +
+    '<th onclick="sortTable(\'costs-tbl\',1)">Date</th>' +
+    '<th onclick="sortTable(\'costs-tbl\',2)">Name</th>' +
+    '<th onclick="sortTable(\'costs-tbl\',3,true)">Amount</th>' +
+    '<th onclick="sortTable(\'costs-tbl\',4)">Notes</th>' +
+    '<th>Actions</th>' +
     '</tr></thead><tbody>' +
     costs.map(c =>
       '<tr>' +
+      '<td class="cb-col"><input type="checkbox" class="row-cb" data-id="' + escA(c.id) + '" onchange="onRowCbChange(\'bulk-bar-costs\',\'bulk-count-costs\',\'costs-tbl\')"></td>' +
       '<td>' + fmtDate(c.date) + '</td>' +
       '<td>' + esc(c.name) + '</td>' +
       '<td class="right red">' + fmtMoney(c.amount) + '</td>' +
       '<td class="muted">' + esc(c.notes || '—') + '</td>' +
-      '<td><button class="btn btn-danger btn-sm" onclick="deleteCost(\'' + escA(c.id) + '\')">Delete</button></td>' +
+      '<td>' +
+        '<button class="btn btn-secondary btn-sm" onclick="openModal(\'edit-cost\',\'' + escA(c.id) + '\')">Edit</button> ' +
+        '<button class="btn btn-danger btn-sm" onclick="deleteCost(\'' + escA(c.id) + '\')">Del</button>' +
+      '</td>' +
       '</tr>'
     ).join('') + '</tbody></table></div>';
 
@@ -2031,7 +2074,7 @@ ${costs.length ? `
 
 <p style="color:#aaa;font-size:8.5pt;margin-top:36px;border-top:1px solid #eee;padding-top:8px">
   Generated by Pokemon Card Shop Dashboard on ${new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}.
-  Square fees marked "est" are calculated at 2.6% + $0.10. Consult a licensed tax professional before filing.
+  Square fees marked "est" are calculated at 2.6% + $0.15. Consult a licensed tax professional before filing.
 </p>
 </div>`;
 
@@ -2113,6 +2156,26 @@ function openModal(type, id) {
       body.innerHTML = buildCostForm();
       footer.innerHTML = '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveCost()">Save Expense</button>';
       break;
+
+    case 'edit-sq-sale': {
+      const sale = S.squareSales.find(x => x.id === id);
+      if (!sale) { closeModal(); return; }
+      title.textContent = '✏️ Edit Square Transaction';
+      body.innerHTML = buildSqSaleEditForm(sale);
+      footer.innerHTML = '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button>' +
+        '<button class="btn btn-danger btn-sm" onclick="deleteSqSale(\'' + escA(id) + '\')" style="margin-right:auto">Delete</button>' +
+        '<button class="btn btn-primary" onclick="saveSqSaleEdit(\'' + escA(id) + '\')">Save Changes</button>';
+      break;
+    }
+
+    case 'edit-cost': {
+      const cost = S.costs.find(x => x.id === id);
+      if (!cost) { closeModal(); return; }
+      title.textContent = '✏️ Edit Expense';
+      body.innerHTML = buildCostForm(cost);
+      footer.innerHTML = '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveCost(\'' + escA(id) + '\')">Update Expense</button>';
+      break;
+    }
   }
 }
 
@@ -2231,26 +2294,27 @@ function buildSinglesForm(d) {
 <p class="text-muted mt8" style="font-size:11px">Singles are tracked as category totals — quantities are updated manually.</p>`;
 }
 
-function buildCostForm() {
+function buildCostForm(d) {
+  const dateVal = d ? d.date.slice(0,10) : todayISO();
   return `
 <div id="form-err" class="alert alert-error" style="display:none"></div>
 <div class="form-grid">
   <div class="form-row">
     <label class="field-label">Date *</label>
-    <input type="date" id="cost-date" value="${todayISO()}" />
+    <input type="date" id="cost-date" value="${dateVal}" />
   </div>
   <div class="form-row">
     <label class="field-label">Amount ($) *</label>
-    <input type="number" id="cost-amt" placeholder="0.00" step="0.01" min="0" />
+    <input type="number" id="cost-amt" value="${d ? d.amount : ''}" placeholder="0.00" step="0.01" min="0" />
   </div>
 </div>
 <div class="form-row">
   <label class="field-label">Expense Name * (e.g. Table fee — Chicago show)</label>
-  <input type="text" id="cost-name" placeholder="e.g. Table fee at Wisconsin Dells show" />
+  <input type="text" id="cost-name" value="${escA(d?.name||'')}" placeholder="e.g. Table fee at Wisconsin Dells show" />
 </div>
 <div class="form-row">
   <label class="field-label">Notes</label>
-  <input type="text" id="cost-notes" placeholder="Optional details" />
+  <input type="text" id="cost-notes" value="${escA(d?.notes||'')}" placeholder="Optional details" />
 </div>`;
 }
 
@@ -2337,13 +2401,18 @@ function saveSinglesSet(editId) {
   saveState(); closeModal(); renderInventory();
 }
 
-function saveCost() {
+function saveCost(editId) {
   const date = v('cost-date'), name = v('cost-name'), amtRaw = vn('cost-amt');
   if (!date) { showFormErr('Date is required.'); return; }
   if (!name) { showFormErr('Expense name is required.'); return; }
   if (amtRaw === null || amtRaw <= 0) { showFormErr('Enter a valid amount.'); return; }
 
-  S.costs.push({ id: genId(), date, name, amount: amtRaw, notes: v('cost-notes') });
+  if (editId) {
+    const idx = S.costs.findIndex(x => x.id === editId);
+    if (idx >= 0) S.costs[idx] = { ...S.costs[idx], date, name, amount: amtRaw, notes: v('cost-notes') };
+  } else {
+    S.costs.push({ id: genId(), date, name, amount: amtRaw, notes: v('cost-notes') });
+  }
   saveState(); closeModal(); renderCosts();
 }
 
@@ -2643,7 +2712,7 @@ function importSquareCSV(event) {
         const id = 'csv_' + dateRaw.replace(/\W/g,'') + '_' + grossRaw.toFixed(2).replace('.','') + '_' + idx;
         if (existingIds.has(id)) { skipped++; return; }
 
-        const fee = feeCol ? Math.abs(parseMoney(row[feeCol])) : parseFloat((grossRaw * 0.026 + 0.10).toFixed(2));
+        const fee = feeCol ? Math.abs(parseMoney(row[feeCol])) : parseFloat((grossRaw * 0.026 + 0.15).toFixed(2));
         const tax = taxCol ? Math.abs(parseMoney(row[taxCol])) : 0;
         const net = netCol ? parseMoney(row[netCol]) : parseFloat((grossRaw - fee - tax).toFixed(2));
 
@@ -2854,10 +2923,11 @@ function findCol(row, candidates) {
 
 const DATE_COLS  = ['date','transaction_date','sale_date','day','created_at','time'];
 const GROSS_COLS = ['gross_sales','gross','total','amount','sale_amount','revenue','gross_revenue',
-                    'cost','costs','price','value','expense','expenses','subtotal','payment'];
+                    'cost','costs','price','value','expense','expenses','subtotal','payment',
+                    'earnings','sales','income','gross_amount'];
 const FEE_COLS   = ['fees','fee','processing_fee','square_fees','processing_fees'];
-const NET_COLS   = ['net_sales','net','net_total','net_amount','net_revenue'];
-const CAT_COLS   = ['category','type','item_type','sale_type','payment_method','expense_type','expenses'];
+const NET_COLS   = ['net_sales','net','net_total','net_amount','net_revenue','post_tax','after_tax','net_earnings'];
+const CAT_COLS   = ['category','type','item_type','sale_type','payment_method','expense_type','expenses','place','location','venue','source'];
 const DESC_COLS  = ['description','note','notes','item','items','memo','details','name','product','label'];
 
 function previewPaste() {
@@ -2943,7 +3013,7 @@ function _importPasteSquare(rows) {
     const rawAmt = grossC ? r[grossC] : (netC ? r[netC] : '');
     const gross  = parseMoney(rawAmt);
     if (!gross) return;
-    const fees   = feeC ? parseMoney(r[feeC]) : Math.round((gross * 0.026 + 0.10) * 100) / 100;
+    const fees   = feeC ? parseMoney(r[feeC]) : Math.round((gross * 0.026 + 0.15) * 100) / 100;
     const net    = netC ? parseMoney(r[netC]) : gross - fees;
     const date   = normalizeDate(r[dateC]);
     // Dedupe key
@@ -3011,6 +3081,139 @@ function _importPasteCosts(rows) {
     added++;
   });
   alert(`✅ Costs / Expenses: imported ${added} row(s).`);
+}
+
+// ============================================================
+// BULK SELECT HELPERS
+// ============================================================
+
+function toggleSelectAll(tblId, masterCb, barId, countId) {
+  const tbl = document.getElementById(tblId);
+  if (!tbl) return;
+  tbl.querySelectorAll('input.row-cb').forEach(cb => { cb.checked = masterCb.checked; });
+  onRowCbChange(barId, countId, tblId);
+}
+
+function onRowCbChange(barId, countId, tblId) {
+  const tbl = document.getElementById(tblId);
+  if (!tbl) return;
+  const cbs = tbl.querySelectorAll('input.row-cb');
+  const checked = [...cbs].filter(c => c.checked).length;
+  const bar = document.getElementById(barId);
+  const cnt = document.getElementById(countId);
+  if (bar) bar.classList.toggle('visible', checked > 0);
+  if (cnt) cnt.textContent = checked + ' selected';
+  // sync master checkbox
+  const master = tbl.querySelector('input.select-all-cb');
+  if (master) master.indeterminate = checked > 0 && checked < cbs.length;
+  if (master && checked === cbs.length && cbs.length > 0) master.checked = true;
+  if (master && checked === 0) { master.checked = false; master.indeterminate = false; }
+}
+
+function clearSelection(tblId, barId, countId) {
+  const tbl = document.getElementById(tblId);
+  if (tbl) tbl.querySelectorAll('input.row-cb, input.select-all-cb').forEach(cb => { cb.checked = false; cb.indeterminate = false; });
+  const bar = document.getElementById(barId); if (bar) bar.classList.remove('visible');
+  const cnt = document.getElementById(countId); if (cnt) cnt.textContent = '0 selected';
+}
+
+function getSelectedIds(tblId) {
+  const tbl = document.getElementById(tblId);
+  if (!tbl) return [];
+  return [...tbl.querySelectorAll('input.row-cb:checked')].map(cb => cb.dataset.id);
+}
+
+function deleteSelected(section) {
+  const map = {
+    sq:    { tbl:'sq-tbl',    bar:'bulk-bar-sq',    cnt:'bulk-count-sq',    arr:'squareSales' },
+    cash:  { tbl:'cash-tbl',  bar:'bulk-bar-cash',  cnt:'bulk-count-cash',  arr:'cashSales'   },
+    costs: { tbl:'costs-tbl', bar:'bulk-bar-costs', cnt:'bulk-count-costs', arr:'costs'       }
+  };
+  const m = map[section]; if (!m) return;
+  const ids = getSelectedIds(m.tbl);
+  if (!ids.length) return;
+  if (!confirm('Delete ' + ids.length + ' selected record(s)? This cannot be undone.')) return;
+  const idSet = new Set(ids);
+  S[m.arr] = S[m.arr].filter(x => !idSet.has(x.id));
+  saveState();
+  refreshCurrentTab();
+}
+
+// ============================================================
+// SQUARE SALE EDIT
+// ============================================================
+
+function buildSqSaleEditForm(s) {
+  const dateVal = s.date ? s.date.slice(0,10) : todayISO();
+  const desc = s.description || (s.items && s.items.length ? s.items.map(i => i.name + (i.qty > 1 ? ' ×'+i.qty : '')).join(', ') : '');
+  const estFee = parseFloat((s.gross * 0.026 + 0.15).toFixed(2));
+  return `
+<div id="form-err" class="alert alert-error" style="display:none"></div>
+<div class="form-grid">
+  <div class="form-row">
+    <label class="field-label">Date *</label>
+    <input type="date" id="sq-edit-date" value="${dateVal}" />
+  </div>
+  <div class="form-row">
+    <label class="field-label">Description / Item Name</label>
+    <input type="text" id="sq-edit-desc" value="${escA(desc)}" placeholder="e.g. Booster Pack, ETB, Singles" />
+  </div>
+</div>
+<div class="form-grid">
+  <div class="form-row">
+    <label class="field-label">Gross Amount ($) *</label>
+    <input type="number" id="sq-edit-gross" value="${s.gross ?? ''}" placeholder="0.00" step="0.01" min="0"
+      oninput="sqEditRecalc()" />
+  </div>
+  <div class="form-row">
+    <label class="field-label">Square Fee ($) <span style="color:var(--text3);font-size:11px">auto 2.6% + $0.15</span></label>
+    <input type="number" id="sq-edit-fee" value="${s.fee ?? estFee}" placeholder="0.00" step="0.01" min="0"
+      oninput="sqEditRecalc()" />
+  </div>
+</div>
+<div class="form-grid">
+  <div class="form-row">
+    <label class="field-label">Tax ($)</label>
+    <input type="number" id="sq-edit-tax" value="${s.tax ?? 0}" placeholder="0.00" step="0.01" min="0"
+      oninput="sqEditRecalc()" />
+  </div>
+  <div class="form-row">
+    <label class="field-label">Net (calculated)</label>
+    <input type="number" id="sq-edit-net" value="${s.net ?? ''}" placeholder="0.00" step="0.01" readonly
+      style="opacity:0.6;cursor:not-allowed" />
+  </div>
+</div>
+<p class="text-muted mt8" style="font-size:11px">Editing the Gross or Fee will auto-update Net. Tax is separate.</p>`;
+}
+
+function sqEditRecalc() {
+  const gross = parseFloat(document.getElementById('sq-edit-gross')?.value || 0) || 0;
+  const fee   = parseFloat(document.getElementById('sq-edit-fee')?.value   || 0) || 0;
+  const tax   = parseFloat(document.getElementById('sq-edit-tax')?.value   || 0) || 0;
+  // Auto-fill fee when gross changes and fee hasn't been manually overridden
+  const netEl = document.getElementById('sq-edit-net');
+  if (netEl) netEl.value = Math.max(0, gross - fee - tax).toFixed(2);
+}
+
+function saveSqSaleEdit(id) {
+  const date  = document.getElementById('sq-edit-date')?.value;
+  const desc  = document.getElementById('sq-edit-desc')?.value?.trim() || '';
+  const gross = parseFloat(document.getElementById('sq-edit-gross')?.value || 0);
+  const fee   = parseFloat(document.getElementById('sq-edit-fee')?.value   || 0);
+  const tax   = parseFloat(document.getElementById('sq-edit-tax')?.value   || 0);
+  if (!date)    { showFormErr('Date is required.'); return; }
+  if (!gross)   { showFormErr('Gross amount is required.'); return; }
+  const net = parseFloat((gross - fee - tax).toFixed(2));
+  const idx = S.squareSales.findIndex(x => x.id === id);
+  if (idx < 0)  { closeModal(); return; }
+  S.squareSales[idx] = { ...S.squareSales[idx], date: date + 'T12:00:00Z', description: desc, gross, fee, tax, net, feeEstimated: false };
+  saveState(); closeModal(); refreshCurrentTab();
+}
+
+function deleteSqSale(id) {
+  if (!confirm('Delete this Square transaction? This cannot be undone.')) return;
+  S.squareSales = S.squareSales.filter(x => x.id !== id);
+  saveState(); closeModal(); refreshCurrentTab();
 }
 
 // ============================================================
