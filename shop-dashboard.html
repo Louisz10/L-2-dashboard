@@ -588,7 +588,8 @@ input[type=checkbox].row-cb{width:16px;height:16px;accent-color:var(--accent);cu
         <span class="section-title">💰 All Sales</span>
         <div class="flex-gap">
           <span id="all-sales-count" class="text-muted fs12"></span>
-          <button class="btn btn-primary btn-sm" onclick="openModal('add-cash')">+ Add Sale</button>
+          <button class="btn btn-secondary btn-sm" onclick="openModal('add-sq-sale')">+ Add Square Sale</button>
+          <button class="btn btn-primary btn-sm" onclick="openModal('add-cash')">+ Add Cash Sale</button>
         </div>
       </div>
       <div id="all-sales-table"></div>
@@ -2167,10 +2168,17 @@ function openModal(type, id) {
       footer.innerHTML = '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveCost()">Save Expense</button>';
       break;
 
+    case 'add-sq-sale':
+      title.textContent = '+ Add Square Transaction';
+      body.innerHTML = buildSqSaleEditForm(null);
+      footer.innerHTML = '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button>' +
+        '<button class="btn btn-primary" onclick="saveSqSaleEdit(null)">Save Sale</button>';
+      break;
+
     case 'edit-sq-sale': {
       const sale = S.squareSales.find(x => x.id === id);
       if (!sale) { closeModal(); return; }
-      title.textContent = '✏️ Edit Square Transaction';
+      title.textContent = '✏️ Edit Sale';
       body.innerHTML = buildSqSaleEditForm(sale);
       footer.innerHTML = '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button>' +
         '<button class="btn btn-danger btn-sm" onclick="deleteSqSale(\'' + escA(id) + '\')" style="margin-right:auto">Delete</button>' +
@@ -2190,7 +2198,7 @@ function openModal(type, id) {
     case 'edit-cash-sale': {
       const sale = S.cashSales.find(x => x.id === id);
       if (!sale) { closeModal(); return; }
-      title.textContent = '✏️ Edit Cash Sale';
+      title.textContent = '✏️ Edit Sale';
       body.innerHTML = buildCashForm(sale);
       footer.innerHTML = '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button>' +
         '<button class="btn btn-danger btn-sm" onclick="deleteCashSale(\'' + escA(id) + '\')" style="margin-right:auto">Delete</button>' +
@@ -2213,9 +2221,6 @@ function closeModalIfOutside(e) {
 // FORM BUILDERS
 // ============================================================
 function buildCashForm(d) {
-  const sealedOpts = S.inventory.map(i =>
-    '<option value="' + escA(i.name) + '"' + (d?.category === i.name ? ' selected' : '') + '>' + esc(i.name) + '</option>'
-  ).join('');
   const dateVal = d ? d.date.slice(0,10) : todayISO();
   return `
 <div id="form-err" class="alert alert-error" style="display:none"></div>
@@ -2225,9 +2230,16 @@ function buildCashForm(d) {
     <input type="date" id="cf-date" value="${dateVal}" />
   </div>
   <div class="form-row">
-    <label class="field-label">Description / Category *</label>
-    <input type="text" id="cf-cat" value="${escA(d?.category||'')}" placeholder="e.g. Singles, Vending, ETB" />
+    <label class="field-label">Source</label>
+    <select id="cf-src">
+      <option value="cash" selected>💵 Cash / Other</option>
+      <option value="square">⬛ Square</option>
+    </select>
   </div>
+</div>
+<div class="form-row">
+  <label class="field-label">Description / Category *</label>
+  <input type="text" id="cf-cat" value="${escA(d?.category||'')}" placeholder="e.g. Singles, Vending, ETB" />
 </div>
 <div class="form-grid">
   <div class="form-row">
@@ -2347,22 +2359,30 @@ function v(id) { return document.getElementById(id)?.value?.trim() || ''; }
 function vn(id) { const n = parseFloat(document.getElementById(id)?.value); return isNaN(n) ? null : n; }
 
 function saveCashSale(editId) {
-  const date = v('cf-date'), cat = v('cf-cat'), amtRaw = vn('cf-amt');
-  if (!date) { showFormErr('Date is required.'); return; }
-  if (!cat)  { showFormErr('Description is required.'); return; }
+  const date   = v('cf-date'), cat = v('cf-cat'), amtRaw = vn('cf-amt');
+  const src    = document.getElementById('cf-src')?.value || 'cash';
+  if (!date)   { showFormErr('Date is required.'); return; }
+  if (!cat)    { showFormErr('Description is required.'); return; }
   if (amtRaw === null || amtRaw <= 0) { showFormErr('Enter a valid sale amount.'); return; }
 
   const taxRaw = vn('cf-tax');
-  const tax = taxRaw !== null ? taxRaw : parseFloat((amtRaw * S.taxRate / 100).toFixed(2));
+  const tax    = taxRaw !== null ? taxRaw : parseFloat((amtRaw * S.taxRate / 100).toFixed(2));
+  const dateISO = date + 'T12:00:00Z';
 
-  if (editId) {
-    const idx = S.cashSales.findIndex(x => x.id === editId);
-    if (idx >= 0) S.cashSales[idx] = { ...S.cashSales[idx], date, category: cat, amount: amtRaw, tax, notes: v('cf-notes') };
+  if (src === 'square') {
+    // Move/save as Square sale
+    if (editId) S.cashSales = S.cashSales.filter(x => x.id !== editId);
+    const fee = parseFloat((amtRaw * 0.026 + 0.15).toFixed(2));
+    S.squareSales.push({ id: editId || genId(), date: dateISO, description: cat, gross: amtRaw, fee, tax, net: parseFloat((amtRaw - fee - tax).toFixed(2)), feeEstimated: true, items: [{ name: cat, qty: 1, price: amtRaw }], status: 'COMPLETED', source: 'manual' });
   } else {
-    S.cashSales.push({ id: genId(), date, category: cat, amount: amtRaw, tax, notes: v('cf-notes') });
-    // Auto-deduct sealed inventory on new sale
-    const inv = S.inventory.find(i => i.name && i.name.toLowerCase().trim() === cat.toLowerCase().trim());
-    if (inv) inv.qty = Math.max(0, (inv.qty || 0) - 1);
+    if (editId) {
+      const idx = S.cashSales.findIndex(x => x.id === editId);
+      if (idx >= 0) S.cashSales[idx] = { ...S.cashSales[idx], date: dateISO, category: cat, amount: amtRaw, tax, notes: v('cf-notes') };
+    } else {
+      S.cashSales.push({ id: genId(), date: dateISO, category: cat, amount: amtRaw, tax, notes: v('cf-notes') });
+      const inv = S.inventory.find(i => i.name && i.name.toLowerCase().trim() === cat.toLowerCase().trim());
+      if (inv) inv.qty = Math.max(0, (inv.qty || 0) - 1);
+    }
   }
 
   saveState(); closeModal(); updateLowStockBadge(); refreshCurrentTab();
@@ -3221,9 +3241,12 @@ function deleteSelected(section) {
 // ============================================================
 
 function buildSqSaleEditForm(s) {
-  const dateVal = s.date ? s.date.slice(0,10) : todayISO();
-  const desc = s.description || (s.items && s.items.length ? s.items.map(i => i.name + (i.qty > 1 ? ' ×'+i.qty : '')).join(', ') : '');
-  const estFee = parseFloat((s.gross * 0.026 + 0.15).toFixed(2));
+  const dateVal = s ? s.date.slice(0,10) : todayISO();
+  const desc    = s ? (s.description || (s.items && s.items.length ? s.items.map(i => i.name + (i.qty > 1 ? ' ×'+i.qty : '')).join(', ') : '')) : '';
+  const gross   = s ? s.gross : '';
+  const fee     = s ? s.fee   : '';
+  const tax     = s ? s.tax   : 0;
+  const net     = s ? s.net   : '';
   return `
 <div id="form-err" class="alert alert-error" style="display:none"></div>
 <div class="form-grid">
@@ -3232,42 +3255,44 @@ function buildSqSaleEditForm(s) {
     <input type="date" id="sq-edit-date" value="${dateVal}" />
   </div>
   <div class="form-row">
-    <label class="field-label">Description / Item Name</label>
-    <input type="text" id="sq-edit-desc" value="${escA(desc)}" placeholder="e.g. Booster Pack, ETB, Singles" />
+    <label class="field-label">Source</label>
+    <select id="sq-edit-src">
+      <option value="square" selected>⬛ Square</option>
+      <option value="cash">💵 Cash / Other</option>
+    </select>
   </div>
+</div>
+<div class="form-row">
+  <label class="field-label">Description / Item Name</label>
+  <input type="text" id="sq-edit-desc" value="${escA(desc)}" placeholder="e.g. Booster Pack, ETB, Singles" />
 </div>
 <div class="form-grid">
   <div class="form-row">
     <label class="field-label">Gross Amount ($) *</label>
-    <input type="number" id="sq-edit-gross" value="${s.gross ?? ''}" placeholder="0.00" step="0.01" min="0"
-      oninput="sqEditRecalc()" />
+    <input type="number" id="sq-edit-gross" value="${gross}" placeholder="0.00" step="0.01" min="0" oninput="sqEditRecalc()" />
   </div>
   <div class="form-row">
     <label class="field-label">Square Fee ($) <span style="color:var(--text3);font-size:11px">auto 2.6% + $0.15</span></label>
-    <input type="number" id="sq-edit-fee" value="${s.fee ?? estFee}" placeholder="0.00" step="0.01" min="0"
-      oninput="sqEditRecalc()" />
+    <input type="number" id="sq-edit-fee" value="${fee}" placeholder="0.00" step="0.01" min="0" oninput="sqEditRecalc()" />
   </div>
 </div>
 <div class="form-grid">
   <div class="form-row">
     <label class="field-label">Tax ($)</label>
-    <input type="number" id="sq-edit-tax" value="${s.tax ?? 0}" placeholder="0.00" step="0.01" min="0"
-      oninput="sqEditRecalc()" />
+    <input type="number" id="sq-edit-tax" value="${tax}" placeholder="0.00" step="0.01" min="0" oninput="sqEditRecalc()" />
   </div>
   <div class="form-row">
     <label class="field-label">Net (calculated)</label>
-    <input type="number" id="sq-edit-net" value="${s.net ?? ''}" placeholder="0.00" step="0.01" readonly
-      style="opacity:0.6;cursor:not-allowed" />
+    <input type="number" id="sq-edit-net" value="${net}" placeholder="0.00" step="0.01" readonly style="opacity:0.6;cursor:not-allowed" />
   </div>
 </div>
-<p class="text-muted mt8" style="font-size:11px">Editing the Gross or Fee will auto-update Net. Tax is separate.</p>`;
+<p class="text-muted mt8" style="font-size:11px">Changing Source will move this record to the correct category. Fee is ignored for Cash sales.</p>`;
 }
 
 function sqEditRecalc() {
   const gross = parseFloat(document.getElementById('sq-edit-gross')?.value || 0) || 0;
   const fee   = parseFloat(document.getElementById('sq-edit-fee')?.value   || 0) || 0;
   const tax   = parseFloat(document.getElementById('sq-edit-tax')?.value   || 0) || 0;
-  // Auto-fill fee when gross changes and fee hasn't been manually overridden
   const netEl = document.getElementById('sq-edit-net');
   if (netEl) netEl.value = Math.max(0, gross - fee - tax).toFixed(2);
 }
@@ -3275,15 +3300,29 @@ function sqEditRecalc() {
 function saveSqSaleEdit(id) {
   const date  = document.getElementById('sq-edit-date')?.value;
   const desc  = document.getElementById('sq-edit-desc')?.value?.trim() || '';
+  const src   = document.getElementById('sq-edit-src')?.value || 'square';
   const gross = parseFloat(document.getElementById('sq-edit-gross')?.value || 0);
   const fee   = parseFloat(document.getElementById('sq-edit-fee')?.value   || 0);
   const tax   = parseFloat(document.getElementById('sq-edit-tax')?.value   || 0);
-  if (!date)    { showFormErr('Date is required.'); return; }
-  if (!gross)   { showFormErr('Gross amount is required.'); return; }
-  const net = parseFloat((gross - fee - tax).toFixed(2));
-  const idx = S.squareSales.findIndex(x => x.id === id);
-  if (idx < 0)  { closeModal(); return; }
-  S.squareSales[idx] = { ...S.squareSales[idx], date: date + 'T12:00:00Z', description: desc, gross, fee, tax, net, feeEstimated: false };
+  if (!date)  { showFormErr('Date is required.'); return; }
+  if (!gross) { showFormErr('Amount is required.'); return; }
+  const net   = parseFloat((gross - fee - tax).toFixed(2));
+  const dateISO = date + 'T12:00:00Z';
+
+  if (src === 'cash') {
+    // Move/save as cash sale
+    if (id) S.squareSales = S.squareSales.filter(x => x.id !== id); // remove from sq if switching
+    S.cashSales.push({ id: id || genId(), date: dateISO, category: desc || 'Sale', amount: gross, tax, notes: '', source: 'manual' });
+  } else {
+    // Save as square sale
+    const newRec = { id: id || genId(), date: dateISO, description: desc, gross, fee, tax, net, feeEstimated: false, items: desc ? [{ name: desc, qty: 1, price: gross }] : [], status: 'COMPLETED', source: 'manual' };
+    if (id) {
+      const idx = S.squareSales.findIndex(x => x.id === id);
+      if (idx >= 0) S.squareSales[idx] = newRec; else S.squareSales.push(newRec);
+    } else {
+      S.squareSales.push(newRec);
+    }
+  }
   saveState(); closeModal(); refreshCurrentTab();
 }
 
