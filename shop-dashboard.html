@@ -394,6 +394,11 @@ input[type=checkbox].row-cb{width:16px;height:16px;accent-color:var(--accent);cu
 .bulk-bar .sel-count{color:var(--accent);min-width:90px}
 .select-all-cb{accent-color:var(--accent);width:16px;height:16px;cursor:pointer;vertical-align:middle}
 
+/* Hide spinner on tax rate only */
+#global-tax-rate::-webkit-inner-spin-button,
+#global-tax-rate::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+#global-tax-rate{-moz-appearance:textfield;appearance:textfield}
+
 /* ── PRINT ── */
 .print-only{display:none}
 @media print{
@@ -466,7 +471,7 @@ input[type=checkbox].row-cb{width:16px;height:16px;accent-color:var(--accent);cu
           <div class="settings-item" style="gap:8px">
             <span>WI Tax Rate</span>
             <div class="flex-gap" style="gap:4px">
-              <input type="number" id="global-tax-rate" style="width:55px;text-align:right" step="0.1" min="0" max="30" onchange="updateTaxRate(this.value)" />
+              <input type="number" id="global-tax-rate" style="width:55px;text-align:right;-webkit-appearance:textfield;-moz-appearance:textfield;appearance:textfield" step="any" min="0" max="30" onchange="updateTaxRate(this.value)" />
               <span class="text-muted">%</span>
             </div>
           </div>
