@@ -348,6 +348,7 @@ canvas{display:block}
 
 /* ── LAYOUT HELPERS ── */
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.two-col-stack{display:flex;flex-direction:column;gap:18px}
 @media(max-width:780px){.two-col{grid-template-columns:1fr}}
 .flex-between{display:flex;justify-content:space-between;align-items:center}
 .flex-gap{display:flex;gap:8px;align-items:center}
@@ -452,7 +453,6 @@ input[type=checkbox].row-cb{width:16px;height:16px;accent-color:var(--accent);cu
       <button class="nav-tab active" data-tab="overview" onclick="showTab('overview')">📊 Overview</button>
       <button class="nav-tab" data-tab="sales" onclick="showTab('sales')">💰 Sales</button>
       <button class="nav-tab" data-tab="inventory" onclick="showTab('inventory')">📦 Inventory <span id="low-stock-badge" class="nav-badge" style="display:none">0</span></button>
-      <button class="nav-tab" data-tab="analytics" onclick="showTab('analytics')">📈 Analytics</button>
       <button class="nav-tab" data-tab="costs" onclick="showTab('costs')">💸 Costs</button>
       <button class="nav-tab" data-tab="reports" onclick="showTab('reports')">🖨 Reports</button>
     </div>
@@ -521,6 +521,31 @@ input[type=checkbox].row-cb{width:16px;height:16px;accent-color:var(--accent);cu
         <div id="ov-cash-recent"></div>
       </div>
     </div>
+    <div class="two-col" style="margin-top:16px">
+      <div class="section">
+        <div class="section-header"><span class="section-title">🏆 Top Selling Items</span></div>
+        <div id="top-items-table"></div>
+      </div>
+      <div class="two-col-stack">
+        <div class="section">
+          <div class="section-header"><span class="section-title">🍩 Revenue by Category</span></div>
+          <div class="section-body" style="display:flex;flex-direction:column;align-items:center">
+            <canvas id="donut-chart" width="220" height="220"></canvas>
+            <div id="donut-legend" class="chart-legend" style="justify-content:center;margin-top:10px"></div>
+          </div>
+        </div>
+        <div class="section mt16">
+          <div class="section-header"><span class="section-title">📊 SKU Type Performance</span></div>
+          <div id="sku-perf-table"></div>
+        </div>
+      </div>
+    </div>
+    <div class="two-col" style="margin-top:16px">
+      <div class="section">
+        <div class="section-header"><span class="section-title">💹 Profit Margins by Item</span></div>
+        <div id="margin-table"></div>
+      </div>
+    </div>
   </div>
 
   <!-- ── TAB: SALES ── -->
@@ -586,48 +611,6 @@ input[type=checkbox].row-cb{width:16px;height:16px;accent-color:var(--accent);cu
         <button class="btn btn-primary btn-sm" onclick="openModal('add-inventory')">+ Add Item</button>
       </div>
       <div id="sealed-inv-table"></div>
-    </div>
-    <div class="section mt16">
-      <div class="section-header">
-        <span class="section-title">🃏 Singles Inventory</span>
-        <button class="btn btn-primary btn-sm" onclick="openModal('add-singles')">+ Add Set</button>
-      </div>
-      <div id="singles-inv-table"></div>
-    </div>
-  </div>
-
-  <!-- ── TAB: ANALYTICS ── -->
-  <div class="tab-content" id="tab-analytics">
-    <div class="two-col">
-      <div class="section">
-        <div class="section-header"><span class="section-title">🏆 Top Selling Items</span></div>
-        <div id="top-items-table"></div>
-      </div>
-      <div class="section">
-        <div class="section-header"><span class="section-title">🎯 Top Sets by Revenue</span></div>
-        <div id="top-sets-table"></div>
-      </div>
-    </div>
-    <div class="two-col">
-      <div class="section">
-        <div class="section-header"><span class="section-title">🍩 Revenue by Category</span></div>
-        <div class="section-body" style="display:flex;flex-direction:column;align-items:center">
-          <canvas id="donut-chart" width="240" height="240"></canvas>
-          <div id="donut-legend" class="chart-legend" style="justify-content:center;margin-top:12px"></div>
-        </div>
-      </div>
-      <div class="section">
-        <div class="section-header"><span class="section-title">📊 SKU Type Performance</span></div>
-        <div id="sku-perf-table"></div>
-      </div>
-    </div>
-    <div class="section mt16">
-      <div class="section-header"><span class="section-title">💹 Profit Margins by Item</span></div>
-      <div id="margin-table"></div>
-    </div>
-    <div class="section mt16">
-      <div class="section-header"><span class="section-title">🃏 Singles Performance</span></div>
-      <div id="singles-perf-table"></div>
     </div>
   </div>
 
@@ -1196,7 +1179,6 @@ function renderTab(name) {
     case 'overview':  renderOverview();   break;
     case 'sales':     renderSales();      break;
     case 'inventory': renderInventory();  break;
-    case 'analytics': renderAnalytics();  break;
     case 'costs':     renderCosts();      break;
     case 'reports':   renderReports();    break;
   }
@@ -1270,6 +1252,12 @@ function renderOverview() {
         ).join('') + '</tbody></table></div>';
     }
   }
+
+  // Analytics sections now live in Overview
+  renderTopItems();
+  renderDonutChart();
+  renderSkuPerf();
+  renderMarginTable();
 }
 
 // ============================================================
@@ -1538,7 +1526,6 @@ function renderCashSalesTable() {
 // ============================================================
 function renderInventory() {
   renderSealedTable();
-  renderSinglesTable();
   updateLowStockBadge();
 }
 
@@ -1617,17 +1604,6 @@ function renderSinglesTable() {
     '</tbody></table></div>';
 }
 
-// ============================================================
-// RENDER: ANALYTICS
-// ============================================================
-function renderAnalytics() {
-  renderTopItems();
-  renderTopSets();
-  renderDonutChart();
-  renderSkuPerf();
-  renderMarginTable();
-  renderSinglesPerf();
-}
 
 function buildItemMap() {
   const map = {};
