@@ -1663,18 +1663,42 @@ function buildSetMap() {
   return Object.values(map).sort((a, b) => b.revenue - a.revenue);
 }
 
+let _topItemsSort = 'revenue'; // 'revenue' | 'units'
+let _topSetsSort  = 'revenue';
+
+function setTopItemsSort(by) {
+  _topItemsSort = by;
+  renderTopItems();
+}
+
+function setTopSetsSort(by) {
+  _topSetsSort = by;
+  renderTopSets();
+}
+
+function _sortHdr(label, by, current, fn) {
+  const active = by === current;
+  return '<th class="right" style="cursor:pointer;user-select:none;white-space:nowrap" onclick="' + fn + '(\'' + by + '\')">' +
+    label + (active ? ' <span style="color:var(--accent)">▼</span>' : ' <span style="color:var(--text3);font-size:10px">⇅</span>') +
+    '</th>';
+}
+
 function renderTopItems() {
   const el = document.getElementById('top-items-table');
   if (!el) return;
-  const items = buildItemMap().slice(0, 10);
+  const all = buildItemMap(); // already sorted by revenue from buildItemMap
+  const items = (all.slice().sort((a, b) => _topItemsSort === 'units' ? b.units - a.units : b.revenue - a.revenue)).slice(0, 15);
   if (!items.length) { el.innerHTML = emptyHTML('No sales data', 'Sync Square or add cash sales to see top items.'); return; }
   el.innerHTML = '<div class="table-wrap"><table>' +
-    '<thead><tr><th>#</th><th>Item</th><th>Units</th><th>Revenue</th><th>Source</th></tr></thead><tbody>' +
+    '<thead><tr><th>#</th><th>Item</th>' +
+    _sortHdr('Units', 'units', _topItemsSort, 'setTopItemsSort') +
+    _sortHdr('Revenue', 'revenue', _topItemsSort, 'setTopItemsSort') +
+    '<th>Source</th></tr></thead><tbody>' +
     items.map((it, i) =>
       '<tr><td class="muted">' + (i+1) + '</td>' +
       '<td>' + esc(it.name) + '</td>' +
-      '<td class="right">' + it.units + '</td>' +
-      '<td class="right green">' + fmtMoney(it.revenue) + '</td>' +
+      '<td class="right' + (_topItemsSort === 'units' ? ' accent' : '') + '">' + it.units + '</td>' +
+      '<td class="right' + (_topItemsSort === 'revenue' ? ' green' : '') + '">' + fmtMoney(it.revenue) + '</td>' +
       '<td><span class="tag ' + (it.src === 'Square' ? 'tag-blue' : it.src === 'Both' ? 'tag-amber' : 'tag-green') + '">' + it.src + '</span></td></tr>'
     ).join('') + '</tbody></table></div>';
 }
@@ -1682,15 +1706,18 @@ function renderTopItems() {
 function renderTopSets() {
   const el = document.getElementById('top-sets-table');
   if (!el) return;
-  const sets = buildSetMap().slice(0, 10);
+  const sets = (buildSetMap().slice().sort((a, b) => _topSetsSort === 'units' ? b.units - a.units : b.revenue - a.revenue)).slice(0, 10);
   if (!sets.length) { el.innerHTML = emptyHTML('No set data', 'Add inventory with set names to see set performance.'); return; }
   el.innerHTML = '<div class="table-wrap"><table>' +
-    '<thead><tr><th>#</th><th>Set Name</th><th>Units</th><th>Revenue</th></tr></thead><tbody>' +
+    '<thead><tr><th>#</th><th>Set Name</th>' +
+    _sortHdr('Units', 'units', _topSetsSort, 'setTopSetsSort') +
+    _sortHdr('Revenue', 'revenue', _topSetsSort, 'setTopSetsSort') +
+    '</tr></thead><tbody>' +
     sets.map((s, i) =>
       '<tr><td class="muted">' + (i+1) + '</td>' +
       '<td>' + esc(s.set) + '</td>' +
-      '<td class="right">' + s.units + '</td>' +
-      '<td class="right green">' + fmtMoney(s.revenue) + '</td></tr>'
+      '<td class="right' + (_topSetsSort === 'units' ? ' accent' : '') + '">' + s.units + '</td>' +
+      '<td class="right' + (_topSetsSort === 'revenue' ? ' green' : '') + '">' + fmtMoney(s.revenue) + '</td></tr>'
     ).join('') + '</tbody></table></div>';
 }
 
