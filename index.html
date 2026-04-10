@@ -1,0 +1,2562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pokemon Card Shop — Business Dashboard</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg0:#1a0533;
+  --bg1:#250a47;
+  --bg2:#31105e;
+  --bg3:#3e1878;
+  --accent:#ffe500;
+  --accent2:#ffd000;
+  --accentDim:rgba(255,229,0,0.13);
+  --poke-red:#ff2b2b;
+  --text:#fff;
+  --text2:#d4b8ff;
+  --text3:#9d7dd0;
+  --border:#5a2fa0;
+  --green:#00e676;
+  --red:#ff3b3b;
+  --amber:#ffaa00;
+  --blue:#44aaff;
+  --radius:20px;
+  --shadow:4px 4px 0 rgba(0,0,0,0.45);
+  --shadow-accent:4px 4px 0 var(--accent2);
+}
+
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&display=swap');
+
+body{
+  background:var(--bg0);
+  background-image:
+    radial-gradient(circle at 15% 20%, rgba(255,43,43,0.07) 0%, transparent 45%),
+    radial-gradient(circle at 85% 80%, rgba(68,170,255,0.07) 0%, transparent 45%);
+  color:var(--text);
+  font-family:'Nunito','Segoe UI',Roboto,sans-serif;
+  font-size:14px;
+  line-height:1.5;
+  min-height:100vh;
+}
+#app{display:flex;flex-direction:column;min-height:100vh}
+
+/* ── SETUP ── */
+#setup-screen{display:none;align-items:center;justify-content:center;min-height:100vh;padding:20px;background:var(--bg0)}
+.setup-box{
+  background:var(--bg2);
+  border:3px solid var(--border);
+  border-radius:28px;
+  padding:40px;
+  max-width:520px;
+  width:100%;
+  box-shadow:6px 6px 0 #0d0020;
+}
+.setup-logo{font-size:36px;margin-bottom:8px}
+.setup-box h1{color:var(--accent);font-size:24px;margin-bottom:6px;font-weight:900;letter-spacing:-0.5px}
+.setup-box .subtitle{color:var(--text2);margin-bottom:28px;font-size:13px}
+.setup-step{display:flex;gap:12px;margin-bottom:14px;align-items:flex-start}
+.setup-num{background:var(--poke-red);color:#fff;border:2px solid #ff7070;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;margin-top:2px;box-shadow:2px 2px 0 #800000}
+.setup-step p{color:var(--text2);font-size:13px}
+.setup-step a{color:var(--accent);font-weight:700}
+.setup-divider{border:none;border-top:2px dashed var(--border);margin:20px 0}
+.setup-sandbox-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:13px;color:var(--text2)}
+
+/* ── NAV ── */
+#main-app{display:none;flex-direction:column;flex:1}
+nav{
+  background:var(--bg1);
+  border-bottom:3px solid var(--border);
+  padding:0 16px;
+  display:flex;
+  align-items:stretch;
+  position:sticky;
+  top:0;
+  z-index:100;
+  gap:0;
+  box-shadow:0 4px 0 rgba(0,0,0,0.3);
+}
+.nav-logo{
+  display:flex;align-items:center;gap:8px;
+  padding:0 16px 0 0;
+  border-right:2px dashed var(--border);
+  margin-right:8px;
+  font-weight:900;
+  font-size:16px;
+  color:var(--accent);
+  white-space:nowrap;
+  flex-shrink:0;
+  text-shadow:2px 2px 0 rgba(0,0,0,0.4);
+  letter-spacing:-0.3px;
+}
+.nav-tabs{display:flex;align-items:center;flex:1;gap:2px;overflow-x:auto}
+.nav-tab{
+  padding:14px 13px;
+  background:none;
+  border:none;
+  color:var(--text3);
+  cursor:pointer;
+  font-size:13px;
+  font-weight:700;
+  border-bottom:4px solid transparent;
+  transition:all 0.15s;
+  display:flex;align-items:center;gap:5px;
+  white-space:nowrap;flex-shrink:0;
+  font-family:inherit;
+}
+.nav-tab:hover{color:var(--text);background:rgba(255,255,255,0.05);border-radius:10px 10px 0 0}
+.nav-tab.active{color:var(--accent);border-bottom-color:var(--accent);text-shadow:0 0 12px rgba(255,229,0,0.4)}
+.nav-badge{background:var(--poke-red);color:#fff;border-radius:999px;padding:1px 7px;font-size:10px;font-weight:800;box-shadow:2px 2px 0 #800000;border:1px solid #ff6060}
+.nav-actions{display:flex;align-items:center;gap:8px;padding:8px 0 8px 12px;border-left:2px dashed var(--border);margin-left:8px;flex-shrink:0}
+#sync-status{font-size:11px;color:var(--text3);max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ── DATE BAR ── */
+.date-bar{
+  background:var(--bg1);
+  border-bottom:3px solid var(--border);
+  padding:9px 18px;
+  display:flex;align-items:center;gap:7px;flex-wrap:wrap;
+}
+.date-bar-label{color:var(--text3);font-size:11px;text-transform:uppercase;letter-spacing:0.7px;font-weight:700}
+.dpbtn{
+  padding:4px 13px;
+  background:var(--bg2);
+  border:2px solid var(--border);
+  border-radius:999px;
+  color:var(--text2);
+  cursor:pointer;
+  font-size:12px;
+  font-weight:700;
+  transition:all 0.15s;
+  font-family:inherit;
+  box-shadow:2px 2px 0 rgba(0,0,0,0.3);
+}
+.dpbtn:hover{border-color:var(--accent);color:var(--accent);transform:translateY(-1px);box-shadow:3px 3px 0 rgba(0,0,0,0.3)}
+.dpbtn.active{background:var(--accent);border-color:var(--accent2);color:#000;font-weight:800;box-shadow:3px 3px 0 #a08000}
+.custom-dates{display:none;align-items:center;gap:6px}
+
+/* ── TAB CONTENT ── */
+.tab-content{flex:1;padding:20px;display:none}
+.tab-content.active{display:block}
+
+/* ── METRIC GRID ── */
+.metric-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:14px;margin-bottom:20px}
+.metric-card{
+  background:var(--bg2);
+  border:3px solid var(--border);
+  border-radius:22px;
+  padding:17px 16px;
+  transition:transform 0.15s,box-shadow 0.15s;
+  box-shadow:var(--shadow);
+  position:relative;
+  overflow:hidden;
+}
+.metric-card::before{
+  content:'';
+  position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(255,255,255,0.04) 0%,transparent 60%);
+  border-radius:inherit;
+  pointer-events:none;
+}
+.metric-card:hover{transform:translate(-2px,-3px);box-shadow:6px 7px 0 rgba(0,0,0,0.45)}
+.metric-icon{font-size:22px;margin-bottom:7px}
+.metric-label{color:var(--text3);font-size:10px;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:3px;font-weight:700}
+.metric-value{font-size:22px;font-weight:900;color:var(--text);letter-spacing:-0.5px}
+.metric-value.green{color:var(--green)}
+.metric-value.red{color:var(--red)}
+.metric-value.amber{color:var(--amber)}
+.metric-value.accent{color:var(--accent)}
+.metric-sub{font-size:11px;color:var(--text3);margin-top:3px;font-weight:600}
+
+/* ── SECTIONS ── */
+.section{
+  background:var(--bg2);
+  border:3px solid var(--border);
+  border-radius:22px;
+  margin-bottom:20px;
+  overflow:hidden;
+  box-shadow:var(--shadow);
+}
+.section-header{
+  padding:13px 18px;
+  border-bottom:2px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  background:linear-gradient(90deg,rgba(255,255,255,0.03),transparent);
+}
+.section-title{font-size:13px;font-weight:800;color:var(--text);display:flex;align-items:center;gap:7px;letter-spacing:0.1px}
+.section-body{padding:18px}
+
+/* ── TABLES ── */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{
+  padding:10px 13px;
+  text-align:left;
+  color:var(--text3);
+  font-size:10px;
+  text-transform:uppercase;
+  letter-spacing:0.7px;
+  border-bottom:2px solid var(--border);
+  cursor:pointer;user-select:none;white-space:nowrap;
+  font-weight:800;
+}
+thead th:hover{color:var(--text)}
+thead th.sort-asc::after{content:' ↑';color:var(--accent)}
+thead th.sort-desc::after{content:' ↓';color:var(--accent)}
+tbody tr{border-bottom:1px solid rgba(90,47,160,0.4);transition:background 0.1s}
+tbody tr:hover{background:rgba(255,255,255,0.04)}
+tbody tr:last-child{border-bottom:none}
+td{padding:10px 13px;color:var(--text);vertical-align:middle}
+td.muted{color:var(--text3);font-size:12px}
+td.right{text-align:right}
+td.green{color:var(--green)}
+td.red{color:var(--red)}
+td.amber{color:var(--amber)}
+.low-stock-row td{background:rgba(255,170,0,0.07)}
+.low-stock-row td:first-child{border-left:4px solid var(--amber);padding-left:9px}
+
+/* ── EMPTY STATE ── */
+.empty-state{text-align:center;padding:44px 20px;color:var(--text3)}
+.empty-icon{font-size:44px;margin-bottom:12px}
+.empty-state h3{font-size:14px;color:var(--text2);margin-bottom:6px;font-weight:800}
+.empty-state p{font-size:12px;max-width:300px;margin:0 auto 14px}
+
+/* ── FORMS ── */
+input[type="text"],input[type="number"],input[type="date"],input[type="password"],select,textarea{
+  background:var(--bg1);
+  border:2px solid var(--border);
+  border-radius:12px;
+  color:var(--text);
+  padding:8px 12px;
+  font-size:13px;
+  width:100%;
+  transition:border-color 0.15s,box-shadow 0.15s;
+  font-family:inherit;
+  font-weight:600;
+}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(255,229,0,0.15)}
+input[type="checkbox"]{width:auto;accent-color:var(--accent);cursor:pointer}
+.field-label{display:block;color:var(--text2);font-size:10px;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.7px;font-weight:800}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:12px}
+.form-row{margin-bottom:12px}
+.form-row:last-child{margin-bottom:0}
+
+/* ── BUTTONS ── */
+.btn{
+  padding:8px 18px;
+  border-radius:999px;
+  border:2px solid transparent;
+  cursor:pointer;
+  font-size:13px;
+  font-weight:800;
+  transition:all 0.15s;
+  display:inline-flex;align-items:center;gap:5px;
+  font-family:inherit;line-height:1;
+  box-shadow:3px 3px 0 rgba(0,0,0,0.35);
+}
+.btn:hover:not(:disabled){transform:translate(-1px,-2px);box-shadow:4px 5px 0 rgba(0,0,0,0.35)}
+.btn:active:not(:disabled){transform:translate(1px,1px);box-shadow:1px 1px 0 rgba(0,0,0,0.35)}
+.btn:disabled{opacity:0.45;cursor:not-allowed;transform:none!important}
+.btn-primary{background:var(--accent);color:#000;border-color:var(--accent2);box-shadow:3px 3px 0 #806000}
+.btn-primary:hover:not(:disabled){background:#fff176;box-shadow:4px 5px 0 #806000}
+.btn-secondary{background:var(--bg3);border-color:var(--border);color:var(--text)}
+.btn-secondary:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
+.btn-danger{background:rgba(255,43,43,0.15);border-color:rgba(255,43,43,0.45);color:var(--red)}
+.btn-danger:hover:not(:disabled){background:rgba(255,43,43,0.28)}
+.btn-sm{padding:4px 13px;font-size:11px}
+.btn-icon{padding:6px 10px}
+
+/* ── MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.78);display:none;align-items:center;justify-content:center;z-index:200;padding:20px}
+.modal-overlay.open{display:flex}
+.modal{
+  background:var(--bg2);
+  border:3px solid var(--border);
+  border-radius:26px;
+  width:100%;max-width:520px;max-height:90vh;overflow-y:auto;
+  box-shadow:8px 8px 0 #0d0020;
+}
+.modal-header{
+  padding:16px 22px;
+  border-bottom:2px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  background:linear-gradient(90deg,rgba(255,255,255,0.04),transparent);
+}
+.modal-header h3{font-size:16px;font-weight:900}
+.modal-body{padding:22px}
+.modal-footer{padding:14px 22px;border-top:2px solid var(--border);display:flex;justify-content:flex-end;gap:10px}
+
+/* ── ALERTS ── */
+.alert{padding:11px 15px;border-radius:14px;font-size:13px;margin-bottom:12px;display:flex;align-items:flex-start;gap:8px;border:2px solid;font-weight:600}
+.alert-error{background:rgba(255,59,59,0.1);border-color:rgba(255,59,59,0.4);color:#ff7070}
+.alert-success{background:rgba(0,230,118,0.1);border-color:rgba(0,230,118,0.35);color:var(--green)}
+.alert-warning{background:rgba(255,170,0,0.1);border-color:rgba(255,170,0,0.35);color:var(--amber)}
+.alert-info{background:rgba(68,170,255,0.1);border-color:rgba(68,170,255,0.35);color:var(--blue)}
+
+/* ── CHARTS ── */
+canvas{display:block}
+.chart-wrap{
+  background:var(--bg2);
+  border:3px solid var(--border);
+  border-radius:22px;
+  padding:18px;
+  margin-bottom:20px;
+  box-shadow:var(--shadow);
+}
+.chart-legend{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);font-weight:700}
+.legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;border:1px solid rgba(255,255,255,0.2)}
+
+/* ── SETTINGS DROPDOWN ── */
+.settings-wrap{position:relative}
+.settings-panel{
+  position:absolute;top:calc(100% + 8px);right:0;
+  background:var(--bg2);
+  border:3px solid var(--border);
+  border-radius:18px;
+  padding:8px;
+  width:240px;
+  z-index:150;
+  display:none;
+  box-shadow:6px 6px 0 #0d0020;
+}
+.settings-panel.open{display:block}
+.settings-item{padding:9px 8px;border-bottom:1px dashed var(--border);display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--text2)}
+.settings-item:last-child{border-bottom:none}
+.settings-item a,.settings-item button.link{color:var(--text2);background:none;border:none;cursor:pointer;font-size:13px;font-family:inherit;font-weight:700}
+.settings-item button.link:hover{color:var(--accent)}
+.settings-item button.link.danger{color:var(--red)}
+.settings-item button.link.danger:hover{color:#ff7070}
+
+/* ── TAGS ── */
+.tag{
+  display:inline-block;
+  padding:2px 10px;
+  border-radius:999px;
+  font-size:11px;
+  font-weight:800;
+  border:2px solid;
+  letter-spacing:0.2px;
+}
+.tag-amber{background:rgba(255,170,0,0.15);color:var(--amber);border-color:rgba(255,170,0,0.4)}
+.tag-green{background:rgba(0,230,118,0.15);color:var(--green);border-color:rgba(0,230,118,0.35)}
+.tag-blue{background:rgba(68,170,255,0.15);color:var(--blue);border-color:rgba(68,170,255,0.35)}
+.tag-red{background:rgba(255,59,59,0.15);color:var(--red);border-color:rgba(255,59,59,0.35)}
+
+/* ── LAYOUT HELPERS ── */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:780px){.two-col{grid-template-columns:1fr}}
+.flex-between{display:flex;justify-content:space-between;align-items:center}
+.flex-gap{display:flex;gap:8px;align-items:center}
+.text-right{text-align:right}
+.text-muted{color:var(--text3)}
+.text-accent{color:var(--accent)}
+.fw600{font-weight:700}
+.fs12{font-size:12px}
+.mt8{margin-top:8px}
+.mt12{margin-top:12px}
+.mt16{margin-top:16px}
+hr.divider{border:none;border-top:2px dashed var(--border);margin:14px 0}
+
+/* ── SPINNER ── */
+.spinner{width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.6s linear infinite;display:inline-block;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── COSTS TOTAL ── */
+.costs-total-bar{padding:14px 18px;border-top:2px dashed var(--border);text-align:right}
+
+/* ── PRINT ── */
+.print-only{display:none}
+@media print{
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  nav,.date-bar,.no-print,#date-bar{display:none!important}
+  body{background:#fff!important;color:#000!important;font-size:11pt}
+  .tab-content{display:none!important;padding:0}
+  #tab-reports{display:block!important}
+  .report-form{display:none!important}
+  #print-report{display:block!important}
+  .print-only{display:block!important}
+  .page-break{page-break-before:always}
+  h1,h2,h3{color:#000}
+  .print-header{border-bottom:2px solid #000;padding-bottom:12px;margin-bottom:20px}
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ═══════════════════════════ SETUP ═══════════════════════════ -->
+<div id="setup-screen">
+  <div class="setup-box">
+    <div class="setup-logo">🎴</div>
+    <h1>Pokemon Card Shop Dashboard</h1>
+    <p class="subtitle">Complete business management for your card shop and show vendor operations. Connect Square to pull transactions automatically, or start in cash-only mode.</p>
+    <div class="setup-step">
+      <div class="setup-num">1</div>
+      <p>Create a free account at <a href="https://developer.squareup.com" target="_blank">developer.squareup.com</a> and create an Application.</p>
+    </div>
+    <div class="setup-step">
+      <div class="setup-num">2</div>
+      <p>In your app's <strong>Credentials</strong> tab, copy your <strong>Production Access Token</strong> (or Sandbox for testing).</p>
+    </div>
+    <div class="setup-step">
+      <div class="setup-num">3</div>
+      <p>Paste it below and click Connect. Your key is stored only in this browser — never sent anywhere except Square's API.</p>
+    </div>
+    <hr class="divider">
+    <div class="form-row">
+      <label class="field-label">Square Access Token (optional)</label>
+      <div class="setup-sandbox-row">
+        <input type="checkbox" id="setup-sandbox" />
+        <span>Use Sandbox mode (for testing)</span>
+      </div>
+      <input type="password" id="setup-api-key" placeholder="EAAAl..." style="margin-bottom:10px" />
+      <div id="setup-error" class="alert alert-error" style="display:none"></div>
+      <div class="flex-gap" style="margin-top:12px">
+        <button class="btn btn-primary" id="setup-connect-btn" onclick="connectSquare()">⚡ Connect to Square</button>
+        <button class="btn btn-secondary" onclick="skipSquare()">Skip — Cash Only Mode</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════ MAIN APP ═══════════════════════════ -->
+<div id="main-app">
+
+  <!-- NAV -->
+  <nav id="nav">
+    <div class="nav-logo">🎴 PokéShop</div>
+    <div class="nav-tabs">
+      <button class="nav-tab active" data-tab="overview" onclick="showTab('overview')">📊 Overview</button>
+      <button class="nav-tab" data-tab="sales" onclick="showTab('sales')">💰 Sales</button>
+      <button class="nav-tab" data-tab="inventory" onclick="showTab('inventory')">📦 Inventory <span id="low-stock-badge" class="nav-badge" style="display:none">0</span></button>
+      <button class="nav-tab" data-tab="analytics" onclick="showTab('analytics')">📈 Analytics</button>
+      <button class="nav-tab" data-tab="costs" onclick="showTab('costs')">💸 Costs</button>
+      <button class="nav-tab" data-tab="reports" onclick="showTab('reports')">🖨 Reports</button>
+    </div>
+    <div class="nav-actions">
+      <span id="sync-status"></span>
+      <button class="btn btn-secondary btn-sm" id="sync-btn" onclick="syncSquare()">⟳ Sync Square</button>
+      <div class="settings-wrap">
+        <button class="btn btn-secondary btn-sm btn-icon" onclick="toggleSettings(event)" title="Settings">⚙</button>
+        <div class="settings-panel" id="settings-panel">
+          <div class="settings-item">
+            <span>Square</span>
+            <span id="sq-status-label" class="tag tag-red">Not Connected</span>
+          </div>
+          <div class="settings-item">
+            <button class="link" onclick="openChangeKeyModal()">Change API Key →</button>
+          </div>
+          <div class="settings-item">
+            <button class="link danger" onclick="disconnectSquare()">Disconnect Square ✕</button>
+          </div>
+          <div class="settings-item" style="gap:8px">
+            <span>WI Tax Rate</span>
+            <div class="flex-gap" style="gap:4px">
+              <input type="number" id="global-tax-rate" style="width:55px;text-align:right" step="0.1" min="0" max="30" onchange="updateTaxRate(this.value)" />
+              <span class="text-muted">%</span>
+            </div>
+          </div>
+          <div class="settings-item">
+            <button class="link danger" onclick="clearAllData()" style="font-size:12px">Clear All Local Data</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- DATE BAR -->
+  <div class="date-bar" id="date-bar">
+    <span class="date-bar-label">Period:</span>
+    <button class="dpbtn" data-p="today" onclick="setPeriod('today')">Today</button>
+    <button class="dpbtn" data-p="week" onclick="setPeriod('week')">This Week</button>
+    <button class="dpbtn active" data-p="month" onclick="setPeriod('month')">This Month</button>
+    <button class="dpbtn" data-p="year" onclick="setPeriod('year')">This Year</button>
+    <button class="dpbtn" data-p="all" onclick="setPeriod('all')">All Time</button>
+    <button class="dpbtn" data-p="custom" onclick="setPeriod('custom')">Custom ▾</button>
+    <div class="custom-dates" id="custom-date-inputs">
+      <input type="date" id="custom-start" style="width:140px" onchange="applyCustomDates()" />
+      <span class="text-muted">→</span>
+      <input type="date" id="custom-end" style="width:140px" onchange="applyCustomDates()" />
+    </div>
+  </div>
+
+  <!-- ── TAB: OVERVIEW ── -->
+  <div class="tab-content active" id="tab-overview">
+    <div class="metric-grid" id="overview-metrics"></div>
+    <div class="chart-wrap">
+      <div class="flex-between" style="margin-bottom:10px">
+        <div class="fw600 fs12" style="text-transform:uppercase;letter-spacing:0.5px;color:var(--text2)">Revenue Trend</div>
+        <div id="revenue-legend" class="chart-legend"></div>
+      </div>
+      <canvas id="revenue-chart" style="width:100%;height:200px"></canvas>
+    </div>
+    <div class="two-col">
+      <div class="section">
+        <div class="section-header"><span class="section-title">⬛ Recent Square Sales</span></div>
+        <div id="ov-sq-recent"></div>
+      </div>
+      <div class="section">
+        <div class="section-header"><span class="section-title">💵 Recent Cash Sales</span></div>
+        <div id="ov-cash-recent"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TAB: SALES ── -->
+  <div class="tab-content" id="tab-sales">
+    <div class="section">
+      <div class="section-header">
+        <span class="section-title">⬛ Square Transactions</span>
+        <div class="flex-gap">
+          <span id="sq-count-label" class="text-muted fs12"></span>
+          <button class="btn btn-secondary btn-sm" onclick="syncSquare()">⟳ Sync</button>
+        </div>
+      </div>
+      <div id="sq-sync-error"></div>
+      <div id="sq-sales-table"></div>
+    </div>
+    <div class="section">
+      <div class="section-header">
+        <span class="section-title">💵 Cash Sales</span>
+        <button class="btn btn-primary btn-sm" onclick="openModal('add-cash')">+ Add Cash Sale</button>
+      </div>
+      <div id="cash-sales-table"></div>
+    </div>
+  </div>
+
+  <!-- ── TAB: INVENTORY ── -->
+  <div class="tab-content" id="tab-inventory">
+    <div class="section">
+      <div class="section-header">
+        <span class="section-title">📦 Sealed Inventory</span>
+        <button class="btn btn-primary btn-sm" onclick="openModal('add-inventory')">+ Add Item</button>
+      </div>
+      <div id="sealed-inv-table"></div>
+    </div>
+    <div class="section mt16">
+      <div class="section-header">
+        <span class="section-title">🃏 Singles Inventory</span>
+        <button class="btn btn-primary btn-sm" onclick="openModal('add-singles')">+ Add Set</button>
+      </div>
+      <div id="singles-inv-table"></div>
+    </div>
+  </div>
+
+  <!-- ── TAB: ANALYTICS ── -->
+  <div class="tab-content" id="tab-analytics">
+    <div class="two-col">
+      <div class="section">
+        <div class="section-header"><span class="section-title">🏆 Top Selling Items</span></div>
+        <div id="top-items-table"></div>
+      </div>
+      <div class="section">
+        <div class="section-header"><span class="section-title">🎯 Top Sets by Revenue</span></div>
+        <div id="top-sets-table"></div>
+      </div>
+    </div>
+    <div class="two-col">
+      <div class="section">
+        <div class="section-header"><span class="section-title">🍩 Revenue by Category</span></div>
+        <div class="section-body" style="display:flex;flex-direction:column;align-items:center">
+          <canvas id="donut-chart" width="240" height="240"></canvas>
+          <div id="donut-legend" class="chart-legend" style="justify-content:center;margin-top:12px"></div>
+        </div>
+      </div>
+      <div class="section">
+        <div class="section-header"><span class="section-title">📊 SKU Type Performance</span></div>
+        <div id="sku-perf-table"></div>
+      </div>
+    </div>
+    <div class="section mt16">
+      <div class="section-header"><span class="section-title">💹 Profit Margins by Item</span></div>
+      <div id="margin-table"></div>
+    </div>
+    <div class="section mt16">
+      <div class="section-header"><span class="section-title">🃏 Singles Performance</span></div>
+      <div id="singles-perf-table"></div>
+    </div>
+  </div>
+
+  <!-- ── TAB: COSTS ── -->
+  <div class="tab-content" id="tab-costs">
+    <div class="section">
+      <div class="section-header">
+        <span class="section-title">💸 Business Expenses</span>
+        <button class="btn btn-primary btn-sm" onclick="openModal('add-cost')">+ Add Expense</button>
+      </div>
+      <div id="costs-table-wrap"></div>
+      <div id="costs-total-bar" class="costs-total-bar" style="display:none"></div>
+    </div>
+  </div>
+
+  <!-- ── TAB: REPORTS ── -->
+  <div class="tab-content" id="tab-reports">
+    <div class="section no-print report-form" style="max-width:540px">
+      <div class="section-header"><span class="section-title">🖨 Generate PDF Report</span></div>
+      <div class="section-body">
+        <div class="form-grid">
+          <div class="form-row">
+            <label class="field-label">Report Period</label>
+            <select id="report-period" onchange="onReportPeriodChange()">
+              <option value="week">This Week</option>
+              <option value="month" selected>This Month</option>
+              <option value="year">This Year</option>
+              <option value="all">All Time</option>
+              <option value="custom">Custom Range</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label class="field-label">Business Name</label>
+            <input type="text" id="report-biz-name" placeholder="Pokemon Card Shop" />
+          </div>
+        </div>
+        <div id="report-custom-wrap" style="display:none">
+          <div class="form-grid">
+            <div class="form-row">
+              <label class="field-label">Start Date</label>
+              <input type="date" id="report-start" />
+            </div>
+            <div class="form-row">
+              <label class="field-label">End Date</label>
+              <input type="date" id="report-end" />
+            </div>
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="generateReport()">🖨 Generate &amp; Print PDF</button>
+      </div>
+    </div>
+    <div id="print-report" style="display:none"></div>
+  </div>
+
+</div><!-- /main-app -->
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModalIfOutside(event)">
+  <div class="modal" id="modal-box">
+    <div class="modal-header">
+      <h3 id="modal-title">Dialog</h3>
+      <button class="btn btn-secondary btn-sm btn-icon" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-footer" id="modal-footer"></div>
+  </div>
+</div>
+
+</div><!-- /app -->
+
+<script>
+// ============================================================
+// STATE
+// ============================================================
+const S = {
+  apiKey: null,
+  sandbox: false,
+  locationId: null,
+  taxRate: 5.0,
+  squareSales: [],
+  cashSales: [],
+  inventory: [],
+  singles: [],
+  costs: [],
+  processedSaleIds: new Set(), // IDs already auto-deducted
+  period: 'month',
+  customStart: '',
+  customEnd: '',
+  tab: 'overview',
+  syncing: false,
+  lastSync: null,
+  businessName: 'Pokemon Card Shop',
+  sortState: {}
+};
+
+// ============================================================
+// STORAGE
+// ============================================================
+function saveState() {
+  try {
+    if (S.apiKey) {
+      localStorage.setItem('sq_key', S.apiKey);
+    } else {
+      localStorage.removeItem('sq_key');
+    }
+    localStorage.setItem('sq_sandbox', S.sandbox ? '1' : '0');
+    if (S.locationId) localStorage.setItem('sq_loc', S.locationId);
+    else localStorage.removeItem('sq_loc');
+    localStorage.setItem('sq_sales', JSON.stringify(S.squareSales));
+    localStorage.setItem('cash_sales', JSON.stringify(S.cashSales));
+    localStorage.setItem('inventory', JSON.stringify(S.inventory));
+    localStorage.setItem('singles', JSON.stringify(S.singles));
+    localStorage.setItem('costs', JSON.stringify(S.costs));
+    localStorage.setItem('processed_ids', JSON.stringify([...S.processedSaleIds]));
+    localStorage.setItem('tax_rate', String(S.taxRate));
+    localStorage.setItem('biz_name', S.businessName);
+    if (S.lastSync) localStorage.setItem('last_sync', S.lastSync);
+  } catch(e) { console.warn('Storage write error:', e); }
+}
+
+function loadState() {
+  S.apiKey = localStorage.getItem('sq_key') || null;
+  S.sandbox = localStorage.getItem('sq_sandbox') === '1';
+  S.locationId = localStorage.getItem('sq_loc') || null;
+  S.squareSales = safeJSON('sq_sales', []);
+  S.cashSales = safeJSON('cash_sales', []);
+  S.inventory = safeJSON('inventory', []);
+  S.singles = safeJSON('singles', []);
+  S.costs = safeJSON('costs', []);
+  S.processedSaleIds = new Set(safeJSON('processed_ids', []));
+  S.taxRate = parseFloat(localStorage.getItem('tax_rate') || '5') || 5;
+  S.businessName = localStorage.getItem('biz_name') || 'Pokemon Card Shop';
+  S.lastSync = localStorage.getItem('last_sync') || null;
+}
+
+function safeJSON(key, def) {
+  try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : def; }
+  catch(e) { return def; }
+}
+
+// ============================================================
+// SQUARE API
+// ============================================================
+function sqBase() {
+  return S.sandbox
+    ? 'https://connect.squareupsandbox.com'
+    : 'https://connect.squareup.com';
+}
+
+async function sqFetch(path, opts = {}) {
+  const res = await fetch(sqBase() + path, {
+    ...opts,
+    headers: {
+      'Authorization': 'Bearer ' + S.apiKey,
+      'Content-Type': 'application/json',
+      'Square-Version': '2024-01-18',
+      ...(opts.headers || {})
+    }
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const msg = (data.errors && data.errors[0])
+      ? (data.errors[0].detail || data.errors[0].code || 'API error')
+      : ('HTTP ' + res.status);
+    throw new Error(msg);
+  }
+  return data;
+}
+
+async function validateApiKey(key, sandbox) {
+  const prev = { key: S.apiKey, sandbox: S.sandbox };
+  S.apiKey = key;
+  S.sandbox = sandbox;
+  try {
+    const data = await sqFetch('/v2/locations');
+    const locs = data.locations || [];
+    if (!locs.length) throw new Error('No locations found on this account.');
+    S.locationId = locs[0].id;
+    return locs[0];
+  } catch(e) {
+    S.apiKey = prev.key;
+    S.sandbox = prev.sandbox;
+    throw e;
+  }
+}
+
+function sqCents(obj) {
+  return obj ? ((obj.amount || 0) / 100) : 0;
+}
+
+async function fetchAllPayments(startISO, endISO) {
+  const all = [];
+  let cursor = null;
+  let pages = 0;
+  do {
+    const params = new URLSearchParams({
+      location_id: S.locationId,
+      begin_time: startISO,
+      end_time: endISO,
+      limit: '100'
+    });
+    if (cursor) params.set('cursor', cursor);
+    const data = await sqFetch('/v2/payments?' + params);
+    all.push(...(data.payments || []));
+    cursor = data.cursor || null;
+    pages++;
+  } while (cursor && pages < 30);
+  return all;
+}
+
+async function fetchOrdersBatch(orderIds) {
+  if (!orderIds.length) return [];
+  const all = [];
+  for (let i = 0; i < orderIds.length; i += 100) {
+    const batch = orderIds.slice(i, i + 100);
+    try {
+      const data = await sqFetch('/v2/orders/batch-retrieve', {
+        method: 'POST',
+        body: JSON.stringify({ order_ids: batch, location_id: S.locationId })
+      });
+      all.push(...(data.orders || []));
+    } catch(e) {
+      // Orders are optional — fees still tracked from payments
+    }
+  }
+  return all;
+}
+
+function buildSaleRecord(payment, order) {
+  const gross = sqCents(payment.total_money || payment.amount_money);
+  // Real fee from payment object
+  const realFee = (payment.processing_fee || []).reduce((s, f) => {
+    const a = sqCents(f.amount_money);
+    return s + (a < 0 ? -a : a); // handle refunded fees (negative amounts)
+  }, 0);
+  // Fallback: estimate 2.6% + $0.10
+  const estFee = parseFloat((gross * 0.026 + 0.10).toFixed(2));
+  const fee = realFee > 0 ? parseFloat(realFee.toFixed(2)) : estFee;
+  const feeEstimated = realFee === 0;
+
+  let tax = 0;
+  let items = [];
+  if (order) {
+    tax = sqCents(order.total_tax_money);
+    items = (order.line_items || []).map(li => ({
+      name: li.name || 'Unknown Item',
+      qty: parseInt(li.quantity) || 1,
+      price: sqCents(li.total_money)
+    }));
+  }
+
+  const net = parseFloat((gross - fee - tax).toFixed(2));
+
+  return {
+    id: payment.id,
+    date: payment.created_at,
+    dateStr: payment.created_at.slice(0, 10),
+    gross: parseFloat(gross.toFixed(2)),
+    fee,
+    feeEstimated,
+    tax: parseFloat(tax.toFixed(2)),
+    net,
+    items,
+    orderId: payment.order_id || null,
+    status: payment.status || 'COMPLETED'
+  };
+}
+
+async function syncSquare() {
+  if (!S.apiKey) {
+    setInlineError('sq-sync-error', 'Square is not connected. Go to Settings to add your API key.', true);
+    return;
+  }
+  if (S.syncing) return;
+  S.syncing = true;
+  setSyncBtnLoading(true);
+  clearEl('sq-sync-error');
+
+  try {
+    // Sync last 365 days
+    const end = new Date();
+    const start = new Date();
+    start.setDate(start.getDate() - 365);
+
+    const payments = await fetchAllPayments(start.toISOString(), end.toISOString());
+    const validPayments = payments.filter(p =>
+      p.status !== 'CANCELED' && p.status !== 'FAILED' && p.status !== 'DECLINED'
+    );
+
+    const orderIds = validPayments.filter(p => p.order_id).map(p => p.order_id);
+    const orders = await fetchOrdersBatch(orderIds);
+    const orderMap = {};
+    orders.forEach(o => { orderMap[o.id] = o; });
+
+    const newRecords = validPayments.map(p =>
+      buildSaleRecord(p, p.order_id ? orderMap[p.order_id] : null)
+    );
+
+    // Find truly new sales (not seen before) for inventory deduction
+    const prevIds = new Set(S.squareSales.map(s => s.id));
+    const brandNew = newRecords.filter(r => !prevIds.has(r.id));
+
+    // Replace Square sales (keep all)
+    S.squareSales = newRecords;
+
+    // Auto-deduct inventory for brand new sales only
+    autoDeductFromSquare(brandNew);
+
+    S.lastSync = new Date().toISOString();
+    saveState();
+
+    const status = document.getElementById('sync-status');
+    if (status) {
+      status.innerHTML = '<span style="color:var(--green)">✓ Synced ' + newRecords.length + ' txns</span>';
+      setTimeout(() => {
+        if (status) status.textContent = 'Last sync: ' + fmtDateTime(S.lastSync);
+      }, 4000);
+    }
+
+    refreshCurrentTab();
+    updateLowStockBadge();
+  } catch(e) {
+    setInlineError('sq-sync-error', 'Sync failed: ' + e.message, true);
+    const status = document.getElementById('sync-status');
+    if (status) status.innerHTML = '<span style="color:var(--red)">⚠ Sync failed</span>';
+  } finally {
+    S.syncing = false;
+    setSyncBtnLoading(false);
+  }
+}
+
+function setSyncBtnLoading(on) {
+  const btn = document.getElementById('sync-btn');
+  if (!btn) return;
+  btn.disabled = on;
+  btn.innerHTML = on ? '<span class="spinner"></span> Syncing...' : '⟳ Sync Square';
+}
+
+// ============================================================
+// DATE UTILITIES
+// ============================================================
+function getDateRange() {
+  const now = new Date();
+  let start, end;
+  end = new Date(now);
+  end.setHours(23, 59, 59, 999);
+
+  switch (S.period) {
+    case 'today':
+      start = new Date(now);
+      start.setHours(0, 0, 0, 0);
+      break;
+    case 'week': {
+      start = new Date(now);
+      start.setDate(now.getDate() - now.getDay());
+      start.setHours(0, 0, 0, 0);
+      break;
+    }
+    case 'month':
+      start = new Date(now.getFullYear(), now.getMonth(), 1);
+      break;
+    case 'year':
+      start = new Date(now.getFullYear(), 0, 1);
+      break;
+    case 'all':
+      start = new Date('2000-01-01');
+      break;
+    case 'custom':
+      start = S.customStart ? new Date(S.customStart + 'T00:00:00') : new Date('2000-01-01');
+      end = S.customEnd ? new Date(S.customEnd + 'T23:59:59') : end;
+      break;
+    default:
+      start = new Date(now.getFullYear(), now.getMonth(), 1);
+  }
+  return { start, end };
+}
+
+function inRange(dateStr) {
+  if (!dateStr) return false;
+  const { start, end } = getDateRange();
+  const d = new Date(dateStr);
+  return d >= start && d <= end;
+}
+
+function fmtDate(str) {
+  if (!str) return '';
+  const d = new Date(str);
+  if (isNaN(d)) return str;
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function fmtDateTime(str) {
+  if (!str) return '';
+  const d = new Date(str);
+  if (isNaN(d)) return '';
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) +
+    ' ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+}
+
+function fmtMoney(n) {
+  const v = parseFloat(n) || 0;
+  const abs = Math.abs(v).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return (v < 0 ? '-$' : '$') + abs;
+}
+
+function fmtPct(n) {
+  return (parseFloat(n) || 0).toFixed(1) + '%';
+}
+
+function todayISO() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+// ============================================================
+// FILTERED DATA
+// ============================================================
+function filteredSqSales() { return S.squareSales.filter(s => inRange(s.date)); }
+function filteredCashSales() { return S.cashSales.filter(s => inRange(s.date)); }
+function filteredCosts() { return S.costs.filter(c => inRange(c.date)); }
+
+// ============================================================
+// CALCULATIONS
+// ============================================================
+function calcTotals() {
+  const sq = filteredSqSales();
+  const cash = filteredCashSales();
+  const costs = filteredCosts();
+
+  const sqGross  = sq.reduce((s, x) => s + (x.gross || 0), 0);
+  const sqFees   = sq.reduce((s, x) => s + (x.fee   || 0), 0);
+  const sqTax    = sq.reduce((s, x) => s + (x.tax   || 0), 0);
+  const cashGross = cash.reduce((s, x) => s + (x.amount || 0), 0);
+  const cashTax   = cash.reduce((s, x) => s + (x.tax    || 0), 0);
+  const totalGross = sqGross + cashGross;
+  const totalFees  = sqFees;
+  const totalTax   = sqTax + cashTax;
+  const totalCosts = costs.reduce((s, x) => s + (x.amount || 0), 0);
+  const netProfit  = totalGross - totalFees - totalTax - totalCosts;
+
+  return {
+    sqGross, sqFees, sqTax, sqCount: sq.length,
+    cashGross, cashTax, cashCount: cash.length,
+    totalGross, totalFees, totalTax, totalCosts, netProfit
+  };
+}
+
+// ============================================================
+// INVENTORY AUTO-DEDUCT
+// ============================================================
+function autoDeductFromSquare(newSales) {
+  newSales.forEach(sale => {
+    if (S.processedSaleIds.has(sale.id)) return;
+    S.processedSaleIds.add(sale.id);
+    (sale.items || []).forEach(item => {
+      matchAndDeduct(item.name, item.qty || 1);
+    });
+  });
+}
+
+function matchAndDeduct(itemName, qty) {
+  if (!itemName) return;
+  const name = itemName.toLowerCase().trim();
+  const inv = S.inventory.find(i => i.name && i.name.toLowerCase().trim() === name);
+  if (inv) inv.qty = Math.max(0, (inv.qty || 0) - qty);
+}
+
+function getLowStockItems() {
+  return S.inventory.filter(i => (i.qty || 0) <= (i.reorder || 0));
+}
+
+function updateLowStockBadge() {
+  const n = getLowStockItems().length;
+  const badge = document.getElementById('low-stock-badge');
+  if (!badge) return;
+  if (n > 0) { badge.textContent = n; badge.style.display = ''; }
+  else badge.style.display = 'none';
+}
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+function showTab(name) {
+  S.tab = name;
+  document.querySelectorAll('.nav-tab').forEach(btn =>
+    btn.classList.toggle('active', btn.dataset.tab === name)
+  );
+  document.querySelectorAll('.tab-content').forEach(el =>
+    el.classList.toggle('active', el.id === 'tab-' + name)
+  );
+  renderTab(name);
+}
+
+function renderTab(name) {
+  switch (name) {
+    case 'overview':  renderOverview();   break;
+    case 'sales':     renderSales();      break;
+    case 'inventory': renderInventory();  break;
+    case 'analytics': renderAnalytics();  break;
+    case 'costs':     renderCosts();      break;
+    case 'reports':   renderReports();    break;
+  }
+}
+
+function refreshCurrentTab() { renderTab(S.tab); }
+
+// ============================================================
+// RENDER: OVERVIEW
+// ============================================================
+function renderOverview() {
+  const t = calcTotals();
+
+  const metrics = [
+    { icon: '💰', label: 'Total Gross Revenue',    value: fmtMoney(t.totalGross), cls: 'accent' },
+    { icon: '⬛', label: 'Square Sales',            value: fmtMoney(t.sqGross),    sub: t.sqCount + ' transactions' },
+    { icon: '💵', label: 'Cash Sales',              value: fmtMoney(t.cashGross),  sub: t.cashCount + ' entries' },
+    { icon: '🏦', label: 'Square Processing Fees',  value: fmtMoney(t.sqFees),     cls: 'red' },
+    { icon: '🏛',  label: 'WI Tax Collected',        value: fmtMoney(t.totalTax),   sub: 'Square + cash combined' },
+    { icon: '📋', label: 'Business Expenses',       value: fmtMoney(t.totalCosts), cls: 'amber' },
+    { icon: '📈', label: 'Net Profit',              value: fmtMoney(t.netProfit),  cls: t.netProfit >= 0 ? 'green' : 'red' }
+  ];
+
+  const grid = document.getElementById('overview-metrics');
+  if (grid) {
+    grid.innerHTML = metrics.map(m => `
+      <div class="metric-card">
+        <div class="metric-icon">${m.icon}</div>
+        <div class="metric-label">${esc(m.label)}</div>
+        <div class="metric-value ${m.cls || ''}">${m.value}</div>
+        ${m.sub ? '<div class="metric-sub">' + esc(m.sub) + '</div>' : ''}
+      </div>
+    `).join('');
+  }
+
+  requestAnimationFrame(() => drawRevenueChart());
+
+  // Recent Square
+  const sqRecent = filteredSqSales().slice().reverse().slice(0, 6);
+  const elSq = document.getElementById('ov-sq-recent');
+  if (elSq) {
+    if (!sqRecent.length) {
+      elSq.innerHTML = emptyHTML('No Square sales this period',
+        S.apiKey ? 'Click Sync Square to pull transactions.' : 'Connect Square in Settings or add cash sales.');
+    } else {
+      elSq.innerHTML = '<div class="table-wrap"><table>' +
+        '<thead><tr><th>Date</th><th>Gross</th><th>Fee</th><th>Net</th></tr></thead><tbody>' +
+        sqRecent.map(s =>
+          '<tr><td>' + fmtDate(s.date) + '</td>' +
+          '<td class="right green">' + fmtMoney(s.gross) + '</td>' +
+          '<td class="right red">' + fmtMoney(s.fee) + '</td>' +
+          '<td class="right">' + fmtMoney(s.net) + '</td></tr>'
+        ).join('') + '</tbody></table></div>';
+    }
+  }
+
+  // Recent Cash
+  const cashRecent = filteredCashSales().slice().reverse().slice(0, 6);
+  const elCash = document.getElementById('ov-cash-recent');
+  if (elCash) {
+    if (!cashRecent.length) {
+      elCash.innerHTML = emptyHTML('No cash sales this period', 'Go to Sales tab → Add Cash Sale.');
+    } else {
+      elCash.innerHTML = '<div class="table-wrap"><table>' +
+        '<thead><tr><th>Date</th><th>Category</th><th>Amount</th><th>Tax</th></tr></thead><tbody>' +
+        cashRecent.map(s =>
+          '<tr><td>' + fmtDate(s.date) + '</td>' +
+          '<td class="muted">' + esc(s.category || '—') + '</td>' +
+          '<td class="right green">' + fmtMoney(s.amount) + '</td>' +
+          '<td class="right">' + fmtMoney(s.tax) + '</td></tr>'
+        ).join('') + '</tbody></table></div>';
+    }
+  }
+}
+
+// ============================================================
+// CANVAS: REVENUE TREND LINE CHART
+// ============================================================
+function drawRevenueChart() {
+  const canvas = document.getElementById('revenue-chart');
+  if (!canvas) return;
+
+  const { start, end } = getDateRange();
+  const sqSales = filteredSqSales();
+  const cashSales = filteredCashSales();
+
+  // Build day list
+  const days = [];
+  const cursor = new Date(start);
+  cursor.setHours(0, 0, 0, 0);
+  const endDay = new Date(end);
+  endDay.setHours(0, 0, 0, 0);
+  while (cursor <= endDay && days.length < 400) {
+    days.push(cursor.toISOString().slice(0, 10));
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  if (!days.length) return;
+
+  const sqByDay = {};
+  const cashByDay = {};
+  sqSales.forEach(s => { const d = s.dateStr || s.date.slice(0,10); sqByDay[d] = (sqByDay[d]||0) + (s.gross||0); });
+  cashSales.forEach(s => { const d = s.date.slice(0,10); cashByDay[d] = (cashByDay[d]||0) + (s.amount||0); });
+
+  let labels, sqVals, cashVals, totalVals;
+
+  if (days.length > 90) {
+    // Aggregate by week
+    const weeks = {};
+    days.forEach(day => {
+      const dt = new Date(day + 'T00:00:00');
+      const wkStart = new Date(dt);
+      wkStart.setDate(dt.getDate() - dt.getDay());
+      const key = wkStart.toISOString().slice(0,10);
+      if (!weeks[key]) weeks[key] = { sq: 0, cash: 0 };
+      weeks[key].sq   += sqByDay[day]   || 0;
+      weeks[key].cash += cashByDay[day] || 0;
+    });
+    const wkKeys = Object.keys(weeks).sort();
+    labels = wkKeys.map(k => { const d = new Date(k+'T00:00:00'); return (d.getMonth()+1)+'/'+d.getDate(); });
+    sqVals    = wkKeys.map(k => weeks[k].sq);
+    cashVals  = wkKeys.map(k => weeks[k].cash);
+    totalVals = wkKeys.map((_,i) => sqVals[i] + cashVals[i]);
+  } else if (days.length > 30) {
+    labels = days.map(d => { const dt = new Date(d+'T00:00:00'); return (dt.getMonth()+1)+'/'+dt.getDate(); });
+    sqVals    = days.map(d => sqByDay[d]   || 0);
+    cashVals  = days.map(d => cashByDay[d] || 0);
+    totalVals = days.map((_,i) => sqVals[i] + cashVals[i]);
+  } else {
+    labels = days.map(d => { const dt = new Date(d+'T00:00:00'); return String(dt.getDate()); });
+    sqVals    = days.map(d => sqByDay[d]   || 0);
+    cashVals  = days.map(d => cashByDay[d] || 0);
+    totalVals = days.map((_,i) => sqVals[i] + cashVals[i]);
+  }
+
+  const w = canvas.parentElement ? canvas.parentElement.clientWidth - 32 : 600;
+  canvas.width  = Math.max(w, 200);
+  canvas.height = 200;
+
+  const ctx = canvas.getContext('2d');
+  renderLineChart(ctx, canvas.width, canvas.height, labels, [
+    { label: 'Square',  data: sqVals,    color: '#f0c040' },
+    { label: 'Cash',    data: cashVals,  color: '#3fb950' },
+    { label: 'Total',   data: totalVals, color: '#58a6ff', dashed: true }
+  ]);
+
+  const legend = document.getElementById('revenue-legend');
+  if (legend) {
+    legend.innerHTML = [
+      { l: 'Square', c: '#f0c040' },
+      { l: 'Cash',   c: '#3fb950' },
+      { l: 'Total',  c: '#58a6ff' }
+    ].map(x => '<div class="legend-item"><div class="legend-dot" style="background:' + x.c + '"></div>' + x.l + '</div>').join('');
+  }
+}
+
+function renderLineChart(ctx, w, h, labels, datasets) {
+  const pad = { top: 16, right: 14, bottom: 38, left: 54 };
+  const cw = w - pad.left - pad.right;
+  const ch = h - pad.top - pad.bottom;
+
+  ctx.clearRect(0, 0, w, h);
+
+  const allVals = datasets.flatMap(d => d.data);
+  const maxVal  = niceNum(Math.max(...allVals, 1));
+  const ticks   = 5;
+
+  // Grid + Y labels
+  for (let i = 0; i <= ticks; i++) {
+    const y = pad.top + ch - (i / ticks) * ch;
+    ctx.strokeStyle = 'rgba(48,54,61,0.8)';
+    ctx.lineWidth   = 1;
+    ctx.beginPath();
+    ctx.moveTo(pad.left, y);
+    ctx.lineTo(pad.left + cw, y);
+    ctx.stroke();
+    ctx.fillStyle = '#6e7681';
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('$' + shortNum(maxVal * i / ticks), pad.left - 4, y);
+  }
+
+  // X labels
+  const step = Math.max(1, Math.ceil(labels.length / 9));
+  ctx.fillStyle    = '#6e7681';
+  ctx.font         = '10px sans-serif';
+  ctx.textAlign    = 'center';
+  ctx.textBaseline = 'top';
+  labels.forEach((lbl, i) => {
+    if (i % step !== 0 && i !== labels.length - 1) return;
+    const x = pad.left + (labels.length < 2 ? cw/2 : i / (labels.length - 1) * cw);
+    ctx.fillText(lbl, x, h - pad.bottom + 6);
+  });
+
+  // Dataset lines + fill
+  datasets.forEach(ds => {
+    const hasData = ds.data.some(v => v > 0);
+    const pts = ds.data.map((v, i) => ({
+      x: pad.left + (ds.data.length < 2 ? cw/2 : i / (ds.data.length - 1) * cw),
+      y: pad.top + ch - (v / maxVal) * ch
+    }));
+
+    // Fill
+    ctx.save();
+    ctx.globalAlpha = 0.07;
+    ctx.fillStyle   = ds.color;
+    ctx.beginPath();
+    pts.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
+    ctx.lineTo(pts[pts.length - 1].x, pad.top + ch);
+    ctx.lineTo(pts[0].x, pad.top + ch);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    // Line
+    ctx.save();
+    ctx.strokeStyle = ds.color;
+    ctx.lineWidth   = 2;
+    if (ds.dashed) ctx.setLineDash([5, 4]);
+    ctx.beginPath();
+    pts.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
+    ctx.stroke();
+    ctx.restore();
+  });
+}
+
+function niceNum(v) {
+  if (v <= 0) return 100;
+  const mag = Math.pow(10, Math.floor(Math.log10(v)));
+  const r   = v / mag;
+  const n   = r <= 1 ? 1 : r <= 2 ? 2 : r <= 5 ? 5 : 10;
+  return n * mag;
+}
+
+function shortNum(n) {
+  if (n >= 1000000) return (n/1000000).toFixed(1) + 'M';
+  if (n >= 1000)    return (n/1000).toFixed(1) + 'k';
+  return n.toFixed(0);
+}
+
+// ============================================================
+// RENDER: SALES
+// ============================================================
+function renderSales() {
+  renderSqSalesTable();
+  renderCashSalesTable();
+}
+
+function renderSqSalesTable() {
+  const el = document.getElementById('sq-sales-table');
+  if (!el) return;
+
+  if (!S.apiKey) {
+    el.innerHTML = '<div class="alert alert-info" style="margin:12px 16px">Square is not connected. ' +
+      '<button class="btn btn-sm btn-secondary" onclick="openChangeKeyModal()">Connect Square</button></div>';
+    const lbl = document.getElementById('sq-count-label');
+    if (lbl) lbl.textContent = '';
+    return;
+  }
+
+  const sales = filteredSqSales().slice().reverse();
+  const lbl = document.getElementById('sq-count-label');
+  if (lbl) lbl.textContent = sales.length + ' transactions';
+
+  if (!sales.length) {
+    el.innerHTML = emptyHTML('No Square transactions this period',
+      'Click Sync Square to pull the latest data from your account.');
+    return;
+  }
+
+  el.innerHTML = '<div class="table-wrap"><table id="sq-tbl">' +
+    '<thead><tr>' +
+    '<th onclick="sortTable(\'sq-tbl\',0)">Date</th>' +
+    '<th onclick="sortTable(\'sq-tbl\',1)">Items</th>' +
+    '<th onclick="sortTable(\'sq-tbl\',2,true)">Gross</th>' +
+    '<th onclick="sortTable(\'sq-tbl\',3,true)">Sq. Fee</th>' +
+    '<th onclick="sortTable(\'sq-tbl\',4,true)">Tax</th>' +
+    '<th onclick="sortTable(\'sq-tbl\',5,true)">Net</th>' +
+    '</tr></thead><tbody>' +
+    sales.map(s =>
+      '<tr>' +
+      '<td>' + fmtDate(s.date) + '</td>' +
+      '<td class="muted">' + esc(s.items && s.items.length ? s.items.map(i => i.name + ' ×' + i.qty).join(', ') : '—') + '</td>' +
+      '<td class="right green">' + fmtMoney(s.gross) + '</td>' +
+      '<td class="right red">' + fmtMoney(s.fee) + (s.feeEstimated ? '<span title="Estimated" style="color:var(--text3);font-size:10px;margin-left:3px">est</span>' : '') + '</td>' +
+      '<td class="right">' + fmtMoney(s.tax) + '</td>' +
+      '<td class="right">' + fmtMoney(s.net) + '</td>' +
+      '</tr>'
+    ).join('') +
+    '</tbody></table></div>';
+}
+
+function renderCashSalesTable() {
+  const el = document.getElementById('cash-sales-table');
+  if (!el) return;
+  const sales = filteredCashSales().slice().reverse();
+
+  if (!sales.length) {
+    el.innerHTML = emptyHTML('No cash sales this period', 'Click "+ Add Cash Sale" to record a cash transaction.');
+    return;
+  }
+
+  el.innerHTML = '<div class="table-wrap"><table id="cash-tbl">' +
+    '<thead><tr>' +
+    '<th onclick="sortTable(\'cash-tbl\',0)">Date</th>' +
+    '<th onclick="sortTable(\'cash-tbl\',1)">Category</th>' +
+    '<th onclick="sortTable(\'cash-tbl\',2,true)">Amount</th>' +
+    '<th onclick="sortTable(\'cash-tbl\',3,true)">Tax Collected</th>' +
+    '<th onclick="sortTable(\'cash-tbl\',4)">Notes</th>' +
+    '<th>Action</th>' +
+    '</tr></thead><tbody>' +
+    sales.map(s =>
+      '<tr>' +
+      '<td>' + fmtDate(s.date) + '</td>' +
+      '<td>' + esc(s.category || '—') + '</td>' +
+      '<td class="right green">' + fmtMoney(s.amount) + '</td>' +
+      '<td class="right">' + fmtMoney(s.tax) + '</td>' +
+      '<td class="muted">' + esc(s.notes || '—') + '</td>' +
+      '<td><button class="btn btn-danger btn-sm" onclick="deleteCashSale(\'' + escA(s.id) + '\')">Delete</button></td>' +
+      '</tr>'
+    ).join('') +
+    '</tbody></table></div>';
+}
+
+// ============================================================
+// RENDER: INVENTORY
+// ============================================================
+function renderInventory() {
+  renderSealedTable();
+  renderSinglesTable();
+  updateLowStockBadge();
+}
+
+function renderSealedTable() {
+  const el = document.getElementById('sealed-inv-table');
+  if (!el) return;
+
+  if (!S.inventory.length) {
+    el.innerHTML = emptyHTML('No inventory items', 'Click "+ Add Item" to add your first sealed product.');
+    return;
+  }
+
+  el.innerHTML = '<div class="table-wrap"><table id="inv-tbl">' +
+    '<thead><tr>' +
+    '<th onclick="sortTable(\'inv-tbl\',0)">Item Name</th>' +
+    '<th onclick="sortTable(\'inv-tbl\',1)">Set</th>' +
+    '<th onclick="sortTable(\'inv-tbl\',2)">SKU Type</th>' +
+    '<th onclick="sortTable(\'inv-tbl\',3,true)">Qty</th>' +
+    '<th onclick="sortTable(\'inv-tbl\',4,true)">Cost</th>' +
+    '<th onclick="sortTable(\'inv-tbl\',5,true)">Sell Price</th>' +
+    '<th onclick="sortTable(\'inv-tbl\',6,true)">Reorder At</th>' +
+    '<th>Status</th>' +
+    '<th>Actions</th>' +
+    '</tr></thead><tbody>' +
+    S.inventory.map(i => {
+      const low = (i.qty || 0) <= (i.reorder || 0);
+      return '<tr class="' + (low ? 'low-stock-row' : '') + '">' +
+        '<td>' + esc(i.name) + '</td>' +
+        '<td class="muted">' + esc(i.set || '—') + '</td>' +
+        '<td><span class="tag tag-blue">' + esc(i.skuType || '—') + '</span></td>' +
+        '<td class="right ' + (low ? 'amber' : '') + '">' + (i.qty || 0) + '</td>' +
+        '<td class="right">' + fmtMoney(i.cost) + '</td>' +
+        '<td class="right green">' + fmtMoney(i.sellPrice) + '</td>' +
+        '<td class="right">' + (i.reorder || 0) + '</td>' +
+        '<td>' + (low ? '<span class="tag tag-amber">⚠ Low</span>' : '<span style="color:var(--green);font-size:12px">● OK</span>') + '</td>' +
+        '<td>' +
+        '<button class="btn btn-secondary btn-sm" onclick="openModal(\'edit-inventory\',\'' + escA(i.id) + '\')">Edit</button> ' +
+        '<button class="btn btn-danger btn-sm" onclick="deleteInvItem(\'' + escA(i.id) + '\')">Del</button>' +
+        '</td></tr>';
+    }).join('') +
+    '</tbody></table></div>';
+}
+
+function renderSinglesTable() {
+  const el = document.getElementById('singles-inv-table');
+  if (!el) return;
+
+  if (!S.singles.length) {
+    el.innerHTML = emptyHTML('No singles sets tracked', 'Click "+ Add Set" to track a set\'s singles inventory by category total.');
+    return;
+  }
+
+  el.innerHTML = '<div class="table-wrap"><table id="singles-tbl">' +
+    '<thead><tr>' +
+    '<th onclick="sortTable(\'singles-tbl\',0)">Set Name</th>' +
+    '<th onclick="sortTable(\'singles-tbl\',1,true)">Cards In Stock</th>' +
+    '<th onclick="sortTable(\'singles-tbl\',2,true)">Avg Cost/Card</th>' +
+    '<th onclick="sortTable(\'singles-tbl\',3,true)">Avg Sell Price</th>' +
+    '<th onclick="sortTable(\'singles-tbl\',4,true)">Total Cost Basis</th>' +
+    '<th onclick="sortTable(\'singles-tbl\',5,true)">Est. Retail Value</th>' +
+    '<th>Actions</th>' +
+    '</tr></thead><tbody>' +
+    S.singles.map(s =>
+      '<tr>' +
+      '<td>' + esc(s.set) + '</td>' +
+      '<td class="right">' + (s.count || 0) + '</td>' +
+      '<td class="right">' + fmtMoney(s.avgCost) + '</td>' +
+      '<td class="right green">' + fmtMoney(s.avgSell) + '</td>' +
+      '<td class="right">' + fmtMoney((s.count || 0) * (s.avgCost || 0)) + '</td>' +
+      '<td class="right accent">' + fmtMoney((s.count || 0) * (s.avgSell || 0)) + '</td>' +
+      '<td>' +
+      '<button class="btn btn-secondary btn-sm" onclick="openModal(\'edit-singles\',\'' + escA(s.id) + '\')">Edit</button> ' +
+      '<button class="btn btn-danger btn-sm" onclick="deleteSinglesSet(\'' + escA(s.id) + '\')">Del</button>' +
+      '</td></tr>'
+    ).join('') +
+    '</tbody></table></div>';
+}
+
+// ============================================================
+// RENDER: ANALYTICS
+// ============================================================
+function renderAnalytics() {
+  renderTopItems();
+  renderTopSets();
+  renderDonutChart();
+  renderSkuPerf();
+  renderMarginTable();
+  renderSinglesPerf();
+}
+
+function buildItemMap() {
+  const map = {};
+  filteredSqSales().forEach(sale => {
+    (sale.items || []).forEach(item => {
+      if (!item.name) return;
+      const k = item.name.toLowerCase().trim();
+      if (!map[k]) map[k] = { name: item.name, units: 0, revenue: 0, src: 'Square' };
+      map[k].units   += item.qty || 1;
+      map[k].revenue += item.price || 0;
+    });
+  });
+  filteredCashSales().forEach(sale => {
+    if (!sale.category) return;
+    const k = sale.category.toLowerCase().trim();
+    if (!map[k]) map[k] = { name: sale.category, units: 0, revenue: 0, src: 'Cash' };
+    else if (map[k].src === 'Square') map[k].src = 'Both';
+    map[k].units   += 1;
+    map[k].revenue += sale.amount || 0;
+  });
+  return Object.values(map).sort((a, b) => b.revenue - a.revenue);
+}
+
+function buildSetMap() {
+  const map = {};
+  const lookupSet = name => {
+    if (!name) return null;
+    const inv = S.inventory.find(i => i.name && i.name.toLowerCase() === name.toLowerCase());
+    return inv ? inv.set : null;
+  };
+  filteredSqSales().forEach(sale => {
+    (sale.items || []).forEach(item => {
+      const setName = lookupSet(item.name) || 'Unknown Set';
+      if (!map[setName]) map[setName] = { set: setName, revenue: 0, units: 0 };
+      map[setName].revenue += item.price || 0;
+      map[setName].units   += item.qty || 1;
+    });
+  });
+  filteredCashSales().forEach(sale => {
+    const setName = lookupSet(sale.category) || 'Singles / Other';
+    if (!map[setName]) map[setName] = { set: setName, revenue: 0, units: 0 };
+    map[setName].revenue += sale.amount || 0;
+    map[setName].units   += 1;
+  });
+  return Object.values(map).sort((a, b) => b.revenue - a.revenue);
+}
+
+function renderTopItems() {
+  const el = document.getElementById('top-items-table');
+  if (!el) return;
+  const items = buildItemMap().slice(0, 10);
+  if (!items.length) { el.innerHTML = emptyHTML('No sales data', 'Sync Square or add cash sales to see top items.'); return; }
+  el.innerHTML = '<div class="table-wrap"><table>' +
+    '<thead><tr><th>#</th><th>Item</th><th>Units</th><th>Revenue</th><th>Source</th></tr></thead><tbody>' +
+    items.map((it, i) =>
+      '<tr><td class="muted">' + (i+1) + '</td>' +
+      '<td>' + esc(it.name) + '</td>' +
+      '<td class="right">' + it.units + '</td>' +
+      '<td class="right green">' + fmtMoney(it.revenue) + '</td>' +
+      '<td><span class="tag ' + (it.src === 'Square' ? 'tag-blue' : it.src === 'Both' ? 'tag-amber' : 'tag-green') + '">' + it.src + '</span></td></tr>'
+    ).join('') + '</tbody></table></div>';
+}
+
+function renderTopSets() {
+  const el = document.getElementById('top-sets-table');
+  if (!el) return;
+  const sets = buildSetMap().slice(0, 10);
+  if (!sets.length) { el.innerHTML = emptyHTML('No set data', 'Add inventory with set names to see set performance.'); return; }
+  el.innerHTML = '<div class="table-wrap"><table>' +
+    '<thead><tr><th>#</th><th>Set Name</th><th>Units</th><th>Revenue</th></tr></thead><tbody>' +
+    sets.map((s, i) =>
+      '<tr><td class="muted">' + (i+1) + '</td>' +
+      '<td>' + esc(s.set) + '</td>' +
+      '<td class="right">' + s.units + '</td>' +
+      '<td class="right green">' + fmtMoney(s.revenue) + '</td></tr>'
+    ).join('') + '</tbody></table></div>';
+}
+
+function renderDonutChart() {
+  const canvas = document.getElementById('donut-chart');
+  if (!canvas) return;
+
+  const sqRev   = filteredSqSales().reduce((s, x) => s + (x.gross || 0), 0);
+  const cashSales = filteredCashSales();
+
+  // Split cash into sealed vs singles
+  const cashSealed = cashSales.filter(s => {
+    const k = (s.category || '').toLowerCase().trim();
+    return S.inventory.some(i => i.name && i.name.toLowerCase().trim() === k);
+  }).reduce((s, x) => s + (x.amount || 0), 0);
+  const cashSingles = cashSales.reduce((s, x) => s + (x.amount || 0), 0) - cashSealed;
+
+  const data = [
+    { label: 'Square Sales',  value: sqRev,       color: '#f0c040' },
+    { label: 'Cash — Sealed', value: cashSealed,   color: '#3fb950' },
+    { label: 'Cash — Singles',value: cashSingles,  color: '#58a6ff' }
+  ].filter(d => d.value > 0);
+
+  const ctx = canvas.getContext('2d');
+  canvas.width = 240; canvas.height = 240;
+
+  if (!data.length) {
+    ctx.fillStyle = '#6e7681';
+    ctx.font = '13px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('No data', 120, 120);
+    document.getElementById('donut-legend').innerHTML = '';
+    return;
+  }
+
+  const total = data.reduce((s, d) => s + d.value, 0);
+  let angle = -Math.PI / 2;
+  const cx = 120, cy = 120, r = 95, inner = 58;
+
+  ctx.clearRect(0, 0, 240, 240);
+  data.forEach(d => {
+    const sweep = (d.value / total) * 2 * Math.PI;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, r, angle, angle + sweep);
+    ctx.closePath();
+    ctx.fillStyle = d.color;
+    ctx.fill();
+    angle += sweep;
+  });
+  // Donut hole
+  ctx.beginPath();
+  ctx.arc(cx, cy, inner, 0, 2 * Math.PI);
+  ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--bg2').trim() || '#1c2333';
+  ctx.fill();
+  // Center label
+  ctx.fillStyle = '#e6edf3';
+  ctx.font = 'bold 13px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(fmtMoney(total), cx, cy);
+
+  const legend = document.getElementById('donut-legend');
+  if (legend) {
+    legend.innerHTML = data.map(d =>
+      '<div class="legend-item">' +
+      '<div class="legend-dot" style="background:' + d.color + '"></div>' +
+      esc(d.label) + ': ' + fmtMoney(d.value) + ' (' + fmtPct(d.value/total*100) + ')' +
+      '</div>'
+    ).join('');
+  }
+}
+
+function renderSkuPerf() {
+  const el = document.getElementById('sku-perf-table');
+  if (!el) return;
+  const map = {};
+
+  const getSku = name => {
+    if (!name) return null;
+    const inv = S.inventory.find(i => i.name && i.name.toLowerCase() === name.toLowerCase());
+    return inv ? inv.skuType : null;
+  };
+
+  filteredSqSales().forEach(sale => {
+    (sale.items || []).forEach(item => {
+      const sku = getSku(item.name);
+      if (!sku) return;
+      if (!map[sku]) map[sku] = { type: sku, revenue: 0, units: 0 };
+      map[sku].revenue += item.price || 0;
+      map[sku].units   += item.qty || 1;
+    });
+  });
+  filteredCashSales().forEach(sale => {
+    const sku = getSku(sale.category);
+    if (!sku) return;
+    if (!map[sku]) map[sku] = { type: sku, revenue: 0, units: 0 };
+    map[sku].revenue += sale.amount || 0;
+    map[sku].units   += 1;
+  });
+
+  const rows = Object.values(map).sort((a, b) => b.revenue - a.revenue);
+  if (!rows.length) {
+    el.innerHTML = emptyHTML('No SKU data yet', 'Inventory items with SKU types and matching sales will appear here.');
+    return;
+  }
+
+  const totalRev = rows.reduce((s, r) => s + r.revenue, 0);
+  el.innerHTML = '<div class="table-wrap"><table>' +
+    '<thead><tr><th>SKU Type</th><th class="right">Revenue</th><th class="right">% of Total</th><th class="right">Units</th></tr></thead><tbody>' +
+    rows.map(r =>
+      '<tr><td><span class="tag tag-blue">' + esc(r.type) + '</span></td>' +
+      '<td class="right green">' + fmtMoney(r.revenue) + '</td>' +
+      '<td class="right">' + fmtPct(totalRev ? r.revenue/totalRev*100 : 0) + '</td>' +
+      '<td class="right">' + r.units + '</td></tr>'
+    ).join('') + '</tbody></table></div>';
+}
+
+function renderMarginTable() {
+  const el = document.getElementById('margin-table');
+  if (!el) return;
+  const items = S.inventory.filter(i => (i.cost || 0) > 0 && (i.sellPrice || 0) > 0);
+  if (!items.length) {
+    el.innerHTML = emptyHTML('No margin data', 'Add inventory items with both cost and sell price to see margins.');
+    return;
+  }
+  const sorted = items.map(i => ({
+    ...i,
+    margin: ((i.sellPrice - i.cost) / i.sellPrice) * 100,
+    profit: i.sellPrice - i.cost
+  })).sort((a, b) => b.margin - a.margin);
+
+  el.innerHTML = '<div class="table-wrap"><table>' +
+    '<thead><tr>' +
+    '<th>Item Name</th><th>Set</th><th>SKU</th>' +
+    '<th class="right">Cost</th><th class="right">Sell Price</th>' +
+    '<th class="right">Profit/Unit</th><th class="right">Margin %</th>' +
+    '</tr></thead><tbody>' +
+    sorted.map(i => {
+      const mc = i.margin >= 30 ? 'green' : i.margin >= 15 ? 'amber' : 'red';
+      return '<tr>' +
+        '<td>' + esc(i.name) + '</td>' +
+        '<td class="muted">' + esc(i.set || '—') + '</td>' +
+        '<td><span class="tag tag-blue">' + esc(i.skuType || '—') + '</span></td>' +
+        '<td class="right">' + fmtMoney(i.cost) + '</td>' +
+        '<td class="right green">' + fmtMoney(i.sellPrice) + '</td>' +
+        '<td class="right ' + (i.profit >= 0 ? 'green' : 'red') + '">' + fmtMoney(i.profit) + '</td>' +
+        '<td class="right ' + mc + '">' + fmtPct(i.margin) + '</td></tr>';
+    }).join('') + '</tbody></table></div>';
+}
+
+function renderSinglesPerf() {
+  const el = document.getElementById('singles-perf-table');
+  if (!el) return;
+  if (!S.singles.length) {
+    el.innerHTML = emptyHTML('No singles data', 'Add singles inventory sets in the Inventory tab.');
+    return;
+  }
+  const rows = S.singles.map(s => ({
+    ...s,
+    totalCost:  (s.count || 0) * (s.avgCost || 0),
+    totalValue: (s.count || 0) * (s.avgSell || 0),
+    potProfit:  (s.count || 0) * ((s.avgSell || 0) - (s.avgCost || 0))
+  }));
+
+  el.innerHTML = '<div class="table-wrap"><table>' +
+    '<thead><tr>' +
+    '<th>Set Name</th><th class="right">Cards</th><th class="right">Avg Cost</th>' +
+    '<th class="right">Avg Sell</th><th class="right">Total Cost Basis</th>' +
+    '<th class="right">Est. Retail Value</th><th class="right">Potential Profit</th>' +
+    '</tr></thead><tbody>' +
+    rows.map(r =>
+      '<tr><td>' + esc(r.set) + '</td>' +
+      '<td class="right">' + (r.count || 0) + '</td>' +
+      '<td class="right">' + fmtMoney(r.avgCost) + '</td>' +
+      '<td class="right green">' + fmtMoney(r.avgSell) + '</td>' +
+      '<td class="right">' + fmtMoney(r.totalCost) + '</td>' +
+      '<td class="right accent">' + fmtMoney(r.totalValue) + '</td>' +
+      '<td class="right ' + (r.potProfit >= 0 ? 'green' : 'red') + '">' + fmtMoney(r.potProfit) + '</td></tr>'
+    ).join('') + '</tbody></table></div>';
+}
+
+// ============================================================
+// RENDER: COSTS
+// ============================================================
+function renderCosts() {
+  const el   = document.getElementById('costs-table-wrap');
+  const totEl = document.getElementById('costs-total-bar');
+  if (!el) return;
+
+  const costs = filteredCosts().slice().reverse();
+
+  if (!costs.length) {
+    el.innerHTML = emptyHTML('No expenses logged', 'Click "+ Add Expense" to track business costs like table fees, gas, and supplies.');
+    if (totEl) totEl.style.display = 'none';
+    return;
+  }
+
+  el.innerHTML = '<div class="table-wrap"><table id="costs-tbl">' +
+    '<thead><tr>' +
+    '<th onclick="sortTable(\'costs-tbl\',0)">Date</th>' +
+    '<th onclick="sortTable(\'costs-tbl\',1)">Name</th>' +
+    '<th onclick="sortTable(\'costs-tbl\',2,true)">Amount</th>' +
+    '<th onclick="sortTable(\'costs-tbl\',3)">Notes</th>' +
+    '<th>Action</th>' +
+    '</tr></thead><tbody>' +
+    costs.map(c =>
+      '<tr>' +
+      '<td>' + fmtDate(c.date) + '</td>' +
+      '<td>' + esc(c.name) + '</td>' +
+      '<td class="right red">' + fmtMoney(c.amount) + '</td>' +
+      '<td class="muted">' + esc(c.notes || '—') + '</td>' +
+      '<td><button class="btn btn-danger btn-sm" onclick="deleteCost(\'' + escA(c.id) + '\')">Delete</button></td>' +
+      '</tr>'
+    ).join('') + '</tbody></table></div>';
+
+  const total = costs.reduce((s, c) => s + (c.amount || 0), 0);
+  if (totEl) {
+    totEl.style.display = 'block';
+    totEl.innerHTML = '<span class="text-muted fw600">Total Expenses: </span>' +
+      '<span style="color:var(--red);font-size:16px;font-weight:700">' + fmtMoney(total) + '</span>';
+  }
+}
+
+// ============================================================
+// RENDER: REPORTS
+// ============================================================
+function renderReports() {
+  const nameEl = document.getElementById('report-biz-name');
+  if (nameEl) nameEl.value = S.businessName;
+}
+
+function onReportPeriodChange() {
+  const val = document.getElementById('report-period')?.value;
+  const wrap = document.getElementById('report-custom-wrap');
+  if (wrap) wrap.style.display = val === 'custom' ? 'block' : 'none';
+}
+
+function generateReport() {
+  const period  = document.getElementById('report-period')?.value || 'month';
+  const bizName = document.getElementById('report-biz-name')?.value?.trim() || 'Pokemon Card Shop';
+  S.businessName = bizName;
+  saveState();
+
+  // Temporarily override period
+  const savedPeriod = S.period, savedCS = S.customStart, savedCE = S.customEnd;
+  if (period === 'custom') {
+    S.period = 'custom';
+    S.customStart = document.getElementById('report-start')?.value || '';
+    S.customEnd   = document.getElementById('report-end')?.value   || '';
+  } else {
+    S.period = period;
+  }
+
+  const { start, end } = getDateRange();
+  const t        = calcTotals();
+  const topItems = buildItemMap().slice(0, 10);
+  const topSets  = buildSetMap().slice(0, 8);
+  const lowStock = getLowStockItems();
+  const costs    = filteredCosts();
+  const periodLbl = fmtDate(start.toISOString()) + ' – ' + fmtDate(end.toISOString());
+
+  // Restore
+  S.period = savedPeriod; S.customStart = savedCS; S.customEnd = savedCE;
+
+  const html = `
+<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:11pt;color:#111;max-width:900px;margin:0 auto;padding:20px">
+<div class="print-header">
+  <h1 style="font-size:20pt;margin-bottom:4px">${esc(bizName)}</h1>
+  <h2 style="font-size:13pt;font-weight:400;color:#555;margin-bottom:4px">Business Performance Report</h2>
+  <p style="color:#777;font-size:10pt">Period: ${esc(periodLbl)} &nbsp;|&nbsp; Generated: ${fmtDate(new Date().toISOString())}</p>
+</div>
+
+<h2 style="font-size:13pt;border-bottom:1px solid #ccc;padding-bottom:5px;margin:20px 0 10px">1 — Revenue Summary</h2>
+<table style="width:100%;border-collapse:collapse;font-size:10.5pt">
+  ${pRow('Total Gross Revenue', fmtMoney(t.totalGross), true)}
+  ${pRow('↳ Square Sales (' + t.sqCount + ' transactions)', fmtMoney(t.sqGross))}
+  ${pRow('↳ Cash Sales (' + t.cashCount + ' entries)', fmtMoney(t.cashGross))}
+  ${pRow('Less: Square Processing Fees', '(' + fmtMoney(t.sqFees) + ')', false, true)}
+  ${pRow('NET PROFIT', fmtMoney(t.netProfit), true, t.netProfit < 0)}
+</table>
+
+<h2 style="font-size:13pt;border-bottom:1px solid #ccc;padding-bottom:5px;margin:24px 0 10px">2 — Wisconsin Tax Summary</h2>
+<table style="width:100%;border-collapse:collapse;font-size:10.5pt">
+  ${pRow('Square — Tax Collected', fmtMoney(t.sqTax))}
+  ${pRow('Cash Sales — Tax Collected', fmtMoney(t.cashTax))}
+  ${pRow('Total Tax Owed to WI DOR', fmtMoney(t.totalTax), true)}
+</table>
+<p style="font-size:9pt;color:#888;margin-top:6px">Wisconsin base sales tax rate: ${S.taxRate}%. Verify with current DOR rates before filing.</p>
+
+${topItems.length ? `
+<div class="page-break"></div>
+<h2 style="font-size:13pt;border-bottom:1px solid #ccc;padding-bottom:5px;margin:24px 0 10px">3 — Top Selling Items</h2>
+<table style="width:100%;border-collapse:collapse;font-size:10.5pt">
+  <thead><tr style="background:#f0f0f0"><th style="padding:6px 8px;border:1px solid #ddd;text-align:left">#</th><th style="padding:6px 8px;border:1px solid #ddd;text-align:left">Item</th><th style="padding:6px 8px;border:1px solid #ddd;text-align:right">Units</th><th style="padding:6px 8px;border:1px solid #ddd;text-align:right">Revenue</th></tr></thead>
+  <tbody>${topItems.map((it,i) => `<tr${i%2?' style="background:#f9f9f9"':''}><td style="padding:5px 8px;border:1px solid #ddd">${i+1}</td><td style="padding:5px 8px;border:1px solid #ddd">${esc(it.name)}</td><td style="padding:5px 8px;border:1px solid #ddd;text-align:right">${it.units}</td><td style="padding:5px 8px;border:1px solid #ddd;text-align:right">${fmtMoney(it.revenue)}</td></tr>`).join('')}</tbody>
+</table>` : ''}
+
+${topSets.length ? `
+<h2 style="font-size:13pt;border-bottom:1px solid #ccc;padding-bottom:5px;margin:24px 0 10px">3b — Top Sets by Revenue</h2>
+<table style="width:100%;border-collapse:collapse;font-size:10.5pt">
+  <thead><tr style="background:#f0f0f0"><th style="padding:6px 8px;border:1px solid #ddd;text-align:left">#</th><th style="padding:6px 8px;border:1px solid #ddd;text-align:left">Set</th><th style="padding:6px 8px;border:1px solid #ddd;text-align:right">Revenue</th></tr></thead>
+  <tbody>${topSets.map((s,i) => `<tr${i%2?' style="background:#f9f9f9"':''}><td style="padding:5px 8px;border:1px solid #ddd">${i+1}</td><td style="padding:5px 8px;border:1px solid #ddd">${esc(s.set)}</td><td style="padding:5px 8px;border:1px solid #ddd;text-align:right">${fmtMoney(s.revenue)}</td></tr>`).join('')}</tbody>
+</table>` : ''}
+
+<div class="page-break"></div>
+<h2 style="font-size:13pt;border-bottom:1px solid #ccc;padding-bottom:5px;margin:24px 0 10px">4 — Inventory Snapshot</h2>
+${S.inventory.length ? `
+<table style="width:100%;border-collapse:collapse;font-size:10.5pt">
+  <thead><tr style="background:#f0f0f0">
+    <th style="padding:6px 8px;border:1px solid #ddd;text-align:left">Item</th>
+    <th style="padding:6px 8px;border:1px solid #ddd;text-align:left">SKU Type</th>
+    <th style="padding:6px 8px;border:1px solid #ddd;text-align:left">Set</th>
+    <th style="padding:6px 8px;border:1px solid #ddd;text-align:right">Qty</th>
+    <th style="padding:6px 8px;border:1px solid #ddd;text-align:right">Sell Price</th>
+    <th style="padding:6px 8px;border:1px solid #ddd">Status</th>
+  </tr></thead>
+  <tbody>${S.inventory.map((i,idx) => {
+    const low = (i.qty||0) <= (i.reorder||0);
+    return `<tr${idx%2?' style="background:#f9f9f9"':''}>
+      <td style="padding:5px 8px;border:1px solid #ddd">${esc(i.name)}</td>
+      <td style="padding:5px 8px;border:1px solid #ddd">${esc(i.skuType||'—')}</td>
+      <td style="padding:5px 8px;border:1px solid #ddd">${esc(i.set||'—')}</td>
+      <td style="padding:5px 8px;border:1px solid #ddd;text-align:right${low?';color:#c0392b;font-weight:bold':''}">${i.qty||0}</td>
+      <td style="padding:5px 8px;border:1px solid #ddd;text-align:right">${fmtMoney(i.sellPrice)}</td>
+      <td style="padding:5px 8px;border:1px solid #ddd">${low?'⚠ LOW':'OK'}</td>
+    </tr>`;
+  }).join('')}</tbody>
+</table>
+${lowStock.length ? `<p style="color:#c0392b;font-size:9pt;margin-top:6px">⚠ ${lowStock.length} item(s) at or below reorder threshold.</p>` : ''}
+` : '<p style="color:#777;font-size:10pt">No inventory on file.</p>'}
+
+${S.singles.length ? `
+<h2 style="font-size:13pt;border-bottom:1px solid #ccc;padding-bottom:5px;margin:24px 0 10px">4b — Singles Inventory</h2>
+<table style="width:100%;border-collapse:collapse;font-size:10.5pt">
+  <thead><tr style="background:#f0f0f0">
+    <th style="padding:6px 8px;border:1px solid #ddd;text-align:left">Set</th>
+    <th style="padding:6px 8px;border:1px solid #ddd;text-align:right">Cards</th>
+    <th style="padding:6px 8px;border:1px solid #ddd;text-align:right">Cost Basis</th>
+    <th style="padding:6px 8px;border:1px solid #ddd;text-align:right">Est. Value</th>
+  </tr></thead>
+  <tbody>${S.singles.map((s,i) => `<tr${i%2?' style="background:#f9f9f9"':''}><td style="padding:5px 8px;border:1px solid #ddd">${esc(s.set)}</td><td style="padding:5px 8px;border:1px solid #ddd;text-align:right">${s.count||0}</td><td style="padding:5px 8px;border:1px solid #ddd;text-align:right">${fmtMoney((s.count||0)*(s.avgCost||0))}</td><td style="padding:5px 8px;border:1px solid #ddd;text-align:right">${fmtMoney((s.count||0)*(s.avgSell||0))}</td></tr>`).join('')}</tbody>
+</table>` : ''}
+
+<div class="page-break"></div>
+<h2 style="font-size:13pt;border-bottom:1px solid #ccc;padding-bottom:5px;margin:24px 0 10px">5 — Business Expenses</h2>
+${costs.length ? `
+<table style="width:100%;border-collapse:collapse;font-size:10.5pt">
+  <thead><tr style="background:#f0f0f0">
+    <th style="padding:6px 8px;border:1px solid #ddd;text-align:left">Date</th>
+    <th style="padding:6px 8px;border:1px solid #ddd;text-align:left">Name</th>
+    <th style="padding:6px 8px;border:1px solid #ddd;text-align:right">Amount</th>
+    <th style="padding:6px 8px;border:1px solid #ddd;text-align:left">Notes</th>
+  </tr></thead>
+  <tbody>
+    ${costs.map((c,i) => `<tr${i%2?' style="background:#f9f9f9"':''}><td style="padding:5px 8px;border:1px solid #ddd">${fmtDate(c.date)}</td><td style="padding:5px 8px;border:1px solid #ddd">${esc(c.name)}</td><td style="padding:5px 8px;border:1px solid #ddd;text-align:right">${fmtMoney(c.amount)}</td><td style="padding:5px 8px;border:1px solid #ddd">${esc(c.notes||'—')}</td></tr>`).join('')}
+    <tr style="background:#f0f0f0;font-weight:bold"><td colspan="2" style="padding:6px 8px;border:1px solid #ddd">TOTAL EXPENSES</td><td style="padding:6px 8px;border:1px solid #ddd;text-align:right">${fmtMoney(t.totalCosts)}</td><td style="border:1px solid #ddd"></td></tr>
+  </tbody>
+</table>` : '<p style="color:#777;font-size:10pt">No expenses for this period.</p>'}
+
+<h2 style="font-size:13pt;border-bottom:1px solid #ccc;padding-bottom:5px;margin:24px 0 10px">6 — Net Profit Summary (P&amp;L)</h2>
+<table style="width:360px;border-collapse:collapse;font-size:11pt">
+  ${pRow('Gross Revenue',             fmtMoney(t.totalGross))}
+  ${pRow('Less: Square Processing Fees', '(' + fmtMoney(t.sqFees)    + ')', false, true)}
+  ${pRow('Less: Tax Collected (WI)',    '(' + fmtMoney(t.totalTax)  + ')', false, true)}
+  ${pRow('Less: Business Expenses',    '(' + fmtMoney(t.totalCosts) + ')', false, true)}
+  ${pRow('NET PROFIT', fmtMoney(t.netProfit), true, t.netProfit < 0)}
+</table>
+
+<p style="color:#aaa;font-size:8.5pt;margin-top:36px;border-top:1px solid #eee;padding-top:8px">
+  Generated by Pokemon Card Shop Dashboard on ${new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}.
+  Square fees marked "est" are calculated at 2.6% + $0.10. Consult a licensed tax professional before filing.
+</p>
+</div>`;
+
+  const container = document.getElementById('print-report');
+  if (container) {
+    container.innerHTML = html;
+    container.style.display = 'block';
+  }
+
+  window.onafterprint = () => {
+    if (container) container.style.display = 'none';
+    window.onafterprint = null;
+  };
+  window.print();
+  // Fallback hide
+  setTimeout(() => { if (container) container.style.display = 'none'; }, 2000);
+}
+
+function pRow(label, val, bold, danger) {
+  const bg = bold ? 'background:#e8f5e9;' : '';
+  const fw = bold ? 'font-weight:bold;' : '';
+  const vc = danger ? 'color:#c0392b;' : bold ? 'color:#27ae60;' : '';
+  return `<tr style="${bg}">
+    <td style="padding:6px 8px;border:1px solid #ddd;${fw}">${esc(label)}</td>
+    <td style="padding:6px 8px;border:1px solid #ddd;text-align:right;${fw}${vc}">${val}</td>
+  </tr>`;
+}
+
+// ============================================================
+// MODALS
+// ============================================================
+function openModal(type, id) {
+  const overlay = document.getElementById('modal-overlay');
+  const title   = document.getElementById('modal-title');
+  const body    = document.getElementById('modal-body');
+  const footer  = document.getElementById('modal-footer');
+  if (!overlay) return;
+  overlay.classList.add('open');
+
+  switch (type) {
+    case 'add-cash':
+      title.textContent = 'Add Cash Sale';
+      body.innerHTML = buildCashForm();
+      footer.innerHTML = '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveCashSale()">Save Sale</button>';
+      break;
+
+    case 'add-inventory':
+      title.textContent = 'Add Inventory Item';
+      body.innerHTML = buildInvForm();
+      footer.innerHTML = '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveInvItem()">Save Item</button>';
+      break;
+
+    case 'edit-inventory': {
+      const item = S.inventory.find(i => i.id === id);
+      if (!item) { closeModal(); return; }
+      title.textContent = 'Edit Inventory Item';
+      body.innerHTML = buildInvForm(item);
+      footer.innerHTML = '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveInvItem(\'' + escA(id) + '\')">Update Item</button>';
+      break;
+    }
+
+    case 'add-singles':
+      title.textContent = 'Add Singles Set';
+      body.innerHTML = buildSinglesForm();
+      footer.innerHTML = '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveSinglesSet()">Save Set</button>';
+      break;
+
+    case 'edit-singles': {
+      const s = S.singles.find(x => x.id === id);
+      if (!s) { closeModal(); return; }
+      title.textContent = 'Edit Singles Set';
+      body.innerHTML = buildSinglesForm(s);
+      footer.innerHTML = '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveSinglesSet(\'' + escA(id) + '\')">Update Set</button>';
+      break;
+    }
+
+    case 'add-cost':
+      title.textContent = 'Add Business Expense';
+      body.innerHTML = buildCostForm();
+      footer.innerHTML = '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveCost()">Save Expense</button>';
+      break;
+  }
+}
+
+function closeModal() {
+  const o = document.getElementById('modal-overlay');
+  if (o) o.classList.remove('open');
+}
+
+function closeModalIfOutside(e) {
+  if (e.target === document.getElementById('modal-overlay')) closeModal();
+}
+
+// ============================================================
+// FORM BUILDERS
+// ============================================================
+function buildCashForm() {
+  const sealedOpts = S.inventory.map(i =>
+    '<option value="' + escA(i.name) + '">' + esc(i.name) + '</option>'
+  ).join('');
+  return `
+<div id="form-err" class="alert alert-error" style="display:none"></div>
+<div class="form-grid">
+  <div class="form-row">
+    <label class="field-label">Date *</label>
+    <input type="date" id="cf-date" value="${todayISO()}" />
+  </div>
+  <div class="form-row">
+    <label class="field-label">Category *</label>
+    <select id="cf-cat">
+      <option value="">— Select —</option>
+      <option value="Singles">Singles</option>
+      ${sealedOpts ? '<optgroup label="Sealed Products">' + sealedOpts + '</optgroup>' : ''}
+      <option value="Other">Other</option>
+    </select>
+  </div>
+</div>
+<div class="form-grid">
+  <div class="form-row">
+    <label class="field-label">Sale Amount ($) *</label>
+    <input type="number" id="cf-amt" placeholder="0.00" step="0.01" min="0" />
+  </div>
+  <div class="form-row">
+    <label class="field-label">Tax Collected ($) — blank = auto</label>
+    <input type="number" id="cf-tax" placeholder="Auto at ${S.taxRate}%" step="0.01" min="0" />
+  </div>
+</div>
+<div class="form-row">
+  <label class="field-label">Notes</label>
+  <input type="text" id="cf-notes" placeholder="e.g. Card show — Milwaukee" />
+</div>
+<p class="text-muted mt8" style="font-size:11px">Tax auto-calculates at ${S.taxRate}% if left blank. Override for different rates (e.g., county/city).</p>`;
+}
+
+const SKU_TYPES = ['ETB', 'Booster Bundle', 'Booster Box', 'Loose Packs', 'Promo Box', 'Collection Box', 'Other'];
+
+function buildInvForm(d) {
+  return `
+<div id="form-err" class="alert alert-error" style="display:none"></div>
+<div class="form-row">
+  <label class="field-label">Item Name * (must match Square item name exactly for auto-deduct)</label>
+  <input type="text" id="if-name" value="${escA(d?.name||'')}" placeholder="e.g. Scarlet &amp; Violet ETB" />
+</div>
+<div class="form-grid">
+  <div class="form-row">
+    <label class="field-label">Set Name</label>
+    <input type="text" id="if-set" value="${escA(d?.set||'')}" placeholder="e.g. Scarlet &amp; Violet Base" />
+  </div>
+  <div class="form-row">
+    <label class="field-label">SKU Type *</label>
+    <select id="if-sku">${SKU_TYPES.map(t => '<option value="' + t + '"' + (d?.skuType===t?' selected':'') + '>' + t + '</option>').join('')}</select>
+  </div>
+</div>
+<div class="form-grid">
+  <div class="form-row">
+    <label class="field-label">Qty In Stock *</label>
+    <input type="number" id="if-qty" value="${d?.qty??''}" placeholder="0" min="0" step="1" />
+  </div>
+  <div class="form-row">
+    <label class="field-label">Reorder Threshold</label>
+    <input type="number" id="if-reorder" value="${d?.reorder??''}" placeholder="2" min="0" step="1" />
+  </div>
+</div>
+<div class="form-grid">
+  <div class="form-row">
+    <label class="field-label">Cost Price ($) *</label>
+    <input type="number" id="if-cost" value="${d?.cost??''}" placeholder="0.00" step="0.01" min="0" />
+  </div>
+  <div class="form-row">
+    <label class="field-label">Sell Price ($) *</label>
+    <input type="number" id="if-sell" value="${d?.sellPrice??''}" placeholder="0.00" step="0.01" min="0" />
+  </div>
+</div>`;
+}
+
+function buildSinglesForm(d) {
+  return `
+<div id="form-err" class="alert alert-error" style="display:none"></div>
+<div class="form-row">
+  <label class="field-label">Set Name *</label>
+  <input type="text" id="sf-set" value="${escA(d?.set||'')}" placeholder="e.g. Base Set, Paldea Evolved" />
+</div>
+<div class="form-grid">
+  <div class="form-row">
+    <label class="field-label">Cards In Stock *</label>
+    <input type="number" id="sf-count" value="${d?.count??''}" placeholder="0" min="0" step="1" />
+  </div>
+  <div class="form-row">
+    <label class="field-label">Avg Cost Per Card ($)</label>
+    <input type="number" id="sf-cost" value="${d?.avgCost??''}" placeholder="0.00" step="0.01" min="0" />
+  </div>
+</div>
+<div class="form-row">
+  <label class="field-label">Avg Sell Price Per Card ($)</label>
+  <input type="number" id="sf-sell" value="${d?.avgSell??''}" placeholder="0.00" step="0.01" min="0" />
+</div>
+<p class="text-muted mt8" style="font-size:11px">Singles are tracked as category totals — quantities are updated manually.</p>`;
+}
+
+function buildCostForm() {
+  return `
+<div id="form-err" class="alert alert-error" style="display:none"></div>
+<div class="form-grid">
+  <div class="form-row">
+    <label class="field-label">Date *</label>
+    <input type="date" id="cost-date" value="${todayISO()}" />
+  </div>
+  <div class="form-row">
+    <label class="field-label">Amount ($) *</label>
+    <input type="number" id="cost-amt" placeholder="0.00" step="0.01" min="0" />
+  </div>
+</div>
+<div class="form-row">
+  <label class="field-label">Expense Name * (e.g. Table fee — Chicago show)</label>
+  <input type="text" id="cost-name" placeholder="e.g. Table fee at Wisconsin Dells show" />
+</div>
+<div class="form-row">
+  <label class="field-label">Notes</label>
+  <input type="text" id="cost-notes" placeholder="Optional details" />
+</div>`;
+}
+
+// ============================================================
+// FORM VALIDATION + SAVE
+// ============================================================
+function showFormErr(msg) {
+  const el = document.getElementById('form-err');
+  if (el) { el.textContent = msg; el.style.display = 'flex'; }
+}
+
+function v(id) { return document.getElementById(id)?.value?.trim() || ''; }
+function vn(id) { const n = parseFloat(document.getElementById(id)?.value); return isNaN(n) ? null : n; }
+
+function saveCashSale() {
+  const date = v('cf-date'), cat = v('cf-cat'), amtRaw = vn('cf-amt');
+  if (!date) { showFormErr('Date is required.'); return; }
+  if (!cat)  { showFormErr('Category is required.'); return; }
+  if (amtRaw === null || amtRaw <= 0) { showFormErr('Enter a valid sale amount.'); return; }
+
+  const amt = amtRaw;
+  const taxRaw = vn('cf-tax');
+  const tax = taxRaw !== null ? taxRaw : parseFloat((amt * S.taxRate / 100).toFixed(2));
+
+  const sale = { id: genId(), date, category: cat, amount: amt, tax, notes: v('cf-notes') };
+  S.cashSales.push(sale);
+
+  // Auto-deduct sealed inventory
+  const inv = S.inventory.find(i => i.name && i.name.toLowerCase().trim() === cat.toLowerCase().trim());
+  if (inv) inv.qty = Math.max(0, (inv.qty || 0) - 1);
+
+  saveState(); closeModal(); updateLowStockBadge(); refreshCurrentTab();
+}
+
+function saveInvItem(editId) {
+  const name = v('if-name'), sku = v('if-sku');
+  const qty = vn('if-qty'), cost = vn('if-cost'), sell = vn('if-sell');
+
+  if (!name) { showFormErr('Item name is required.'); return; }
+  if (!sku)  { showFormErr('SKU type is required.'); return; }
+  if (qty === null)  { showFormErr('Quantity is required.'); return; }
+  if (cost === null) { showFormErr('Cost price is required.'); return; }
+  if (sell === null) { showFormErr('Sell price is required.'); return; }
+
+  const reorderRaw = vn('if-reorder');
+  const item = {
+    id: editId || genId(),
+    name, set: v('if-set'), skuType: sku,
+    qty: Math.max(0, Math.round(qty)),
+    reorder: reorderRaw !== null ? Math.max(0, Math.round(reorderRaw)) : 0,
+    cost, sellPrice: sell
+  };
+
+  if (editId) {
+    const idx = S.inventory.findIndex(i => i.id === editId);
+    if (idx >= 0) S.inventory[idx] = item; else S.inventory.push(item);
+  } else {
+    S.inventory.push(item);
+  }
+
+  saveState(); closeModal(); updateLowStockBadge(); renderInventory();
+}
+
+function saveSinglesSet(editId) {
+  const set = v('sf-set'), cntRaw = vn('sf-count');
+  if (!set)      { showFormErr('Set name is required.'); return; }
+  if (cntRaw === null) { showFormErr('Card count is required.'); return; }
+
+  const s = {
+    id: editId || genId(),
+    set,
+    count: Math.max(0, Math.round(cntRaw)),
+    avgCost: vn('sf-cost') || 0,
+    avgSell: vn('sf-sell') || 0
+  };
+
+  if (editId) {
+    const idx = S.singles.findIndex(x => x.id === editId);
+    if (idx >= 0) S.singles[idx] = s; else S.singles.push(s);
+  } else {
+    S.singles.push(s);
+  }
+
+  saveState(); closeModal(); renderInventory();
+}
+
+function saveCost() {
+  const date = v('cost-date'), name = v('cost-name'), amtRaw = vn('cost-amt');
+  if (!date) { showFormErr('Date is required.'); return; }
+  if (!name) { showFormErr('Expense name is required.'); return; }
+  if (amtRaw === null || amtRaw <= 0) { showFormErr('Enter a valid amount.'); return; }
+
+  S.costs.push({ id: genId(), date, name, amount: amtRaw, notes: v('cost-notes') });
+  saveState(); closeModal(); renderCosts();
+}
+
+// ============================================================
+// DELETE HANDLERS
+// ============================================================
+function deleteCashSale(id) {
+  if (!confirm('Delete this cash sale? This cannot be undone.')) return;
+  S.cashSales = S.cashSales.filter(s => s.id !== id);
+  saveState(); refreshCurrentTab();
+}
+
+function deleteInvItem(id) {
+  if (!confirm('Delete this inventory item?')) return;
+  S.inventory = S.inventory.filter(i => i.id !== id);
+  saveState(); updateLowStockBadge(); renderInventory();
+}
+
+function deleteSinglesSet(id) {
+  if (!confirm('Delete this singles set?')) return;
+  S.singles = S.singles.filter(s => s.id !== id);
+  saveState(); renderInventory();
+}
+
+function deleteCost(id) {
+  if (!confirm('Delete this expense?')) return;
+  S.costs = S.costs.filter(c => c.id !== id);
+  saveState(); renderCosts();
+}
+
+// ============================================================
+// TABLE SORT
+// ============================================================
+function sortTable(tableId, col, isNum) {
+  const table = document.getElementById(tableId);
+  if (!table) return;
+  const key = tableId + '_' + col;
+  const asc = S.sortState[key] !== true;
+  S.sortState[key] = asc;
+
+  const tbody = table.querySelector('tbody');
+  if (!tbody) return;
+  const rows = Array.from(tbody.rows);
+
+  rows.sort((a, b) => {
+    const av = (a.cells[col] ? a.cells[col].textContent.trim() : '');
+    const bv = (b.cells[col] ? b.cells[col].textContent.trim() : '');
+    if (isNum) {
+      const an = parseFloat(av.replace(/[$,%()k]/g, '')) || 0;
+      const bn = parseFloat(bv.replace(/[$,%()k]/g, '')) || 0;
+      return asc ? an - bn : bn - an;
+    }
+    return asc ? av.localeCompare(bv) : bv.localeCompare(av);
+  });
+
+  rows.forEach(r => tbody.appendChild(r));
+
+  table.querySelectorAll('thead th').forEach((th, i) => {
+    th.classList.remove('sort-asc', 'sort-desc');
+    if (i === col) th.classList.add(asc ? 'sort-asc' : 'sort-desc');
+  });
+}
+
+// ============================================================
+// SETTINGS
+// ============================================================
+function toggleSettings(e) {
+  if (e) e.stopPropagation();
+  const panel = document.getElementById('settings-panel');
+  if (!panel) return;
+  panel.classList.toggle('open');
+  const taxEl = document.getElementById('global-tax-rate');
+  if (taxEl) taxEl.value = S.taxRate;
+  updateSqStatusLabel();
+}
+
+function updateSqStatusLabel() {
+  const lbl = document.getElementById('sq-status-label');
+  if (!lbl) return;
+  if (S.apiKey) {
+    lbl.className = 'tag tag-green';
+    lbl.textContent = S.sandbox ? 'Sandbox' : 'Live';
+  } else {
+    lbl.className = 'tag tag-red';
+    lbl.textContent = 'Not Connected';
+  }
+  const syncBtn = document.getElementById('sync-btn');
+  if (syncBtn) syncBtn.style.opacity = S.apiKey ? '1' : '0.45';
+}
+
+function updateTaxRate(val) {
+  const r = parseFloat(val);
+  if (!isNaN(r) && r >= 0 && r <= 30) { S.taxRate = r; saveState(); }
+}
+
+function disconnectSquare() {
+  const panel = document.getElementById('settings-panel');
+  if (panel) panel.classList.remove('open');
+  if (!confirm('Disconnect Square? Your cash sales, inventory, and cost data will be kept.')) return;
+  S.apiKey = null;
+  S.locationId = null;
+  S.squareSales = [];
+  saveState();
+  updateSqStatusLabel();
+  refreshCurrentTab();
+}
+
+function clearAllData() {
+  const panel = document.getElementById('settings-panel');
+  if (panel) panel.classList.remove('open');
+  if (!confirm('⚠ CLEAR ALL LOCAL DATA? This will delete all your sales, inventory, and cost data. This cannot be undone.')) return;
+  localStorage.clear();
+  location.reload();
+}
+
+function openChangeKeyModal() {
+  const panel = document.getElementById('settings-panel');
+  if (panel) panel.classList.remove('open');
+
+  const overlay = document.getElementById('modal-overlay');
+  const title   = document.getElementById('modal-title');
+  const body    = document.getElementById('modal-body');
+  const footer  = document.getElementById('modal-footer');
+  if (!overlay) return;
+  overlay.classList.add('open');
+  title.textContent = 'Change Square API Key';
+  body.innerHTML = `
+    <div id="form-err" class="alert alert-error" style="display:none"></div>
+    <div class="form-row">
+      <label class="field-label">New Access Token</label>
+      <input type="password" id="new-key" placeholder="EAAAl..." />
+    </div>
+    <div class="form-row" style="display:flex;align-items:center;gap:8px">
+      <input type="checkbox" id="new-sandbox" ${S.sandbox?'checked':''} />
+      <label for="new-sandbox" style="color:var(--text2);font-size:13px;margin:0">Use Sandbox mode</label>
+    </div>`;
+  footer.innerHTML = '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="applyNewKey()">Update Key</button>';
+}
+
+async function applyNewKey() {
+  const key     = document.getElementById('new-key')?.value?.trim();
+  const sandbox = document.getElementById('new-sandbox')?.checked || false;
+  if (!key) { showFormErr('Please enter a new API key.'); return; }
+  try {
+    await validateApiKey(key, sandbox);
+    saveState();
+    closeModal();
+    updateSqStatusLabel();
+    const status = document.getElementById('sync-status');
+    if (status) status.innerHTML = '<span style="color:var(--green)">✓ API key updated</span>';
+    setTimeout(() => { if (status) status.textContent = ''; }, 3000);
+  } catch(e) {
+    showFormErr('Connection failed: ' + e.message);
+  }
+}
+
+// ============================================================
+// SETUP SCREEN HANDLERS
+// ============================================================
+async function connectSquare() {
+  const key     = document.getElementById('setup-api-key')?.value?.trim();
+  const sandbox = document.getElementById('setup-sandbox')?.checked || false;
+  const errEl   = document.getElementById('setup-error');
+  const btn     = document.getElementById('setup-connect-btn');
+  if (errEl) errEl.style.display = 'none';
+
+  if (!key) {
+    if (errEl) { errEl.textContent = 'Please paste your Access Token.'; errEl.style.display = 'flex'; }
+    return;
+  }
+
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Connecting...'; }
+  try {
+    const loc = await validateApiKey(key, sandbox);
+    saveState();
+    showApp();
+    const status = document.getElementById('sync-status');
+    if (status) {
+      status.innerHTML = '<span style="color:var(--green)">✓ Connected to ' + esc(loc.name || 'Square') + '</span>';
+      setTimeout(() => { if (status) status.textContent = ''; }, 5000);
+    }
+  } catch(e) {
+    if (errEl) { errEl.textContent = 'Connection failed: ' + e.message; errEl.style.display = 'flex'; }
+    S.apiKey = null;
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = '⚡ Connect to Square'; }
+  }
+}
+
+function skipSquare() { showApp(); }
+
+// ============================================================
+// DATE PERIOD
+// ============================================================
+function setPeriod(p) {
+  S.period = p;
+  document.querySelectorAll('.dpbtn').forEach(btn =>
+    btn.classList.toggle('active', btn.dataset.p === p)
+  );
+  const ci = document.getElementById('custom-date-inputs');
+  if (ci) ci.style.display = p === 'custom' ? 'flex' : 'none';
+  if (p !== 'custom') refreshCurrentTab();
+}
+
+function applyCustomDates() {
+  const s = document.getElementById('custom-start')?.value;
+  const e = document.getElementById('custom-end')?.value;
+  if (s) S.customStart = s;
+  if (e) S.customEnd   = e;
+  if (S.period === 'custom') refreshCurrentTab();
+}
+
+// ============================================================
+// SHOW/HIDE SCREENS
+// ============================================================
+function showSetup() {
+  document.getElementById('setup-screen').style.display = 'flex';
+  document.getElementById('main-app').style.display = 'none';
+}
+
+function showApp() {
+  document.getElementById('setup-screen').style.display = 'none';
+  document.getElementById('main-app').style.display = 'flex';
+  localStorage.setItem('app_launched', '1');
+  updateSqStatusLabel();
+  updateLowStockBadge();
+  if (S.lastSync) {
+    const status = document.getElementById('sync-status');
+    if (status) status.textContent = 'Last sync: ' + fmtDateTime(S.lastSync);
+  }
+  renderTab(S.tab);
+  requestAnimationFrame(() => { if (S.tab === 'overview') drawRevenueChart(); });
+}
+
+// ============================================================
+// UTILITY HELPERS
+// ============================================================
+function genId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+
+function esc(s) {
+  if (s == null) return '';
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');
+}
+
+function escA(s) {
+  if (s == null) return '';
+  return String(s).replace(/"/g,'&quot;').replace(/'/g,'&#x27;');
+}
+
+function emptyHTML(title, desc) {
+  return '<div class="empty-state"><div class="empty-icon">📋</div>' +
+    '<h3>' + esc(title) + '</h3><p>' + esc(desc) + '</p></div>';
+}
+
+function clearEl(id) {
+  const el = document.getElementById(id);
+  if (el) el.innerHTML = '';
+}
+
+function setInlineError(containerId, msg, withRetry) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  el.innerHTML = '<div class="alert alert-error" style="margin:12px 16px">' + esc(msg) +
+    (withRetry ? ' <button class="btn btn-sm btn-secondary" style="margin-left:8px" onclick="syncSquare()">Retry</button>' : '') +
+    '</div>';
+}
+
+// Close settings when clicking outside
+document.addEventListener('click', e => {
+  const panel = document.getElementById('settings-panel');
+  if (!panel || !panel.classList.contains('open')) return;
+  if (!panel.contains(e.target)) panel.classList.remove('open');
+});
+
+// Redraw chart on resize
+let resizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    if (S.tab === 'overview') drawRevenueChart();
+  }, 250);
+});
+
+// ============================================================
+// INIT
+// ============================================================
+function init() {
+  loadState();
+  const launched = localStorage.getItem('app_launched');
+  if (launched || S.apiKey) {
+    showApp();
+  } else {
+    showSetup();
+  }
+}
+
+init();
+</script>
+</body>
+</html>
