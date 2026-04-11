@@ -2802,40 +2802,41 @@ function importSquareCSV(event) {
         return;
       }
 
-      let imported = 0, skipped = 0;
-      const existingIds = new Set(S.squareSales.map(s => s.id));
+      let imported = 0, updated = 0, skipped = 0;
 
       records.forEach((row, idx) => {
         const dateRaw  = row[dateCol]?.trim();
         const grossRaw = parseMoney(row[grossCol]);
         if (!dateRaw || isNaN(grossRaw) || grossRaw <= 0) { skipped++; return; }
 
-        // Build a deterministic ID from date + gross + row index
         const id = 'csv_' + dateRaw.replace(/\W/g,'') + '_' + grossRaw.toFixed(2).replace('.','') + '_' + idx;
-        if (existingIds.has(id)) { skipped++; return; }
 
         const fee = feeCol ? Math.abs(parseMoney(row[feeCol])) : parseFloat((grossRaw * 0.026 + 0.15).toFixed(2));
         const tax = taxCol ? Math.abs(parseMoney(row[taxCol])) : 0;
         const net = netCol ? parseMoney(row[netCol]) : parseFloat((grossRaw - fee - tax).toFixed(2));
-
-        // Parse date — Square uses M/D/YYYY or YYYY-MM-DD
         const dateISO = normalizeDate(dateRaw);
-
         const rawDesc = descCol ? row[descCol]?.trim() : '';
         const items   = parseSqItemDesc(rawDesc, grossRaw);
-
         const cashAmt = cashCol ? parseMoney(row[cashCol]) : 0;
         const paymentMethod = cashAmt > 0 ? 'Cash' : 'Card';
+
+        const existing = S.squareSales.find(s => s.id === id);
+        if (existing) {
+          // Refresh fields that may have been missing on older imports
+          existing.paymentMethod = paymentMethod;
+          if (!existing.feeEstimated && feeCol) existing.fee = parseFloat(fee.toFixed(2));
+          updated++;
+          return;
+        }
 
         S.squareSales.push({
           id, date: dateISO, dateStr: dateISO.slice(0, 10),
           gross: parseFloat(grossRaw.toFixed(2)),
-          fee:   parseFloat(fee.toFixed(2)),   feeEstimated: !feeCol,
+          fee:   parseFloat(fee.toFixed(2)), feeEstimated: !feeCol,
           tax:   parseFloat(tax.toFixed(2)),
           net:   parseFloat(net.toFixed(2)),
           items, status: 'COMPLETED', paymentMethod
         });
-        existingIds.add(id);
         imported++;
       });
 
@@ -2849,7 +2850,7 @@ function importSquareCSV(event) {
 
       const status = document.getElementById('sync-status');
       if (status) {
-        status.innerHTML = '<span style="color:var(--green)">✓ Imported ' + imported + ' transactions' + (skipped ? ' (' + skipped + ' skipped)' : '') + '</span>';
+        status.innerHTML = '<span style="color:var(--green)">✓ Imported ' + imported + ' new' + (updated ? ', ' + updated + ' updated' : '') + (skipped ? ', ' + skipped + ' skipped' : '') + '</span>';
         setTimeout(() => { if (status) status.textContent = ''; }, 5000);
       }
 
