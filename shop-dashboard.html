@@ -2877,18 +2877,23 @@ function importSquareInventory(event) {
       // Square item library columns (normalized):
       // token, name, description, category, price_1, sku_1, gtin_1, stock_1, etc.
       // Column names vary slightly by Square version — use flexible matching
+      const allHeaders = Object.keys(rows[0]);
+      const normH = h => h.toLowerCase().replace(/[^a-z0-9]/g,'');
+      // Exact match first, then substring
       const col = key => {
-        const k = key.toLowerCase().replace(/[^a-z0-9]/g,'');
-        return Object.keys(rows[0]).find(h => h.toLowerCase().replace(/[^a-z0-9]/g,'').includes(k));
+        const k = normH(key);
+        return allHeaders.find(h => normH(h) === k) || allHeaders.find(h => normH(h).includes(k));
       };
 
-      const nameCol     = col('itemname') || col('name') || col('item') || col('title');
-      const priceCol    = col('price') || col('amount');
-      const catCol      = col('category') || col('type');
-      const descCol     = col('description') || col('desc');
-      // Square exports quantity as "Current Quantity - [Location]" or "New Quantity - [Location]"
-      const stockCol    = col('currentquantity') || col('newquantity') || col('quantity') || col('qty') || col('stock') || col('instock') || col('quant') || col('onhand');
-      const skuCol      = col('sku');
+      const nameCol  = col('itemname') || col('name') || col('item') || col('title');
+      const priceCol = col('price') || col('amount');
+      const catCol   = col('category') || col('type');
+      const skuCol   = col('sku');
+      // Square has one "Current Quantity [Location]" column per location — sum them all
+      const qtyCols  = allHeaders.filter(h => normH(h).startsWith('currentquantity'))
+                    || allHeaders.filter(h => normH(h).startsWith('newquantity'));
+      // Fallback to any single qty column if none found
+      const stockCol = qtyCols.length ? null : (col('quantity') || col('qty') || col('stock') || col('onhand'));
 
       if (!nameCol) {
         if (statusEl) statusEl.innerHTML = '<div class="alert alert-error" style="margin:12px 18px">Could not find a Name column. Make sure you\'re using the Square Item Library export.</div>';
@@ -2903,14 +2908,17 @@ function importSquareInventory(event) {
 
         const price    = priceCol ? parseMoney(row[priceCol]) : 0;
         const category = catCol   ? row[catCol]?.trim()   : '';
-        const stock    = stockCol ? Math.round(parseFloat(row[stockCol]?.toString().replace(/[^0-9.\-]/g,'')) || 0) : 0;
+        const parseQty = v => Math.round(parseFloat((v||'').toString().replace(/[^0-9.\-]/g,'')) || 0);
+        const stock    = qtyCols.length
+          ? qtyCols.reduce((sum, c) => sum + parseQty(row[c]), 0)
+          : (stockCol ? parseQty(row[stockCol]) : 0);
         const skuType  = detectSkuType(name, category);
 
         // Match by name (case-insensitive) — update if exists, add if new
         const existing = S.inventory.find(i => i.name && i.name.toLowerCase().trim() === name.toLowerCase());
         if (existing) {
           if (priceCol) existing.sellPrice = price;
-          if (stockCol) existing.qty = stock;
+          if (qtyCols.length || stockCol) existing.qty = stock;
           if (catCol && category) existing.set = existing.set || category;
           existing.skuType = existing.skuType || skuType;
           updated++;
