@@ -1221,14 +1221,14 @@ function renderOverview() {
   const totalTx = t.sqCount + t.cashCount;
   const invRetail = S.inventory.reduce((sum, i) => sum + (i.sellPrice || 0) * (i.qty || 0), 0);
   const metrics = [
-    { icon: '💰', label: 'Total Revenue',          value: fmtMoney(t.totalGross), cls: 'accent', sub: totalTx + ' transactions' },
-    { icon: '⬛', label: 'Square Card Sales',       value: fmtMoney(t.sqGross),    sub: t.sqCount + ' transactions' },
-    { icon: '💵', label: 'Cash / Other Sales',      value: fmtMoney(t.cashGross),  sub: t.cashCount + ' entries' },
+    { icon: '💰', label: 'Total Revenue',          value: fmtMoney(t.totalGross), cls: 'green',  sub: totalTx + ' transactions' },
+    { icon: '⬛', label: 'Square Card Sales',       value: fmtMoney(t.sqGross),    cls: 'green',  sub: t.sqCount + ' transactions' },
+    { icon: '💵', label: 'Cash / Other Sales',      value: fmtMoney(t.cashGross),  cls: 'green',  sub: t.cashCount + ' entries' },
     { icon: '🏦', label: 'Square Processing Fees',  value: fmtMoney(t.sqFees),     cls: 'red' },
-    { icon: '🏛',  label: 'WI Tax Collected',        value: fmtMoney(t.totalTax) },
-    { icon: '📋', label: 'Business Expenses',       value: fmtMoney(t.totalCosts), cls: 'amber' },
+    { icon: '🏛',  label: 'WI Tax Collected',        value: fmtMoney(t.totalTax),   cls: 'red' },
+    { icon: '📋', label: 'Business Expenses',       value: fmtMoney(t.totalCosts), cls: 'red' },
     { icon: '📈', label: 'Net Profit',              value: fmtMoney(t.netProfit),  cls: t.netProfit >= 0 ? 'green' : 'red' },
-    { icon: '📦', label: 'Inventory Retail Value',  value: fmtMoney(invRetail),    cls: 'accent', sub: S.inventory.reduce((s,i) => s + (i.qty||0), 0) + ' units in stock' }
+    { icon: '📦', label: 'Inventory Retail Value',  value: fmtMoney(invRetail),    cls: 'green',  sub: S.inventory.reduce((s,i) => s + (i.qty||0), 0) + ' units in stock' }
   ];
 
   const grid = document.getElementById('overview-metrics');
