@@ -2820,11 +2820,23 @@ function importSquareCSV(event) {
         const cashAmt = cashCol ? parseMoney(row[cashCol]) : 0;
         const paymentMethod = cashAmt > 0 ? 'Cash' : 'Card';
 
+        // For cash transactions: tax is inclusive (backed out of gross), no fee
+        let effectiveTax = parseFloat(tax.toFixed(2));
+        let effectiveFee = parseFloat(fee.toFixed(2));
+        let effectiveNet = parseFloat(net.toFixed(2));
+        if (paymentMethod === 'Cash') {
+          effectiveTax = parseFloat((grossRaw * S.taxRate / (100 + S.taxRate)).toFixed(2));
+          effectiveFee = 0;
+          effectiveNet = parseFloat((grossRaw - effectiveTax).toFixed(2));
+        }
+
         const existing = S.squareSales.find(s => s.id === id);
         if (existing) {
-          // Refresh fields that may have been missing on older imports
           existing.paymentMethod = paymentMethod;
-          if (!existing.feeEstimated && feeCol) existing.fee = parseFloat(fee.toFixed(2));
+          existing.tax = effectiveTax;
+          existing.fee = effectiveFee;
+          existing.net = effectiveNet;
+          if (paymentMethod === 'Card' && !existing.feeEstimated && feeCol) existing.fee = parseFloat(fee.toFixed(2));
           updated++;
           return;
         }
@@ -2832,9 +2844,9 @@ function importSquareCSV(event) {
         S.squareSales.push({
           id, date: dateISO, dateStr: dateISO.slice(0, 10),
           gross: parseFloat(grossRaw.toFixed(2)),
-          fee:   parseFloat(fee.toFixed(2)), feeEstimated: !feeCol,
-          tax:   parseFloat(tax.toFixed(2)),
-          net:   parseFloat(net.toFixed(2)),
+          fee:   effectiveFee, feeEstimated: paymentMethod === 'Cash' ? false : !feeCol,
+          tax:   effectiveTax,
+          net:   effectiveNet,
           items, status: 'COMPLETED', paymentMethod
         });
         imported++;
