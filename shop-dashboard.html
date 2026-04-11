@@ -2286,7 +2286,7 @@ function buildCashForm(d) {
 <p class="text-muted mt8" style="font-size:11px">Tax auto-calculates at ${S.taxRate}% if left blank. Override for different rates (e.g., county/city).</p>`;
 }
 
-const SKU_TYPES = ['ETB', 'Booster Bundle', 'Booster Box', 'Loose Packs', 'Promo Box', 'Collection Box', 'Other'];
+const SKU_TYPES = ['Collection Box', 'ETB', 'Booster Bundle', 'Booster Pack', 'Booster Box', 'Tin', 'Other'];
 
 function buildInvForm(d) {
   return `
@@ -2958,13 +2958,13 @@ function importSquareInventory(event) {
 // Guess SKU type from item name / category
 function detectSkuType(name, category) {
   const s = (name + ' ' + (category || '')).toLowerCase();
-  if (s.includes('booster box'))                    return 'Booster Box';
+  if (s.includes('booster box'))                             return 'Booster Box';
   if (s.includes('booster bundle') || s.includes('bundle')) return 'Booster Bundle';
-  if (s.includes('etb') || s.includes('elite trainer')) return 'ETB';
-  if (s.includes('loose pack') || s.includes('single pack')) return 'Loose Packs';
-  if (s.includes('promo'))                          return 'Promo Box';
-  if (s.includes('collection box') || s.includes('collection')) return 'Collection Box';
-  if (s.includes('blister') || s.includes('three pack')) return 'Loose Packs';
+  if (s.includes('booster pack'))                            return 'Booster Pack';
+  if (s.includes('etb') || s.includes('elite trainer'))     return 'ETB';
+  if (s.includes('tin'))                                     return 'Tin';
+  if (s.includes('collection box') || s.includes('collection') || s.includes('box')) return 'Collection Box';
+  if (s.includes('pack'))                                    return 'Booster Pack';
   return 'Other';
 }
 
