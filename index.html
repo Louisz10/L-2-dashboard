@@ -2887,11 +2887,12 @@ function importSquareInventory(event) {
         return Object.keys(rows[0]).find(h => h.toLowerCase().replace(/[^a-z0-9]/g,'').includes(k));
       };
 
-      const nameCol     = col('name') || col('item') || col('title');
+      const nameCol     = col('itemname') || col('name') || col('item') || col('title');
       const priceCol    = col('price') || col('amount');
       const catCol      = col('category') || col('type');
       const descCol     = col('description') || col('desc');
-      const stockCol    = col('stock') || col('qty') || col('quantity') || col('instock') || col('currentquantity');
+      // Square exports quantity as "Current Quantity - [Location]" or "New Quantity - [Location]"
+      const stockCol    = col('currentquantity') || col('newquantity') || col('quantity') || col('qty') || col('stock') || col('instock') || col('quant') || col('onhand');
       const skuCol      = col('sku');
 
       if (!nameCol) {
@@ -2907,7 +2908,7 @@ function importSquareInventory(event) {
 
         const price    = priceCol ? parseMoney(row[priceCol]) : 0;
         const category = catCol   ? row[catCol]?.trim()   : '';
-        const stock    = stockCol ? parseInt(row[stockCol]) || 0 : 0;
+        const stock    = stockCol ? Math.round(parseFloat(row[stockCol]?.toString().replace(/[^0-9.\-]/g,'')) || 0) : 0;
         const skuType  = detectSkuType(name, category);
 
         // Match by name (case-insensitive) — update if exists, add if new
