@@ -1566,21 +1566,16 @@ function renderSealedTable() {
     '<th onclick="sortTable(\'inv-tbl\',3,true)">Qty</th>' +
     '<th onclick="sortTable(\'inv-tbl\',4,true)">Cost</th>' +
     '<th onclick="sortTable(\'inv-tbl\',5,true)">Sell Price</th>' +
-    '<th onclick="sortTable(\'inv-tbl\',6,true)">Reorder At</th>' +
-    '<th>Status</th>' +
     '<th>Actions</th>' +
     '</tr></thead><tbody>' +
     S.inventory.map(i => {
-      const low = (i.qty || 0) <= (i.reorder || 0);
-      return '<tr class="' + (low ? 'low-stock-row' : '') + '">' +
+      return '<tr>' +
         '<td>' + esc(i.name) + '</td>' +
         '<td class="muted">' + esc(i.set || '—') + '</td>' +
         '<td><span class="tag tag-blue">' + esc(i.skuType || '—') + '</span></td>' +
-        '<td class="right ' + (low ? 'amber' : '') + '">' + (i.qty || 0) + '</td>' +
+        '<td class="right">' + (i.qty || 0) + '</td>' +
         '<td class="right">' + fmtMoney(i.cost) + '</td>' +
         '<td class="right green">' + fmtMoney(i.sellPrice) + '</td>' +
-        '<td class="right">' + (i.reorder || 0) + '</td>' +
-        '<td>' + (low ? '<span class="tag tag-amber">⚠ Low</span>' : '<span style="color:var(--green);font-size:12px">● OK</span>') + '</td>' +
         '<td>' +
         '<button class="btn btn-secondary btn-sm" onclick="openModal(\'edit-inventory\',\'' + escA(i.id) + '\')">Edit</button> ' +
         '<button class="btn btn-danger btn-sm" onclick="deleteInvItem(\'' + escA(i.id) + '\')">Del</button>' +
