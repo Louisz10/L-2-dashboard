@@ -1460,7 +1460,8 @@ function renderAllSalesTable() {
     feeEst: s.feeEstimated,
     tax:   s.tax,
     net:   s.net,
-    note:  ''
+    note:  '',
+    paymentMethod: s.paymentMethod || 'Card'
   }));
   const cashSales = filteredCashSales().map(s => ({
     _src: 'cash', _id: s.id,
@@ -1504,7 +1505,9 @@ function renderAllSalesTable() {
     '</tr></thead><tbody>' +
     all.map(s => {
       const srcTag = s._src === 'square'
-        ? '<span class="tag tag-blue">Square</span>'
+        ? (s.paymentMethod === 'Cash'
+            ? '<span class="tag tag-amber">Square · Cash</span>'
+            : '<span class="tag tag-blue">Square · Card</span>')
         : '<span class="tag tag-green">Cash</span>';
       const feeCell = s._src === 'square'
         ? fmtMoney(s.fee) + (s.feeEst ? '<span title="Estimated" style="color:var(--text3);font-size:10px;margin-left:3px">est</span>' : '')
@@ -2272,18 +2275,18 @@ function buildCashForm(d) {
 <div class="form-grid">
   <div class="form-row">
     <label class="field-label">Sale Amount ($) *</label>
-    <input type="number" id="cf-amt" value="${d?.amount||''}" placeholder="0.00" step="0.01" min="0" />
+    <input type="number" id="cf-amt" value="${d?.amount||''}" placeholder="0.00" step="0.01" min="0" oninput="(function(){const g=parseFloat(document.getElementById('cf-amt').value)||0;const t=g*${S.taxRate}/(100+${S.taxRate});const el=document.getElementById('cf-net-display');if(el)el.value=g>0?'$'+(g-t).toFixed(2):'';})()" />
   </div>
   <div class="form-row">
-    <label class="field-label">Tax Collected ($) — blank = $0</label>
-    <input type="number" id="cf-tax" placeholder="0.00" step="0.01" min="0" />
+    <label class="field-label">Net (after tax)</label>
+    <input type="text" id="cf-net-display" readonly style="background:var(--bg3);color:var(--green);font-weight:700" placeholder="—" oninput="void(0)" />
   </div>
 </div>
 <div class="form-row">
   <label class="field-label">Notes</label>
   <input type="text" id="cf-notes" value="${escA(d?.notes||'')}" placeholder="e.g. Card show — Milwaukee" />
 </div>
-<p class="text-muted mt8" style="font-size:11px">Tax defaults to $0 for cash sales. Enter an amount if you collected tax.</p>`;
+<p class="text-muted mt8" style="font-size:11px">Tax (${S.taxRate}%) is back-calculated from the sale amount and deducted from your net.</p>`;
 }
 
 const SKU_TYPES = ['Collection Box', 'ETB', 'Booster Bundle', 'Booster Pack', 'Booster Box', 'Tin', 'Other'];
@@ -2393,8 +2396,8 @@ function saveCashSale(editId) {
   if (!cat)    { showFormErr('Description is required.'); return; }
   if (amtRaw === null || amtRaw <= 0) { showFormErr('Enter a valid sale amount.'); return; }
 
-  const taxRaw = vn('cf-tax');
-  const tax    = taxRaw !== null ? taxRaw : 0;
+  // Tax is back-calculated (inclusive) — it's already inside the sale amount
+  const tax = parseFloat((amtRaw * S.taxRate / (100 + S.taxRate)).toFixed(2));
   const dateISO = date + 'T12:00:00Z';
 
   if (src === 'square') {
@@ -2789,6 +2792,8 @@ function importSquareCSV(event) {
       const netCol   = col('net');
       const taxCol   = col('tax');
       const descCol  = col('description') || col('detail') || col('item');
+      const cashCol  = col('cash');
+      const cardCol  = col('card');
 
       if (!dateCol || !grossCol) {
         setInlineError('sq-sync-error',
@@ -2819,13 +2824,16 @@ function importSquareCSV(event) {
         const rawDesc = descCol ? row[descCol]?.trim() : '';
         const items   = parseSqItemDesc(rawDesc, grossRaw);
 
+        const cashAmt = cashCol ? parseMoney(row[cashCol]) : 0;
+        const paymentMethod = cashAmt > 0 ? 'Cash' : 'Card';
+
         S.squareSales.push({
           id, date: dateISO, dateStr: dateISO.slice(0, 10),
           gross: parseFloat(grossRaw.toFixed(2)),
           fee:   parseFloat(fee.toFixed(2)),   feeEstimated: !feeCol,
           tax:   parseFloat(tax.toFixed(2)),
           net:   parseFloat(net.toFixed(2)),
-          items, status: 'COMPLETED'
+          items, status: 'COMPLETED', paymentMethod
         });
         existingIds.add(id);
         imported++;
