@@ -459,7 +459,6 @@ input[type=checkbox].row-cb{width:16px;height:16px;accent-color:var(--accent);cu
       <button class="nav-tab" data-tab="sales" onclick="showTab('sales')">💰 Sales</button>
       <button class="nav-tab" data-tab="inventory" onclick="showTab('inventory')">📦 Inventory</button>
       <button class="nav-tab" data-tab="costs" onclick="showTab('costs')">💸 Costs</button>
-      <button class="nav-tab" data-tab="reports" onclick="showTab('reports')">🖨 Reports</button>
     </div>
     <div class="nav-actions">
       <span id="sync-status"></span>
@@ -519,25 +518,63 @@ input[type=checkbox].row-cb{width:16px;height:16px;accent-color:var(--accent);cu
       <div class="section-header"><span class="section-title">💰 Recent Sales</span></div>
       <div id="ov-recent-sales"></div>
     </div>
-    <div class="two-col" style="margin-top:16px">
-      <div class="section">
-        <div class="section-header"><span class="section-title">🏆 Top Selling Items</span></div>
-        <div id="top-items-table"></div>
+    <div class="section" style="margin-top:16px">
+      <div class="section-header"><span class="section-title">🍩 Revenue by Category</span></div>
+      <div class="section-body" style="display:flex;flex-direction:column;align-items:center">
+        <canvas id="donut-chart" width="220" height="220"></canvas>
+        <div id="donut-legend" class="chart-legend" style="justify-content:center;margin-top:10px"></div>
       </div>
-      <div class="two-col-stack">
-        <div class="section">
-          <div class="section-header"><span class="section-title">🍩 Revenue by Category</span></div>
-          <div class="section-body" style="display:flex;flex-direction:column;align-items:center">
-            <canvas id="donut-chart" width="220" height="220"></canvas>
-            <div id="donut-legend" class="chart-legend" style="justify-content:center;margin-top:10px"></div>
+    </div>
+    <div class="two-col" style="margin-top:16px">
+      <div class="section no-print report-form">
+        <div class="section-header"><span class="section-title">🖨 Generate PDF Report</span></div>
+        <div class="section-body">
+          <div class="form-grid">
+            <div class="form-row">
+              <label class="field-label">Report Period</label>
+              <select id="report-period" onchange="onReportPeriodChange()">
+                <option value="week">This Week</option>
+                <option value="month" selected>This Month</option>
+                <option value="year">This Year</option>
+                <option value="all">All Time</option>
+                <option value="custom">Custom Range</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label class="field-label">Business Name</label>
+              <input type="text" id="report-biz-name" placeholder="Pokemon Card Shop" />
+            </div>
           </div>
+          <div id="report-custom-wrap" style="display:none">
+            <div class="form-grid">
+              <div class="form-row">
+                <label class="field-label">Start Date</label>
+                <input type="date" id="report-start" />
+              </div>
+              <div class="form-row">
+                <label class="field-label">End Date</label>
+                <input type="date" id="report-end" />
+              </div>
+            </div>
+          </div>
+          <button class="btn btn-primary" onclick="generateReport()">🖨 Generate &amp; Print PDF</button>
         </div>
-        <div class="section mt16">
-          <div class="section-header"><span class="section-title">📊 SKU Type Performance</span></div>
-          <div id="sku-perf-table"></div>
+      </div>
+      <div class="section no-print">
+        <div class="section-header"><span class="section-title">💾 Data Backup</span></div>
+        <div class="section-body">
+          <div id="backup-warning" class="alert alert-warning" style="margin-bottom:14px">
+            ⚠ Your data lives in this browser only. Export a backup regularly so you never lose your sales, inventory, or cost records.
+          </div>
+          <div class="flex-gap" style="flex-wrap:wrap">
+            <button class="btn btn-primary" onclick="exportData()">⬇ Export Backup (.json)</button>
+            <button class="btn btn-secondary" onclick="triggerImport()">⬆ Restore from Backup</button>
+          </div>
+          <p class="text-muted mt8" style="font-size:11px">The .json file contains all your cash sales, inventory, costs, and settings. Keep it somewhere safe — Google Drive, iCloud, USB drive.</p>
         </div>
       </div>
     </div>
+    <div id="print-report" style="display:none;margin-top:16px"></div>
   </div>
 
   <!-- ── TAB: SALES ── -->
@@ -647,58 +684,6 @@ input[type=checkbox].row-cb{width:16px;height:16px;accent-color:var(--accent);cu
   </div>
 
   <!-- ── TAB: REPORTS ── -->
-  <div class="tab-content" id="tab-reports">
-    <div class="section no-print report-form" style="max-width:540px">
-      <div class="section-header"><span class="section-title">🖨 Generate PDF Report</span></div>
-      <div class="section-body">
-        <div class="form-grid">
-          <div class="form-row">
-            <label class="field-label">Report Period</label>
-            <select id="report-period" onchange="onReportPeriodChange()">
-              <option value="week">This Week</option>
-              <option value="month" selected>This Month</option>
-              <option value="year">This Year</option>
-              <option value="all">All Time</option>
-              <option value="custom">Custom Range</option>
-            </select>
-          </div>
-          <div class="form-row">
-            <label class="field-label">Business Name</label>
-            <input type="text" id="report-biz-name" placeholder="Pokemon Card Shop" />
-          </div>
-        </div>
-        <div id="report-custom-wrap" style="display:none">
-          <div class="form-grid">
-            <div class="form-row">
-              <label class="field-label">Start Date</label>
-              <input type="date" id="report-start" />
-            </div>
-            <div class="form-row">
-              <label class="field-label">End Date</label>
-              <input type="date" id="report-end" />
-            </div>
-          </div>
-        </div>
-        <button class="btn btn-primary" onclick="generateReport()">🖨 Generate &amp; Print PDF</button>
-      </div>
-    </div>
-
-    <div class="section no-print" style="max-width:540px">
-      <div class="section-header"><span class="section-title">💾 Data Backup</span></div>
-      <div class="section-body">
-        <div id="backup-warning" class="alert alert-warning" style="margin-bottom:14px">
-          ⚠ Your data lives in this browser only. Export a backup regularly so you never lose your sales, inventory, or cost records.
-        </div>
-        <div class="flex-gap" style="flex-wrap:wrap">
-          <button class="btn btn-primary" onclick="exportData()">⬇ Export Backup (.json)</button>
-          <button class="btn btn-secondary" onclick="triggerImport()">⬆ Restore from Backup</button>
-        </div>
-        <p class="text-muted mt8" style="font-size:11px">The .json file contains all your cash sales, inventory, costs, and settings. Keep it somewhere safe — Google Drive, iCloud, USB drive.</p>
-      </div>
-    </div>
-
-    <div id="print-report" style="display:none"></div>
-  </div>
 
 </div><!-- /main-app -->
 
@@ -1200,7 +1185,6 @@ function renderTab(name) {
     case 'sales':     renderSales();      break;
     case 'inventory': renderInventory();  break;
     case 'costs':     renderCosts();      break;
-    case 'reports':   renderReports();    break;
   }
 }
 
