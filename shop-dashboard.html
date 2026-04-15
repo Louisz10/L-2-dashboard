@@ -1347,7 +1347,7 @@ function drawRevenueChart() {
 }
 
 function renderLineChart(ctx, w, h, labels, datasets) {
-  const pad = { top: 16, right: 14, bottom: 38, left: 54 };
+  const pad = { top: 20, right: 14, bottom: 52, left: 62 };
   const cw = w - pad.left - pad.right;
   const ch = h - pad.top - pad.bottom;
 
@@ -1357,33 +1357,59 @@ function renderLineChart(ctx, w, h, labels, datasets) {
   const maxVal  = niceNum(Math.max(...allVals, 1));
   const ticks   = 5;
 
-  // Grid + Y labels
+  // Grid + Y tick labels
   for (let i = 0; i <= ticks; i++) {
     const y = pad.top + ch - (i / ticks) * ch;
-    ctx.strokeStyle = 'rgba(48,54,61,0.8)';
-    ctx.lineWidth   = 1;
+    ctx.strokeStyle = i === 0 ? 'rgba(120,120,140,0.6)' : 'rgba(48,54,61,0.8)';
+    ctx.lineWidth   = i === 0 ? 1.5 : 1;
     ctx.beginPath();
     ctx.moveTo(pad.left, y);
     ctx.lineTo(pad.left + cw, y);
     ctx.stroke();
-    ctx.fillStyle = '#6e7681';
+    ctx.fillStyle = '#9090a8';
     ctx.font = '10px sans-serif';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
-    ctx.fillText('$' + shortNum(maxVal * i / ticks), pad.left - 4, y);
+    ctx.fillText('$' + shortNum(maxVal * i / ticks), pad.left - 6, y);
   }
 
-  // X labels
+  // Y-axis line
+  ctx.strokeStyle = 'rgba(120,120,140,0.6)';
+  ctx.lineWidth   = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(pad.left, pad.top);
+  ctx.lineTo(pad.left, pad.top + ch);
+  ctx.stroke();
+
+  // Y-axis title
+  ctx.save();
+  ctx.translate(12, pad.top + ch / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillStyle = '#9090a8';
+  ctx.font = 'bold 10px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('Revenue ($)', 0, 0);
+  ctx.restore();
+
+  // X tick labels
   const step = Math.max(1, Math.ceil(labels.length / 9));
-  ctx.fillStyle    = '#6e7681';
+  ctx.fillStyle    = '#9090a8';
   ctx.font         = '10px sans-serif';
   ctx.textAlign    = 'center';
   ctx.textBaseline = 'top';
   labels.forEach((lbl, i) => {
     if (i % step !== 0 && i !== labels.length - 1) return;
     const x = pad.left + (labels.length < 2 ? cw/2 : i / (labels.length - 1) * cw);
-    ctx.fillText(lbl, x, h - pad.bottom + 6);
+    ctx.fillText(lbl, x, pad.top + ch + 6);
   });
+
+  // X-axis title
+  ctx.fillStyle = '#9090a8';
+  ctx.font = 'bold 10px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'bottom';
+  ctx.fillText('Date', pad.left + cw / 2, h - 2);
 
   // Dataset lines + fill
   datasets.forEach(ds => {
