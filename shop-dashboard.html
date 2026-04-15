@@ -2451,10 +2451,12 @@ function saveSinglesSet(editId) {
 }
 
 function saveCost(editId) {
-  const date = v('cost-date'), name = v('cost-name'), amtRaw = vn('cost-amt');
-  if (!date) { showFormErr('Date is required.'); return; }
+  const dateRaw = v('cost-date'), name = v('cost-name'), amtRaw = vn('cost-amt');
+  if (!dateRaw) { showFormErr('Date is required.'); return; }
   if (!name) { showFormErr('Expense name is required.'); return; }
   if (amtRaw === null || amtRaw <= 0) { showFormErr('Enter a valid amount.'); return; }
+
+  const date = dateRaw + 'T12:00:00Z';
 
   if (editId) {
     const idx = S.costs.findIndex(x => x.id === editId);
