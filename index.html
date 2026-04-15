@@ -1031,25 +1031,32 @@ function setSyncBtnLoading(on) {
 function getDateRange() {
   const now = new Date();
   let start, end;
-  end = new Date(now);
-  end.setHours(23, 59, 59, 999);
+  // Default end: far future so pre-paid/future-dated entries always show
+  end = new Date('2099-12-31T23:59:59');
 
   switch (S.period) {
     case 'today':
       start = new Date(now);
       start.setHours(0, 0, 0, 0);
+      end = new Date(now);
+      end.setHours(23, 59, 59, 999);
       break;
     case 'week': {
       start = new Date(now);
       start.setDate(now.getDate() - now.getDay());
       start.setHours(0, 0, 0, 0);
+      end = new Date(now);
+      end.setDate(now.getDate() - now.getDay() + 6);
+      end.setHours(23, 59, 59, 999);
       break;
     }
     case 'month':
       start = new Date(now.getFullYear(), now.getMonth(), 1);
+      end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
       break;
     case 'year':
       start = new Date(now.getFullYear(), 0, 1);
+      end = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
       break;
     case 'all':
       start = new Date('2000-01-01');
@@ -1060,6 +1067,7 @@ function getDateRange() {
       break;
     default:
       start = new Date(now.getFullYear(), now.getMonth(), 1);
+      end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
   }
   return { start, end };
 }
