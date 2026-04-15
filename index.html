@@ -1331,15 +1331,15 @@ function drawRevenueChart() {
 
   const ctx = canvas.getContext('2d');
   renderBarChart(ctx, canvas.width, canvas.height, labels, [
-    { label: 'Square', data: sqVals,   color: '#e02020' },
-    { label: 'Cash',   data: cashVals, color: '#3fb950' }
+    { label: 'Square', data: sqVals,   color: '#1a7a40' },
+    { label: 'Cash',   data: cashVals, color: '#5ddb8a' }
   ]);
 
   const legend = document.getElementById('revenue-legend');
   if (legend) {
     legend.innerHTML = [
-      { l: 'Square', c: '#e02020' },
-      { l: 'Cash',   c: '#3fb950' }
+      { l: 'Square', c: '#1a7a40' },
+      { l: 'Cash',   c: '#5ddb8a' }
     ].map(x => '<div class="legend-item"><div class="legend-dot" style="background:' + x.c + '"></div>' + x.l + '</div>').join('');
   }
 }
