@@ -406,7 +406,7 @@ input[type=checkbox].row-cb{width:16px;height:16px;accent-color:var(--accent);cu
   nav,.date-bar,.no-print,#date-bar{display:none!important}
   body{background:#fff!important;color:#000!important;font-size:11pt}
   .tab-content{display:none!important;padding:0}
-  #tab-reports{display:block!important}
+  #tab-overview{display:block!important}
   .report-form{display:none!important}
   #print-report{display:block!important}
   .print-only{display:block!important}
@@ -1252,10 +1252,7 @@ function renderOverview() {
     }
   }
 
-  // Analytics sections now live in Overview
-  renderTopItems();
   renderDonutChart();
-  renderSkuPerf();
 }
 
 // ============================================================
@@ -1265,9 +1262,19 @@ function drawRevenueChart() {
   const canvas = document.getElementById('revenue-chart');
   if (!canvas) return;
 
-  const { start, end } = getDateRange();
-  const sqSales = filteredSqSales();
+  let { start, end } = getDateRange();
+  const sqSales   = filteredSqSales();
   const cashSales = filteredCashSales();
+
+  // For "all time", derive range from actual data instead of 2000–2099
+  if (S.period === 'all') {
+    const allDates = [...sqSales.map(s => s.date), ...cashSales.map(s => s.date)].filter(Boolean).map(d => new Date(d));
+    if (!allDates.length) { canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height); return; }
+    start = new Date(Math.min(...allDates));
+    end   = new Date(Math.max(...allDates));
+    start.setHours(0,0,0,0);
+    end.setHours(23,59,59,999);
+  }
 
   // Build day list
   const days = [];
@@ -1574,40 +1581,6 @@ function renderSealedTable() {
     '</tbody></table></div>';
 }
 
-function renderSinglesTable() {
-  const el = document.getElementById('singles-inv-table');
-  if (!el) return;
-
-  if (!S.singles.length) {
-    el.innerHTML = emptyHTML('No singles sets tracked', 'Click "+ Add Set" to track a set\'s singles inventory by category total.');
-    return;
-  }
-
-  el.innerHTML = '<div class="table-wrap"><table id="singles-tbl">' +
-    '<thead><tr>' +
-    '<th onclick="sortTable(\'singles-tbl\',0)">Set Name</th>' +
-    '<th onclick="sortTable(\'singles-tbl\',1,true)">Cards In Stock</th>' +
-    '<th onclick="sortTable(\'singles-tbl\',2,true)">Avg Cost/Card</th>' +
-    '<th onclick="sortTable(\'singles-tbl\',3,true)">Avg Sell Price</th>' +
-    '<th onclick="sortTable(\'singles-tbl\',4,true)">Total Cost Basis</th>' +
-    '<th onclick="sortTable(\'singles-tbl\',5,true)">Est. Retail Value</th>' +
-    '<th>Actions</th>' +
-    '</tr></thead><tbody>' +
-    S.singles.map(s =>
-      '<tr>' +
-      '<td>' + esc(s.set) + '</td>' +
-      '<td class="right">' + (s.count || 0) + '</td>' +
-      '<td class="right">' + fmtMoney(s.avgCost) + '</td>' +
-      '<td class="right green">' + fmtMoney(s.avgSell) + '</td>' +
-      '<td class="right">' + fmtMoney((s.count || 0) * (s.avgCost || 0)) + '</td>' +
-      '<td class="right accent">' + fmtMoney((s.count || 0) * (s.avgSell || 0)) + '</td>' +
-      '<td>' +
-      '<button class="btn btn-secondary btn-sm" onclick="openModal(\'edit-singles\',\'' + escA(s.id) + '\')">Edit</button> ' +
-      '<button class="btn btn-danger btn-sm" onclick="deleteSinglesSet(\'' + escA(s.id) + '\')">Del</button>' +
-      '</td></tr>'
-    ).join('') +
-    '</tbody></table></div>';
-}
 
 
 function buildItemMap() {
@@ -1665,63 +1638,6 @@ function buildSetMap() {
   return Object.values(map).sort((a, b) => b.revenue - a.revenue);
 }
 
-let _topItemsSort = 'revenue'; // 'revenue' | 'units'
-let _topSetsSort  = 'revenue';
-
-function setTopItemsSort(by) {
-  _topItemsSort = by;
-  renderTopItems();
-}
-
-function setTopSetsSort(by) {
-  _topSetsSort = by;
-  renderTopSets();
-}
-
-function _sortHdr(label, by, current, fn) {
-  const active = by === current;
-  return '<th class="right" style="cursor:pointer;user-select:none;white-space:nowrap" onclick="' + fn + '(\'' + by + '\')">' +
-    label + (active ? ' <span style="color:var(--accent)">▼</span>' : ' <span style="color:var(--text3);font-size:10px">⇅</span>') +
-    '</th>';
-}
-
-function renderTopItems() {
-  const el = document.getElementById('top-items-table');
-  if (!el) return;
-  const all = buildItemMap(); // already sorted by revenue from buildItemMap
-  const items = (all.slice().sort((a, b) => _topItemsSort === 'units' ? b.units - a.units : b.revenue - a.revenue)).slice(0, 15);
-  if (!items.length) { el.innerHTML = emptyHTML('No sales data', 'Sync Square or add cash sales to see top items.'); return; }
-  el.innerHTML = '<div class="table-wrap"><table>' +
-    '<thead><tr><th>#</th><th>Item</th>' +
-    _sortHdr('Units', 'units', _topItemsSort, 'setTopItemsSort') +
-    _sortHdr('Revenue', 'revenue', _topItemsSort, 'setTopItemsSort') +
-    '<th>Source</th></tr></thead><tbody>' +
-    items.map((it, i) =>
-      '<tr><td class="muted">' + (i+1) + '</td>' +
-      '<td>' + esc(it.name) + '</td>' +
-      '<td class="right' + (_topItemsSort === 'units' ? ' accent' : '') + '">' + it.units + '</td>' +
-      '<td class="right' + (_topItemsSort === 'revenue' ? ' green' : '') + '">' + fmtMoney(it.revenue) + '</td>' +
-      '<td><span class="tag ' + (it.src === 'Square' ? 'tag-blue' : it.src === 'Both' ? 'tag-amber' : 'tag-green') + '">' + it.src + '</span></td></tr>'
-    ).join('') + '</tbody></table></div>';
-}
-
-function renderTopSets() {
-  const el = document.getElementById('top-sets-table');
-  if (!el) return;
-  const sets = (buildSetMap().slice().sort((a, b) => _topSetsSort === 'units' ? b.units - a.units : b.revenue - a.revenue)).slice(0, 10);
-  if (!sets.length) { el.innerHTML = emptyHTML('No set data', 'Add inventory with set names to see set performance.'); return; }
-  el.innerHTML = '<div class="table-wrap"><table>' +
-    '<thead><tr><th>#</th><th>Set Name</th>' +
-    _sortHdr('Units', 'units', _topSetsSort, 'setTopSetsSort') +
-    _sortHdr('Revenue', 'revenue', _topSetsSort, 'setTopSetsSort') +
-    '</tr></thead><tbody>' +
-    sets.map((s, i) =>
-      '<tr><td class="muted">' + (i+1) + '</td>' +
-      '<td>' + esc(s.set) + '</td>' +
-      '<td class="right' + (_topSetsSort === 'units' ? ' accent' : '') + '">' + s.units + '</td>' +
-      '<td class="right' + (_topSetsSort === 'revenue' ? ' green' : '') + '">' + fmtMoney(s.revenue) + '</td></tr>'
-    ).join('') + '</tbody></table></div>';
-}
 
 function renderDonutChart() {
   const canvas = document.getElementById('donut-chart');
@@ -1794,114 +1710,6 @@ function renderDonutChart() {
   }
 }
 
-function renderSkuPerf() {
-  const el = document.getElementById('sku-perf-table');
-  if (!el) return;
-  const map = {};
-
-  const getSku = name => {
-    if (!name) return null;
-    const inv = S.inventory.find(i => i.name && i.name.toLowerCase() === name.toLowerCase());
-    return inv ? inv.skuType : null;
-  };
-
-  filteredSqSales().forEach(sale => {
-    (sale.items || []).forEach(item => {
-      const sku = getSku(item.name);
-      if (!sku) return;
-      if (!map[sku]) map[sku] = { type: sku, revenue: 0, units: 0 };
-      map[sku].revenue += item.price || 0;
-      map[sku].units   += item.qty || 1;
-    });
-  });
-  filteredCashSales().forEach(sale => {
-    const sku = getSku(sale.category);
-    if (!sku) return;
-    if (!map[sku]) map[sku] = { type: sku, revenue: 0, units: 0 };
-    map[sku].revenue += sale.amount || 0;
-    map[sku].units   += 1;
-  });
-
-  const rows = Object.values(map).sort((a, b) => b.revenue - a.revenue);
-  if (!rows.length) {
-    el.innerHTML = emptyHTML('No SKU data yet', 'Inventory items with SKU types and matching sales will appear here.');
-    return;
-  }
-
-  const totalRev = rows.reduce((s, r) => s + r.revenue, 0);
-  el.innerHTML = '<div class="table-wrap"><table>' +
-    '<thead><tr><th>SKU Type</th><th class="right">Revenue</th><th class="right">% of Total</th><th class="right">Units</th></tr></thead><tbody>' +
-    rows.map(r =>
-      '<tr><td><span class="tag tag-blue">' + esc(r.type) + '</span></td>' +
-      '<td class="right green">' + fmtMoney(r.revenue) + '</td>' +
-      '<td class="right">' + fmtPct(totalRev ? r.revenue/totalRev*100 : 0) + '</td>' +
-      '<td class="right">' + r.units + '</td></tr>'
-    ).join('') + '</tbody></table></div>';
-}
-
-function renderMarginTable() {
-  const el = document.getElementById('margin-table');
-  if (!el) return;
-  const items = S.inventory.filter(i => (i.cost || 0) > 0 && (i.sellPrice || 0) > 0);
-  if (!items.length) {
-    el.innerHTML = emptyHTML('No margin data', 'Add inventory items with both cost and sell price to see margins.');
-    return;
-  }
-  const sorted = items.map(i => ({
-    ...i,
-    margin: ((i.sellPrice - i.cost) / i.sellPrice) * 100,
-    profit: i.sellPrice - i.cost
-  })).sort((a, b) => b.margin - a.margin);
-
-  el.innerHTML = '<div class="table-wrap"><table>' +
-    '<thead><tr>' +
-    '<th>Item Name</th><th>Set</th><th>SKU</th>' +
-    '<th class="right">Cost</th><th class="right">Sell Price</th>' +
-    '<th class="right">Profit/Unit</th><th class="right">Margin %</th>' +
-    '</tr></thead><tbody>' +
-    sorted.map(i => {
-      const mc = i.margin >= 30 ? 'green' : i.margin >= 15 ? 'amber' : 'red';
-      return '<tr>' +
-        '<td>' + esc(i.name) + '</td>' +
-        '<td class="muted">' + esc(i.set || '—') + '</td>' +
-        '<td><span class="tag tag-blue">' + esc(i.skuType || '—') + '</span></td>' +
-        '<td class="right">' + fmtMoney(i.cost) + '</td>' +
-        '<td class="right green">' + fmtMoney(i.sellPrice) + '</td>' +
-        '<td class="right ' + (i.profit >= 0 ? 'green' : 'red') + '">' + fmtMoney(i.profit) + '</td>' +
-        '<td class="right ' + mc + '">' + fmtPct(i.margin) + '</td></tr>';
-    }).join('') + '</tbody></table></div>';
-}
-
-function renderSinglesPerf() {
-  const el = document.getElementById('singles-perf-table');
-  if (!el) return;
-  if (!S.singles.length) {
-    el.innerHTML = emptyHTML('No singles data', 'Add singles inventory sets in the Inventory tab.');
-    return;
-  }
-  const rows = S.singles.map(s => ({
-    ...s,
-    totalCost:  (s.count || 0) * (s.avgCost || 0),
-    totalValue: (s.count || 0) * (s.avgSell || 0),
-    potProfit:  (s.count || 0) * ((s.avgSell || 0) - (s.avgCost || 0))
-  }));
-
-  el.innerHTML = '<div class="table-wrap"><table>' +
-    '<thead><tr>' +
-    '<th>Set Name</th><th class="right">Cards</th><th class="right">Avg Cost</th>' +
-    '<th class="right">Avg Sell</th><th class="right">Total Cost Basis</th>' +
-    '<th class="right">Est. Retail Value</th><th class="right">Potential Profit</th>' +
-    '</tr></thead><tbody>' +
-    rows.map(r =>
-      '<tr><td>' + esc(r.set) + '</td>' +
-      '<td class="right">' + (r.count || 0) + '</td>' +
-      '<td class="right">' + fmtMoney(r.avgCost) + '</td>' +
-      '<td class="right green">' + fmtMoney(r.avgSell) + '</td>' +
-      '<td class="right">' + fmtMoney(r.totalCost) + '</td>' +
-      '<td class="right accent">' + fmtMoney(r.totalValue) + '</td>' +
-      '<td class="right ' + (r.potProfit >= 0 ? 'green' : 'red') + '">' + fmtMoney(r.potProfit) + '</td></tr>'
-    ).join('') + '</tbody></table></div>';
-}
 
 // ============================================================
 // RENDER: COSTS
@@ -1959,10 +1767,6 @@ function renderCosts() {
 // ============================================================
 // RENDER: REPORTS
 // ============================================================
-function renderReports() {
-  const nameEl = document.getElementById('report-biz-name');
-  if (nameEl) nameEl.value = S.businessName;
-}
 
 function onReportPeriodChange() {
   const val = document.getElementById('report-period')?.value;
@@ -2239,7 +2043,7 @@ function closeModalIfOutside(e) {
 // FORM BUILDERS
 // ============================================================
 function buildCashForm(d) {
-  const dateVal = d ? d.date.slice(0,10) : todayISO();
+  const dateVal = d ? (d.date || '').slice(0,10) : todayISO();
   return `
 <div id="form-err" class="alert alert-error" style="display:none"></div>
 <div class="form-grid">
@@ -2342,7 +2146,7 @@ function buildSinglesForm(d) {
 }
 
 function buildCostForm(d) {
-  const dateVal = d ? d.date.slice(0,10) : todayISO();
+  const dateVal = d ? (d.date || '').slice(0,10) : todayISO();
   return `
 <div id="form-err" class="alert alert-error" style="display:none"></div>
 <div class="form-grid">
@@ -3391,7 +3195,7 @@ function deleteSelected(section) {
 // ============================================================
 
 function buildSqSaleEditForm(s) {
-  const dateVal  = s ? s.date.slice(0,10) : todayISO();
+  const dateVal  = s ? (s.date || '').slice(0,10) : todayISO();
   const desc     = s ? (s.description || (s.items && s.items.length ? s.items.map(i => i.name + (i.qty > 1 ? ' ×'+i.qty : '')).join(', ') : '')) : '';
   const gross    = s ? s.gross : '';
   const fee      = s ? s.fee   : '';
