@@ -2602,6 +2602,7 @@ function importSquareCSV(event) {
       const descCol  = col('description') || col('detail') || col('item');
       const cashCol  = col('cash');
       const cardCol  = col('card');
+      const txIdCol  = col('transaction id') || col('payment id') || col('transaction_id') || col('payment_id');
 
       if (!dateCol || !grossCol) {
         setInlineError('sq-sync-error',
@@ -2617,7 +2618,11 @@ function importSquareCSV(event) {
         const grossRaw = parseMoney(row[grossCol]);
         if (!dateRaw || isNaN(grossRaw) || grossRaw <= 0) { skipped++; return; }
 
-        const id = 'csv_' + dateRaw.replace(/\W/g,'') + '_' + grossRaw.toFixed(2).replace('.','') + '_' + idx;
+        // Use Square's own Transaction ID when available — stable across exports
+        const sqTxId = txIdCol ? row[txIdCol]?.trim() : '';
+        const id = sqTxId
+          ? 'csv_' + sqTxId.replace(/\W/g,'')
+          : 'csv_' + dateRaw.replace(/\W/g,'') + '_' + grossRaw.toFixed(2).replace('.','');
 
         const fee = feeCol ? Math.abs(parseMoney(row[feeCol])) : parseFloat((grossRaw * 0.026 + 0.15).toFixed(2));
         const tax = taxCol ? Math.abs(parseMoney(row[taxCol])) : 0;
@@ -2638,13 +2643,18 @@ function importSquareCSV(event) {
           effectiveNet = parseFloat((grossRaw - effectiveTax).toFixed(2));
         }
 
-        const existing = S.squareSales.find(s => s.id === id);
+        // Match by exact ID, or by old idx-suffixed ID, or by date+amount fuzzy match
+        const existing = S.squareSales.find(s =>
+          s.id === id ||
+          s.id.startsWith(id + '_') ||
+          (s.date?.slice(0,10) === dateISO.slice(0,10) && Math.abs((s.gross||0) - grossRaw) < 0.01 && s.source !== 'manual')
+        );
         if (existing) {
+          existing.id = id; // upgrade to stable ID
           existing.paymentMethod = paymentMethod;
           existing.tax = effectiveTax;
           existing.fee = effectiveFee;
           existing.net = effectiveNet;
-          if (paymentMethod === 'Card' && !existing.feeEstimated && feeCol) existing.fee = parseFloat(fee.toFixed(2));
           updated++;
           return;
         }
