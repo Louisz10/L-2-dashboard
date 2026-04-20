@@ -2749,6 +2749,7 @@ function importSquareInventory(event) {
       }
 
       let added = 0, updated = 0, skipped = 0;
+      const csvNames = new Set();
 
       rows.forEach(row => {
         const name = row[nameCol]?.trim();
@@ -2761,6 +2762,7 @@ function importSquareInventory(event) {
           ? qtyCols.reduce((sum, c) => sum + parseQty(row[c]), 0)
           : (stockCol ? parseQty(row[stockCol]) : 0);
         const skuType  = detectSkuType(name, category);
+        csvNames.add(name.toLowerCase().trim());
 
         // Match by name (case-insensitive) — update if exists, add if new
         const existing = S.inventory.find(i => i.name && i.name.toLowerCase().trim() === name.toLowerCase());
@@ -2791,16 +2793,32 @@ function importSquareInventory(event) {
         }
       });
 
+      // Prune inventory: delete items not in CSV, or items in CSV with qty=0.
+      // Manual-count items and items that were just added by this import are exempt.
+      const deletedNames = [];
+      S.inventory = S.inventory.filter(i => {
+        if (i.manualCount) return true;
+        const key = (i.name || '').toLowerCase().trim();
+        const inCsv = csvNames.has(key);
+        const shouldDelete = !inCsv || (i.qty || 0) <= 0;
+        if (shouldDelete) deletedNames.push(i.name);
+        return !shouldDelete;
+      });
+      const deleted = deletedNames.length;
+
       saveState();
       updateLowStockBadge();
       renderInventory();
 
       if (statusEl) {
+        const deletedList = deleted
+          ? `<br><span style="color:var(--red);font-size:12px"><strong>${deleted}</strong> deleted:</span> <span style="color:var(--text2);font-size:12px">${deletedNames.map(esc).join(', ')}</span>`
+          : '';
         statusEl.innerHTML = `<div class="alert" style="background:rgba(0,230,118,0.1);border-color:var(--green);color:var(--green);margin:12px 18px;font-size:13px">
-          ✅ Import complete — <strong>${added}</strong> item(s) added, <strong>${updated}</strong> updated, <strong>${skipped}</strong> skipped.
+          ✅ Import complete — <strong>${added}</strong> added, <strong>${updated}</strong> updated, <strong>${skipped}</strong> skipped.${deletedList}
           ${added ? '<br><span style="color:var(--text2);font-size:12px">Tip: fill in the Cost column manually for profit margin tracking.</span>' : ''}
         </div>`;
-        setTimeout(() => { if (statusEl) statusEl.innerHTML = ''; }, 6000);
+        setTimeout(() => { if (statusEl) statusEl.innerHTML = ''; }, 10000);
       }
     } catch(err) {
       if (statusEl) statusEl.innerHTML = '<div class="alert alert-error" style="margin:12px 18px">Error reading file: ' + esc(err.message) + '</div>';
