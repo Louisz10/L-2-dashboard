@@ -1581,8 +1581,9 @@ function renderSealedTable() {
     '<th>Actions</th>' +
     '</tr></thead><tbody>' +
     S.inventory.map(i => {
+      const manualBadge = i.manualCount ? ' <span title="Manual count — skipped on Square import" style="color:var(--red);margin-left:4px">📌</span>' : '';
       return '<tr>' +
-        '<td>' + esc(i.name) + '</td>' +
+        '<td>' + esc(i.name) + manualBadge + '</td>' +
         '<td class="muted">' + esc(i.set || '—') + '</td>' +
         '<td><span class="tag tag-blue">' + esc(i.skuType || '—') + '</span></td>' +
         '<td class="right">' + (i.qty || 0) + '</td>' +
@@ -2133,6 +2134,12 @@ function buildInvForm(d) {
     <label class="field-label">Sell Price ($) *</label>
     <input type="number" id="if-sell" value="${d?.sellPrice??''}" placeholder="0.00" step="0.01" min="0" />
   </div>
+</div>
+<div class="form-row" style="margin-top:10px;padding:10px 12px;background:rgba(224,32,32,0.08);border:1px solid rgba(224,32,32,0.3);border-radius:6px">
+  <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
+    <input type="checkbox" id="if-manual" ${d?.manualCount ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer" />
+    <span><strong>📌 Manual count</strong> — skip this item when importing from Square CSV (preserves qty &amp; price)</span>
+  </label>
 </div>`;
 }
 
@@ -2236,12 +2243,14 @@ function saveInvItem(editId) {
   if (sell === null) { showFormErr('Sell price is required.'); return; }
 
   const reorderRaw = vn('if-reorder');
+  const manualCount = document.getElementById('if-manual')?.checked || false;
   const item = {
     id: editId || genId(),
     name, set: v('if-set'), skuType: sku,
     qty: Math.max(0, Math.round(qty)),
     reorder: reorderRaw !== null ? Math.max(0, Math.round(reorderRaw)) : 0,
-    cost, sellPrice: sell
+    cost, sellPrice: sell,
+    manualCount
   };
 
   if (editId) {
@@ -2756,11 +2765,17 @@ function importSquareInventory(event) {
         // Match by name (case-insensitive) — update if exists, add if new
         const existing = S.inventory.find(i => i.name && i.name.toLowerCase().trim() === name.toLowerCase());
         if (existing) {
-          if (priceCol) existing.sellPrice = price;
-          if (qtyCols.length || stockCol) existing.qty = stock;
-          if (catCol && category) existing.set = existing.set || category;
-          if (skuType !== 'Other') existing.skuType = skuType;
-          updated++;
+          if (existing.manualCount) {
+            // Manually-tracked item: preserve qty and price, only update metadata
+            if (catCol && category) existing.set = existing.set || category;
+            skipped++;
+          } else {
+            if (priceCol) existing.sellPrice = price;
+            if (qtyCols.length || stockCol) existing.qty = stock;
+            if (catCol && category) existing.set = existing.set || category;
+            if (skuType !== 'Other') existing.skuType = skuType;
+            updated++;
+          }
         } else {
           S.inventory.push({
             id: genId(),
