@@ -34,8 +34,8 @@
 body{
   background:var(--bg0);
   background-image:
-    radial-gradient(circle at 15% 20%, rgba(224,32,32,0.08) 0%, transparent 45%),
-    radial-gradient(circle at 85% 80%, rgba(255,255,255,0.03) 0%, transparent 45%);
+  radial-gradient(circle at 15% 20%, rgba(224,32,32,0.08) 0%, transparent 45%),
+  radial-gradient(circle at 85% 80%, rgba(255,255,255,0.03) 0%, transparent 45%);
   color:var(--text);
   font-family:'Nunito','Segoe UI',Roboto,sans-serif;
   font-size:14px;
@@ -422,29 +422,29 @@ input[type=checkbox].row-cb{width:16px;height:16px;accent-color:var(--accent);cu
 <!-- ═══════════════════════════ SETUP ═══════════════════════════ -->
 <div id="setup-screen">
   <div class="setup-box">
-    <div class="setup-logo">🎴</div>
-    <h1>Pokemon Card Shop Dashboard</h1>
-    <p class="subtitle">Track your card shop revenue, inventory, and costs. Import Square sales via CSV, log cash sales manually, and export PDF reports.</p>
-    <div class="setup-step">
-      <div class="setup-num">1</div>
-      <p>Enter your business name below — used on PDF reports.</p>
-    </div>
-    <div class="setup-step">
-      <div class="setup-num">2</div>
-      <p>After setup, import your Square sales from <a href="https://squareup.com/dashboard/sales/transactions" target="_blank" style="color:var(--accent);font-weight:800">squareup.com/dashboard/sales/transactions</a> → set date range → Export → Transactions CSV.</p>
-    </div>
-    <div class="setup-step">
-      <div class="setup-num">3</div>
-      <p>Log cash sales manually in the <strong>Sales</strong> tab. All data is saved in your browser.</p>
-    </div>
-    <hr class="divider">
-    <div class="form-row">
-      <label class="field-label">Business Name</label>
-      <input type="text" id="setup-biz-name" placeholder="Pokemon Card Shop" style="margin-bottom:10px" />
-      <div class="flex-gap" style="margin-top:12px">
-        <button class="btn btn-primary" onclick="finishSetup()">🚀 Get Started</button>
-      </div>
-    </div>
+  <div class="setup-logo"></div>
+  <h1>Pokemon Card Shop Dashboard</h1>
+  <p class="subtitle">Track your card shop revenue, inventory, and costs. Import Square sales via CSV, log cash sales manually, and export PDF reports.</p>
+  <div class="setup-step">
+  <div class="setup-num">1</div>
+  <p>Enter your business name below — used on PDF reports.</p>
+  </div>
+  <div class="setup-step">
+  <div class="setup-num">2</div>
+  <p>After setup, import your Square sales from <a href="https://squareup.com/dashboard/sales/transactions" target="_blank" style="color:var(--accent);font-weight:800">squareup.com/dashboard/sales/transactions</a> → set date range → Export → Transactions CSV.</p>
+  </div>
+  <div class="setup-step">
+  <div class="setup-num">3</div>
+  <p>Log cash sales manually in the <strong>Sales</strong> tab. All data is saved in your browser.</p>
+  </div>
+  <hr class="divider">
+  <div class="form-row">
+  <label class="field-label">Business Name</label>
+  <input type="text" id="setup-biz-name" placeholder="Pokemon Card Shop" style="margin-bottom:10px" />
+  <div class="flex-gap" style="margin-top:12px">
+  <button class="btn btn-primary" onclick="finishSetup()">Get Started</button>
+  </div>
+  </div>
   </div>
 </div>
 
@@ -453,255 +453,265 @@ input[type=checkbox].row-cb{width:16px;height:16px;accent-color:var(--accent);cu
 
   <!-- NAV -->
   <nav id="nav">
-    <div class="nav-logo">🎴 PokéShop</div>
-    <div class="nav-tabs">
-      <button class="nav-tab active" data-tab="overview" onclick="showTab('overview')">📊 Overview</button>
-      <button class="nav-tab" data-tab="sales" onclick="showTab('sales')">💰 Sales</button>
-      <button class="nav-tab" data-tab="inventory" onclick="showTab('inventory')">📦 Inventory</button>
-      <button class="nav-tab" data-tab="costs" onclick="showTab('costs')">💸 Costs</button>
-    </div>
-    <div class="nav-actions">
-      <span id="sync-status"></span>
-      <button class="btn btn-secondary btn-sm" onclick="openPasteModal()">📋 Paste from Excel</button>
-      <div class="settings-wrap">
-        <button class="btn btn-secondary btn-sm btn-icon" onclick="toggleSettings(event)" title="Settings">⚙</button>
-        <div class="settings-panel" id="settings-panel">
-          <div class="settings-item" style="gap:8px">
-            <span>WI Tax Rate</span>
-            <div class="flex-gap" style="gap:4px">
-              <input type="number" id="global-tax-rate" style="width:55px;text-align:right;-webkit-appearance:textfield;-moz-appearance:textfield;appearance:textfield" step="any" min="0" max="30" onchange="updateTaxRate(this.value)" />
-              <span class="text-muted">%</span>
-            </div>
-          </div>
-          <div class="settings-item">
-            <button class="link" onclick="exportData()" style="color:var(--green)">⬇ Export Backup (.json)</button>
-          </div>
-          <div class="settings-item">
-            <button class="link" onclick="triggerImport()" style="color:var(--blue)">⬆ Import Backup (.json)</button>
-            <input type="file" id="import-file-input" accept=".json" style="display:none" onchange="importData(event)" />
-          </div>
-          <div class="settings-item">
-            <button class="link danger" onclick="clearAllData()" style="font-size:12px">Clear All Local Data</button>
-          </div>
-        </div>
-      </div>
-    </div>
+  <div class="nav-logo">PokéShop</div>
+  <div class="nav-tabs">
+  <button class="nav-tab active" data-tab="overview" onclick="showTab('overview')">Overview</button>
+  <button class="nav-tab" data-tab="sales" onclick="showTab('sales')">Sales</button>
+  <button class="nav-tab" data-tab="inventory" onclick="showTab('inventory')">Inventory</button>
+  <button class="nav-tab" data-tab="costs" onclick="showTab('costs')">Costs</button>
+  </div>
+  <div class="nav-actions">
+  <span id="sync-status"></span>
+  <button class="btn btn-secondary btn-sm" onclick="openPasteModal()">Paste from Excel</button>
+  <div class="settings-wrap">
+  <button class="btn btn-secondary btn-sm btn-icon" onclick="toggleSettings(event)" title="Settings"></button>
+  <div class="settings-panel" id="settings-panel">
+  <div class="settings-item" style="gap:8px">
+  <span>WI Tax Rate</span>
+  <div class="flex-gap" style="gap:4px">
+  <input type="number" id="global-tax-rate" style="width:55px;text-align:right;-webkit-appearance:textfield;-moz-appearance:textfield;appearance:textfield" step="any" min="0" max="30" onchange="updateTaxRate(this.value)" />
+  <span class="text-muted">%</span>
+  </div>
+  </div>
+  <div class="settings-item">
+  <button class="link" onclick="exportData()" style="color:var(--green)">⬇ Export Backup (.json)</button>
+  </div>
+  <div class="settings-item">
+  <button class="link" onclick="triggerImport()" style="color:var(--blue)">⬆ Import Backup (.json)</button>
+  <input type="file" id="import-file-input" accept=".json" style="display:none" onchange="importData(event)" />
+  </div>
+  <div class="settings-item">
+  <button class="link danger" onclick="clearAllData()" style="font-size:12px">Clear All Local Data</button>
+  </div>
+  </div>
+  </div>
+  </div>
   </nav>
 
   <!-- DATE BAR -->
   <div class="date-bar" id="date-bar">
-    <span class="date-bar-label">Period:</span>
-    <button class="dpbtn" data-p="today" onclick="setPeriod('today')">Today</button>
-    <button class="dpbtn" data-p="week" onclick="setPeriod('week')">This Week</button>
-    <button class="dpbtn active" data-p="month" onclick="setPeriod('month')">This Month</button>
-    <button class="dpbtn" data-p="year" onclick="setPeriod('year')">This Year</button>
-    <button class="dpbtn" data-p="all" onclick="setPeriod('all')">All Time</button>
-    <button class="dpbtn" data-p="custom" onclick="setPeriod('custom')">Custom ▾</button>
-    <div class="custom-dates" id="custom-date-inputs">
-      <input type="date" id="custom-start" style="width:140px" onchange="applyCustomDates()" />
-      <span class="text-muted">→</span>
-      <input type="date" id="custom-end" style="width:140px" onchange="applyCustomDates()" />
-    </div>
+  <span class="date-bar-label">Period:</span>
+  <button class="dpbtn" data-p="today" onclick="setPeriod('today')">Today</button>
+  <button class="dpbtn" data-p="week" onclick="setPeriod('week')">This Week</button>
+  <button class="dpbtn active" data-p="month" onclick="setPeriod('month')">This Month</button>
+  <button class="dpbtn" data-p="year" onclick="setPeriod('year')">This Year</button>
+  <button class="dpbtn" data-p="all" onclick="setPeriod('all')">All Time</button>
+  <button class="dpbtn" data-p="custom" onclick="setPeriod('custom')">Custom ▾</button>
+  <div class="custom-dates" id="custom-date-inputs">
+  <input type="date" id="custom-start" style="width:140px" onchange="applyCustomDates()" />
+  <span class="text-muted">→</span>
+  <input type="date" id="custom-end" style="width:140px" onchange="applyCustomDates()" />
+  </div>
   </div>
 
   <!-- ── TAB: OVERVIEW ── -->
   <div class="tab-content active" id="tab-overview">
-    <div class="metric-grid" id="overview-metrics"></div>
-    <div class="chart-wrap">
-      <div class="flex-between" style="margin-bottom:10px">
-        <div class="fw600 fs12" style="text-transform:uppercase;letter-spacing:0.5px;color:var(--text2)">Revenue Trend</div>
-        <div id="revenue-legend" class="chart-legend"></div>
-      </div>
-      <canvas id="revenue-chart" style="width:100%;height:200px"></canvas>
-    </div>
-    <div class="section">
-      <div class="section-header"><span class="section-title">💰 Recent Sales</span></div>
-      <div id="ov-recent-sales"></div>
-    </div>
-    <div class="section" style="margin-top:16px">
-      <div class="section-header"><span class="section-title">🍩 Revenue by Category</span></div>
-      <div class="section-body" style="display:flex;flex-direction:column;align-items:center">
-        <canvas id="donut-chart" width="220" height="220"></canvas>
-        <div id="donut-legend" class="chart-legend" style="justify-content:center;margin-top:10px"></div>
-      </div>
-    </div>
-    <div class="two-col" style="margin-top:16px">
-      <div class="section no-print report-form">
-        <div class="section-header"><span class="section-title">🖨 Generate PDF Report</span></div>
-        <div class="section-body">
-          <div class="form-grid">
-            <div class="form-row">
-              <label class="field-label">Report Period</label>
-              <select id="report-period" onchange="onReportPeriodChange()">
-                <option value="week">This Week</option>
-                <option value="month" selected>This Month</option>
-                <option value="year">This Year</option>
-                <option value="all">All Time</option>
-                <option value="custom">Custom Range</option>
-              </select>
-            </div>
-            <div class="form-row">
-              <label class="field-label">Business Name</label>
-              <input type="text" id="report-biz-name" placeholder="Pokemon Card Shop" />
-            </div>
-          </div>
-          <div id="report-custom-wrap" style="display:none">
-            <div class="form-grid">
-              <div class="form-row">
-                <label class="field-label">Start Date</label>
-                <input type="date" id="report-start" />
-              </div>
-              <div class="form-row">
-                <label class="field-label">End Date</label>
-                <input type="date" id="report-end" />
-              </div>
-            </div>
-          </div>
-          <button class="btn btn-primary" onclick="generateReport()">🖨 Generate &amp; Print PDF</button>
-        </div>
-      </div>
-      <div class="section no-print">
-        <div class="section-header"><span class="section-title">💾 Data Backup</span></div>
-        <div class="section-body">
-          <div id="backup-warning" class="alert alert-warning" style="margin-bottom:14px">
-            ⚠ Your data lives in this browser only. Export a backup regularly so you never lose your sales, inventory, or cost records.
-          </div>
-          <div class="flex-gap" style="flex-wrap:wrap">
-            <button class="btn btn-primary" onclick="exportData()">⬇ Export Backup (.json)</button>
-            <button class="btn btn-secondary" onclick="triggerImport()">⬆ Restore from Backup</button>
-          </div>
-          <p class="text-muted mt8" style="font-size:11px">The .json file contains all your cash sales, inventory, costs, and settings. Keep it somewhere safe — Google Drive, iCloud, USB drive.</p>
-        </div>
-      </div>
-    </div>
-    <div id="print-report" style="display:none;margin-top:16px"></div>
+  <div class="metric-grid" id="overview-metrics"></div>
+  <div class="chart-wrap">
+  <div class="flex-between" style="margin-bottom:10px">
+  <div class="fw600 fs12" style="text-transform:uppercase;letter-spacing:0.5px;color:var(--text2)">Revenue Trend</div>
+  <div id="revenue-legend" class="chart-legend"></div>
+  </div>
+  <canvas id="revenue-chart" style="width:100%;height:200px"></canvas>
+  </div>
+  <div class="section">
+  <div class="section-header"><span class="section-title">Recent Sales</span></div>
+  <div id="ov-recent-sales"></div>
+  </div>
+  <div class="section" style="margin-top:16px">
+  <div class="section-header"><span class="section-title">Revenue by Category</span></div>
+  <div class="section-body" style="display:flex;flex-direction:column;align-items:center">
+  <canvas id="donut-chart" width="220" height="220"></canvas>
+  <div id="donut-legend" class="chart-legend" style="justify-content:center;margin-top:10px"></div>
+  </div>
+  </div>
+  <div class="two-col" style="margin-top:16px">
+  <div class="section no-print report-form">
+  <div class="section-header"><span class="section-title">Generate PDF Report</span></div>
+  <div class="section-body">
+  <div class="form-grid">
+  <div class="form-row">
+  <label class="field-label">Report Period</label>
+  <select id="report-period" onchange="onReportPeriodChange()">
+  <option value="week">This Week</option>
+  <option value="month" selected>This Month</option>
+  <option value="year">This Year</option>
+  <option value="all">All Time</option>
+  <option value="custom">Custom Range</option>
+  </select>
+  </div>
+  <div class="form-row">
+  <label class="field-label">Business Name</label>
+  <input type="text" id="report-biz-name" placeholder="Pokemon Card Shop" />
+  </div>
+  </div>
+  <div id="report-custom-wrap" style="display:none">
+  <div class="form-grid">
+  <div class="form-row">
+  <label class="field-label">Start Date</label>
+  <input type="date" id="report-start" />
+  </div>
+  <div class="form-row">
+  <label class="field-label">End Date</label>
+  <input type="date" id="report-end" />
+  </div>
+  </div>
+  </div>
+  <button class="btn btn-primary" onclick="generateReport()">Generate &amp; Print PDF</button>
+  </div>
+  </div>
+  <div class="section no-print">
+  <div class="section-header"><span class="section-title">Data Backup</span></div>
+  <div class="section-body">
+  <div id="backup-warning" class="alert alert-warning" style="margin-bottom:14px">
+  Your data lives in this browser only. Export a backup regularly so you never lose your sales, inventory, or cost records.
+  </div>
+  <div class="flex-gap" style="flex-wrap:wrap">
+  <button class="btn btn-primary" onclick="exportData()">⬇ Export Backup (.json)</button>
+  <button class="btn btn-secondary" onclick="triggerImport()">⬆ Restore from Backup</button>
+  </div>
+  <p class="text-muted mt8" style="font-size:11px">The .json file contains all your cash sales, inventory, costs, and settings. Keep it somewhere safe — Google Drive, iCloud, USB drive.</p>
+  </div>
+  </div>
+  </div>
+  <div id="print-report" style="display:none;margin-top:16px"></div>
   </div>
 
   <!-- ── TAB: SALES ── -->
   <div class="tab-content" id="tab-sales">
 
-    <!-- CSV IMPORT INSTRUCTIONS -->
-    <div class="section" id="csv-import-section">
-      <div class="section-header">
-        <span class="section-title">⬛ Import Square Transactions (CSV)</span>
-        <div class="flex-gap">
-          <span id="sq-count-label" class="text-muted fs12"></span>
-          <label class="btn btn-primary btn-sm" style="cursor:pointer">
-            📥 Choose CSV File
-            <input type="file" id="csv-file-input" accept=".csv" style="display:none" onchange="importSquareCSV(event)" />
-          </label>
-        </div>
-      </div>
-      <div style="padding:16px 18px;border-bottom:2px dashed var(--border)">
-        <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:0.6px;color:var(--text3);margin-bottom:10px">How to export your Square transactions:</div>
-        <div style="display:flex;flex-direction:column;gap:8px">
-          <div style="display:flex;gap:10px;align-items:flex-start">
-            <span style="background:var(--poke-red);color:var(--text);border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0;margin-top:1px">1</span>
-            <span style="font-size:13px;color:var(--text2)">Go to <a href="https://squareup.com/dashboard/sales/transactions" target="_blank" style="color:var(--accent);font-weight:800">squareup.com/dashboard/sales/transactions</a> and sign in</span>
-          </div>
-          <div style="display:flex;gap:10px;align-items:flex-start">
-            <span style="background:var(--poke-red);color:var(--text);border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0;margin-top:1px">2</span>
-            <span style="font-size:13px;color:var(--text2)">Click <strong style="color:var(--text)">Sales</strong> → set your date range → click <strong style="color:var(--text)">Export</strong> → <strong style="color:var(--text)">Transactions CSV</strong></span>
-          </div>
-          <div style="display:flex;gap:10px;align-items:flex-start">
-            <span style="background:var(--poke-red);color:var(--text);border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0;margin-top:1px">3</span>
-            <span style="font-size:13px;color:var(--text2)">Click <strong style="color:var(--accent)">📥 Choose CSV File</strong> above — duplicates are automatically skipped</span>
-          </div>
-        </div>
-      </div>
-      <div id="sq-sync-error"></div>
-    </div>
+  <!-- CSV IMPORT INSTRUCTIONS -->
+  <div class="section" id="csv-import-section">
+  <div class="section-header">
+  <span class="section-title">Import Square Transactions (CSV)</span>
+  <div class="flex-gap">
+  <span id="sq-count-label" class="text-muted fs12"></span>
+  <label class="btn btn-primary btn-sm" style="cursor:pointer">
+  Choose CSV File
+  <input type="file" id="csv-file-input" accept=".csv" style="display:none" onchange="importSquareCSV(event)" />
+  </label>
+  </div>
+  </div>
+  <div style="padding:16px 18px;border-bottom:2px dashed var(--border)">
+  <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:0.6px;color:var(--text3);margin-bottom:10px">How to export your Square transactions:</div>
+  <div style="display:flex;flex-direction:column;gap:8px">
+  <div style="display:flex;gap:10px;align-items:flex-start">
+  <span style="background:var(--poke-red);color:var(--text);border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0;margin-top:1px">1</span>
+  <span style="font-size:13px;color:var(--text2)">Go to <a href="https://squareup.com/dashboard/sales/transactions" target="_blank" style="color:var(--accent);font-weight:800">squareup.com/dashboard/sales/transactions</a> and sign in</span>
+  </div>
+  <div style="display:flex;gap:10px;align-items:flex-start">
+  <span style="background:var(--poke-red);color:var(--text);border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0;margin-top:1px">2</span>
+  <span style="font-size:13px;color:var(--text2)">Click <strong style="color:var(--text)">Sales</strong> → set your date range → click <strong style="color:var(--text)">Export</strong> → <strong style="color:var(--text)">Transactions CSV</strong></span>
+  </div>
+  <div style="display:flex;gap:10px;align-items:flex-start">
+  <span style="background:var(--poke-red);color:var(--text);border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0;margin-top:1px">3</span>
+  <span style="font-size:13px;color:var(--text2)">Click <strong style="color:var(--accent)">Choose CSV File</strong> above — duplicates are automatically skipped</span>
+  </div>
+  </div>
+  </div>
+  <div id="sq-sync-error"></div>
+  </div>
 
-    <!-- UNIFIED SALES TABLE -->
-    <div class="section" style="margin-top:16px">
-      <div class="section-header">
-        <span class="section-title">💰 All Sales</span>
-        <div class="flex-gap">
-          <span id="all-sales-count" class="text-muted fs12"></span>
-          <button class="btn btn-secondary btn-sm" onclick="openModal('add-sq-sale')">+ Add Square Sale</button>
-          <button class="btn btn-primary btn-sm" onclick="openModal('add-cash')">+ Add Cash Sale</button>
-        </div>
-      </div>
-      <div class="filter-bar" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 18px;border-bottom:2px dashed var(--border)">
-        <input type="text" id="sales-search" placeholder="🔎 Search description or notes…" oninput="renderAllSalesTable()" style="flex:1;min-width:220px;padding:8px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" />
-        <select id="sales-source-filter" onchange="renderAllSalesTable()" style="padding:8px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px">
-          <option value="all">All sources</option>
-          <option value="square-card">Square · Card only</option>
-          <option value="square-cash">Square · Cash only</option>
-          <option value="cash">Cash only</option>
-        </select>
-        <button class="btn btn-secondary btn-sm" onclick="clearSalesFilters()">Clear</button>
-      </div>
-      <div id="all-sales-table"></div>
-      <div id="sales-total-bar" class="costs-total-bar" style="display:none"></div>
-    </div>
+  <!-- UNIFIED SALES TABLE -->
+  <div class="section" style="margin-top:16px">
+  <div class="section-header">
+  <span class="section-title">All Sales</span>
+  <div class="flex-gap">
+  <span id="all-sales-count" class="text-muted fs12"></span>
+  <button class="btn btn-secondary btn-sm" onclick="openModal('add-sq-sale')">+ Add Square Sale</button>
+  <button class="btn btn-primary btn-sm" onclick="openModal('add-cash')">+ Add Cash Sale</button>
+  </div>
+  </div>
+  <div class="filter-bar" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 18px;border-bottom:2px dashed var(--border)">
+  <input type="text" id="sales-search" placeholder="Search description or notes…" oninput="renderAllSalesTable()" style="flex:1;min-width:220px;padding:8px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" />
+  <select id="sales-source-filter" onchange="renderAllSalesTable()" style="padding:8px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px">
+  <option value="all">All sources</option>
+  <option value="square-card">Square · Card only</option>
+  <option value="square-cash">Square · Cash only</option>
+  <option value="cash">Cash only</option>
+  </select>
+  <button class="btn btn-secondary btn-sm" onclick="clearSalesFilters()">Clear</button>
+  </div>
+  <div id="all-sales-table"></div>
+  <div id="sales-total-bar" class="costs-total-bar" style="display:none"></div>
+  </div>
   </div>
 
   <!-- ── TAB: INVENTORY ── -->
   <div class="tab-content" id="tab-inventory">
 
-    <!-- SQUARE ITEM LIBRARY IMPORT -->
-    <div class="section" id="inv-import-section">
-      <div class="section-header">
-        <span class="section-title">⬛ Import from Square Item Library</span>
-        <label class="btn btn-primary btn-sm" style="cursor:pointer">
-          📥 Choose CSV File
-          <input type="file" id="inv-csv-input" accept=".csv" style="display:none" onchange="importSquareInventory(event)" />
-        </label>
-      </div>
-      <div style="padding:14px 18px;border-bottom:2px dashed var(--border)">
-        <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:0.6px;color:var(--text3);margin-bottom:10px">How to export your Square item library:</div>
-        <div style="display:flex;flex-direction:column;gap:8px">
-          <div style="display:flex;gap:10px;align-items:flex-start">
-            <span style="background:var(--poke-red);color:var(--text);border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0;margin-top:1px">1</span>
-            <span style="font-size:13px;color:var(--text2)">Go to <a href="https://squareup.com/dashboard/items/library" target="_blank" style="color:var(--accent);font-weight:800">squareup.com/dashboard/items/library</a></span>
-          </div>
-          <div style="display:flex;gap:10px;align-items:flex-start">
-            <span style="background:var(--poke-red);color:var(--text);border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0;margin-top:1px">2</span>
-            <span style="font-size:13px;color:var(--text2)">Click <strong style="color:var(--text)">Export Library</strong> (top right) → <strong style="color:var(--text)">Export as CSV</strong></span>
-          </div>
-          <div style="display:flex;gap:10px;align-items:flex-start">
-            <span style="background:var(--poke-red);color:var(--text);border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0;margin-top:1px">3</span>
-            <span style="font-size:13px;color:var(--text2)">Click <strong style="color:var(--accent)">📥 Choose CSV File</strong> above — existing items are updated, new ones are added</span>
-          </div>
-        </div>
-        <div class="alert alert-info" style="margin-top:12px;margin-bottom:0">
-          💡 Re-import any time to sync price or stock changes. Items matched by name — duplicates are updated, not added twice.
-        </div>
-      </div>
-      <div id="inv-import-status"></div>
-    </div>
+  <!-- SQUARE ITEM LIBRARY IMPORT -->
+  <div class="section" id="inv-import-section">
+  <div class="section-header">
+  <span class="section-title">Import from Square Item Library</span>
+  <label class="btn btn-primary btn-sm" style="cursor:pointer">
+  Choose CSV File
+  <input type="file" id="inv-csv-input" accept=".csv" style="display:none" onchange="importSquareInventory(event)" />
+  </label>
+  </div>
+  <div style="padding:14px 18px;border-bottom:2px dashed var(--border)">
+  <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:0.6px;color:var(--text3);margin-bottom:10px">How to export your Square item library:</div>
+  <div style="display:flex;flex-direction:column;gap:8px">
+  <div style="display:flex;gap:10px;align-items:flex-start">
+  <span style="background:var(--poke-red);color:var(--text);border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0;margin-top:1px">1</span>
+  <span style="font-size:13px;color:var(--text2)">Go to <a href="https://squareup.com/dashboard/items/library" target="_blank" style="color:var(--accent);font-weight:800">squareup.com/dashboard/items/library</a></span>
+  </div>
+  <div style="display:flex;gap:10px;align-items:flex-start">
+  <span style="background:var(--poke-red);color:var(--text);border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0;margin-top:1px">2</span>
+  <span style="font-size:13px;color:var(--text2)">Click <strong style="color:var(--text)">Export Library</strong> (top right) → <strong style="color:var(--text)">Export as CSV</strong></span>
+  </div>
+  <div style="display:flex;gap:10px;align-items:flex-start">
+  <span style="background:var(--poke-red);color:var(--text);border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0;margin-top:1px">3</span>
+  <span style="font-size:13px;color:var(--text2)">Click <strong style="color:var(--accent)">Choose CSV File</strong> above — existing items are updated, new ones are added</span>
+  </div>
+  </div>
+  <div class="alert alert-info" style="margin-top:12px;margin-bottom:0">
+  Re-import any time to sync price or stock changes. Items matched by name — duplicates are updated, not added twice.
+  </div>
+  </div>
+  <div id="inv-import-status"></div>
+  </div>
 
-    <!-- INVENTORY TABLE -->
-    <div class="section" style="margin-top:16px">
-      <div class="section-header">
-        <span class="section-title">📦 Sealed Inventory</span>
-        <button class="btn btn-primary btn-sm" onclick="openModal('add-inventory')">+ Add Item</button>
-      </div>
-      <div id="sealed-inv-table"></div>
-    </div>
+  <!-- INVENTORY TABLE -->
+  <div class="section" style="margin-top:16px">
+  <div class="section-header">
+  <span class="section-title">Sealed Inventory</span>
+  <div class="flex-gap">
+  <span id="inv-count-label" class="text-muted fs12"></span>
+  <button class="btn btn-primary btn-sm" onclick="openModal('add-inventory')">+ Add Item</button>
+  </div>
+  </div>
+  <div class="filter-bar" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 18px;border-bottom:2px dashed var(--border)">
+  <input type="text" id="inv-search" placeholder="Search item name or set…" oninput="renderSealedTable()" style="flex:1;min-width:220px;padding:8px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" />
+  <select id="inv-sku-filter" onchange="renderSealedTable()" style="padding:8px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px">
+  <option value="all">All SKU types</option>
+  </select>
+  <button class="btn btn-secondary btn-sm" onclick="clearInvFilters()">Clear</button>
+  </div>
+  <div id="sealed-inv-table"></div>
+  </div>
   </div>
 
   <!-- ── TAB: COSTS ── -->
   <div class="tab-content" id="tab-costs">
-    <div class="section">
-      <div class="section-header">
-        <span class="section-title">💸 Business Expenses</span>
-        <button class="btn btn-primary btn-sm" onclick="openModal('add-cost')">+ Add Expense</button>
-      </div>
-      <div class="filter-bar" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 18px;border-bottom:2px dashed var(--border)">
-        <input type="text" id="costs-search" placeholder="🔎 Search expense name or notes…" oninput="renderCosts()" style="flex:1;min-width:220px;padding:8px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" />
-        <button class="btn btn-secondary btn-sm" onclick="clearCostsFilter()">Clear</button>
-      </div>
-      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:8px 18px;border-bottom:2px dashed var(--border);font-size:12px">
-        <span class="text-muted" style="margin-right:4px">Quick filter:</span>
-        <button class="btn btn-secondary btn-sm" onclick="setCostsFilter('table')">Table fees</button>
-        <button class="btn btn-secondary btn-sm" onclick="setCostsFilter('gas')">Gas</button>
-        <button class="btn btn-secondary btn-sm" onclick="setCostsFilter('shipping')">Shipping</button>
-      </div>
-      <div id="costs-table-wrap"></div>
-      <div id="costs-total-bar" class="costs-total-bar" style="display:none"></div>
-    </div>
+  <div class="section">
+  <div class="section-header">
+  <span class="section-title">Business Expenses</span>
+  <button class="btn btn-primary btn-sm" onclick="openModal('add-cost')">+ Add Expense</button>
+  </div>
+  <div class="filter-bar" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 18px;border-bottom:2px dashed var(--border)">
+  <input type="text" id="costs-search" placeholder="Search expense name or notes…" oninput="renderCosts()" style="flex:1;min-width:220px;padding:8px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" />
+  <button class="btn btn-secondary btn-sm" onclick="clearCostsFilter()">Clear</button>
+  </div>
+  <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:8px 18px;border-bottom:2px dashed var(--border);font-size:12px">
+  <span class="text-muted" style="margin-right:4px">Quick filter:</span>
+  <button class="btn btn-secondary btn-sm" onclick="setCostsFilter('table')">Table fees</button>
+  <button class="btn btn-secondary btn-sm" onclick="setCostsFilter('gas')">Gas</button>
+  <button class="btn btn-secondary btn-sm" onclick="setCostsFilter('shipping')">Shipping</button>
+  </div>
+  <div id="costs-table-wrap"></div>
+  <div id="costs-total-bar" class="costs-total-bar" style="display:none"></div>
+  </div>
   </div>
 
   <!-- ── TAB: REPORTS ── -->
@@ -711,56 +721,56 @@ input[type=checkbox].row-cb{width:16px;height:16px;accent-color:var(--accent);cu
 <!-- MODAL -->
 <div class="modal-overlay" id="modal-overlay" onclick="closeModalIfOutside(event)">
   <div class="modal" id="modal-box">
-    <div class="modal-header">
-      <h3 id="modal-title">Dialog</h3>
-      <button class="btn btn-secondary btn-sm btn-icon" onclick="closeModal()">✕</button>
-    </div>
-    <div class="modal-body" id="modal-body"></div>
-    <div class="modal-footer" id="modal-footer"></div>
+  <div class="modal-header">
+  <h3 id="modal-title">Dialog</h3>
+  <button class="btn btn-secondary btn-sm btn-icon" onclick="closeModal()">✕</button>
+  </div>
+  <div class="modal-body" id="modal-body"></div>
+  <div class="modal-footer" id="modal-footer"></div>
   </div>
 </div>
 
 <!-- PASTE MODAL -->
 <div class="modal-overlay" id="paste-modal-overlay" onclick="closePasteModalIfOutside(event)">
   <div class="modal" style="max-width:680px">
-    <div class="modal-header">
-      <h3>📋 Paste Data from Excel</h3>
-      <button class="btn btn-secondary btn-sm btn-icon" onclick="closePasteModal()">✕</button>
-    </div>
-    <div class="modal-body">
+  <div class="modal-header">
+  <h3>Paste Data from Excel</h3>
+  <button class="btn btn-secondary btn-sm btn-icon" onclick="closePasteModal()">✕</button>
+  </div>
+  <div class="modal-body">
 
-      <!-- Step 1: Type selector -->
-      <div style="margin-bottom:16px">
-        <label class="field-label">What type of data are you pasting?</label>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
-          <button class="paste-type-btn btn btn-secondary btn-sm active" data-type="square" onclick="setPasteType('square')">⬛ Square Sales</button>
-          <button class="paste-type-btn btn btn-secondary btn-sm" data-type="cash" onclick="setPasteType('cash')">💵 Cash Sales</button>
-          <button class="paste-type-btn btn btn-secondary btn-sm" data-type="costs" onclick="setPasteType('costs')">💸 Costs / Expenses</button>
-        </div>
-      </div>
+  <!-- Step 1: Type selector -->
+  <div style="margin-bottom:16px">
+  <label class="field-label">What type of data are you pasting?</label>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
+  <button class="paste-type-btn btn btn-secondary btn-sm active" data-type="square" onclick="setPasteType('square')">Square Sales</button>
+  <button class="paste-type-btn btn btn-secondary btn-sm" data-type="cash" onclick="setPasteType('cash')">Cash Sales</button>
+  <button class="paste-type-btn btn btn-secondary btn-sm" data-type="costs" onclick="setPasteType('costs')">Costs / Expenses</button>
+  </div>
+  </div>
 
-      <!-- Column format hint -->
-      <div id="paste-hint" class="alert alert-info" style="margin-bottom:14px;font-size:12px;line-height:1.7"></div>
+  <!-- Column format hint -->
+  <div id="paste-hint" class="alert alert-info" style="margin-bottom:14px;font-size:12px;line-height:1.7"></div>
 
-      <!-- Textarea -->
-      <div class="form-row">
-        <label class="field-label">Paste your data here (copy straight from Excel)</label>
-        <textarea id="paste-textarea" rows="8" placeholder="Copy cells from Excel and paste here..." style="font-family:monospace;font-size:12px;resize:vertical" oninput="clearPastePreview()"></textarea>
-      </div>
+  <!-- Textarea -->
+  <div class="form-row">
+  <label class="field-label">Paste your data here (copy straight from Excel)</label>
+  <textarea id="paste-textarea" rows="8" placeholder="Copy cells from Excel and paste here..." style="font-family:monospace;font-size:12px;resize:vertical" oninput="clearPastePreview()"></textarea>
+  </div>
 
-      <button class="btn btn-primary" onclick="previewPaste()" style="margin-bottom:16px">🔍 Preview Import</button>
+  <button class="btn btn-primary" onclick="previewPaste()" style="margin-bottom:16px">Preview Import</button>
 
-      <!-- Preview area -->
-      <div id="paste-preview" style="display:none">
-        <hr class="divider">
-        <div id="paste-preview-content"></div>
-      </div>
+  <!-- Preview area -->
+  <div id="paste-preview" style="display:none">
+  <hr class="divider">
+  <div id="paste-preview-content"></div>
+  </div>
 
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closePasteModal()">Cancel</button>
-      <button class="btn btn-primary" id="paste-confirm-btn" onclick="confirmPasteImport()" disabled>✅ Import All</button>
-    </div>
+  </div>
+  <div class="modal-footer">
+  <button class="btn btn-secondary" onclick="closePasteModal()">Cancel</button>
+  <button class="btn btn-primary" id="paste-confirm-btn" onclick="confirmPasteImport()" disabled>Import All</button>
+  </div>
   </div>
 </div>
 
@@ -769,12 +779,12 @@ input[type=checkbox].row-cb{width:16px;height:16px;accent-color:var(--accent);cu
 <!-- CUSTOM CONFIRM DIALOG -->
 <div id="confirm-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.82);z-index:500;align-items:center;justify-content:center;padding:20px">
   <div style="background:var(--bg2);border:3px solid var(--poke-red);border-radius:22px;padding:28px 28px 22px;max-width:400px;width:100%;box-shadow:6px 6px 0 #000000;text-align:center">
-    <div style="font-size:28px;margin-bottom:10px">⚠️</div>
-    <div id="confirm-msg" style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:20px;line-height:1.5"></div>
-    <div style="display:flex;gap:10px;justify-content:center">
-      <button class="btn btn-secondary" id="confirm-cancel-btn" style="min-width:90px">Cancel</button>
-      <button class="btn btn-danger" id="confirm-ok-btn" style="min-width:90px">Delete</button>
-    </div>
+  <div style="font-size:28px;margin-bottom:10px"></div>
+  <div id="confirm-msg" style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:20px;line-height:1.5"></div>
+  <div style="display:flex;gap:10px;justify-content:center">
+  <button class="btn btn-secondary" id="confirm-cancel-btn" style="min-width:90px">Cancel</button>
+  <button class="btn btn-danger" id="confirm-ok-btn" style="min-width:90px">Delete</button>
+  </div>
   </div>
 </div>
 
@@ -808,23 +818,23 @@ const S = {
 // ============================================================
 function saveState() {
   try {
-    if (S.apiKey) {
-      localStorage.setItem('sq_key', S.apiKey);
-    } else {
-      localStorage.removeItem('sq_key');
-    }
-    localStorage.setItem('sq_sandbox', S.sandbox ? '1' : '0');
-    if (S.locationId) localStorage.setItem('sq_loc', S.locationId);
-    else localStorage.removeItem('sq_loc');
-    localStorage.setItem('sq_sales', JSON.stringify(S.squareSales));
-    localStorage.setItem('cash_sales', JSON.stringify(S.cashSales));
-    localStorage.setItem('inventory', JSON.stringify(S.inventory));
-    localStorage.setItem('singles', JSON.stringify(S.singles));
-    localStorage.setItem('costs', JSON.stringify(S.costs));
-    localStorage.setItem('processed_ids', JSON.stringify([...S.processedSaleIds]));
-    localStorage.setItem('tax_rate', String(S.taxRate));
-    localStorage.setItem('biz_name', S.businessName);
-    if (S.lastSync) localStorage.setItem('last_sync', S.lastSync);
+  if (S.apiKey) {
+  localStorage.setItem('sq_key', S.apiKey);
+  } else {
+  localStorage.removeItem('sq_key');
+  }
+  localStorage.setItem('sq_sandbox', S.sandbox ? '1' : '0');
+  if (S.locationId) localStorage.setItem('sq_loc', S.locationId);
+  else localStorage.removeItem('sq_loc');
+  localStorage.setItem('sq_sales', JSON.stringify(S.squareSales));
+  localStorage.setItem('cash_sales', JSON.stringify(S.cashSales));
+  localStorage.setItem('inventory', JSON.stringify(S.inventory));
+  localStorage.setItem('singles', JSON.stringify(S.singles));
+  localStorage.setItem('costs', JSON.stringify(S.costs));
+  localStorage.setItem('processed_ids', JSON.stringify([...S.processedSaleIds]));
+  localStorage.setItem('tax_rate', String(S.taxRate));
+  localStorage.setItem('biz_name', S.businessName);
+  if (S.lastSync) localStorage.setItem('last_sync', S.lastSync);
   } catch(e) { console.warn('Storage write error:', e); }
 }
 
@@ -853,26 +863,26 @@ function safeJSON(key, def) {
 // ============================================================
 function sqBase() {
   return S.sandbox
-    ? 'https://connect.squareupsandbox.com'
-    : 'https://connect.squareup.com';
+  ? 'https://connect.squareupsandbox.com'
+  : 'https://connect.squareup.com';
 }
 
 async function sqFetch(path, opts = {}) {
   const res = await fetch(sqBase() + path, {
-    ...opts,
-    headers: {
-      'Authorization': 'Bearer ' + S.apiKey,
-      'Content-Type': 'application/json',
-      'Square-Version': '2024-01-18',
-      ...(opts.headers || {})
-    }
+  ...opts,
+  headers: {
+  'Authorization': 'Bearer ' + S.apiKey,
+  'Content-Type': 'application/json',
+  'Square-Version': '2024-01-18',
+  ...(opts.headers || {})
+  }
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    const msg = (data.errors && data.errors[0])
-      ? (data.errors[0].detail || data.errors[0].code || 'API error')
-      : ('HTTP ' + res.status);
-    throw new Error(msg);
+  const msg = (data.errors && data.errors[0])
+  ? (data.errors[0].detail || data.errors[0].code || 'API error')
+  : ('HTTP ' + res.status);
+  throw new Error(msg);
   }
   return data;
 }
@@ -882,15 +892,15 @@ async function validateApiKey(key, sandbox) {
   S.apiKey = key;
   S.sandbox = sandbox;
   try {
-    const data = await sqFetch('/v2/locations');
-    const locs = data.locations || [];
-    if (!locs.length) throw new Error('No locations found on this account.');
-    S.locationId = locs[0].id;
-    return locs[0];
+  const data = await sqFetch('/v2/locations');
+  const locs = data.locations || [];
+  if (!locs.length) throw new Error('No locations found on this account.');
+  S.locationId = locs[0].id;
+  return locs[0];
   } catch(e) {
-    S.apiKey = prev.key;
-    S.sandbox = prev.sandbox;
-    throw e;
+  S.apiKey = prev.key;
+  S.sandbox = prev.sandbox;
+  throw e;
   }
 }
 
@@ -903,17 +913,17 @@ async function fetchAllPayments(startISO, endISO) {
   let cursor = null;
   let pages = 0;
   do {
-    const params = new URLSearchParams({
-      location_id: S.locationId,
-      begin_time: startISO,
-      end_time: endISO,
-      limit: '100'
-    });
-    if (cursor) params.set('cursor', cursor);
-    const data = await sqFetch('/v2/payments?' + params);
-    all.push(...(data.payments || []));
-    cursor = data.cursor || null;
-    pages++;
+  const params = new URLSearchParams({
+  location_id: S.locationId,
+  begin_time: startISO,
+  end_time: endISO,
+  limit: '100'
+  });
+  if (cursor) params.set('cursor', cursor);
+  const data = await sqFetch('/v2/payments?' + params);
+  all.push(...(data.payments || []));
+  cursor = data.cursor || null;
+  pages++;
   } while (cursor && pages < 30);
   return all;
 }
@@ -922,16 +932,16 @@ async function fetchOrdersBatch(orderIds) {
   if (!orderIds.length) return [];
   const all = [];
   for (let i = 0; i < orderIds.length; i += 100) {
-    const batch = orderIds.slice(i, i + 100);
-    try {
-      const data = await sqFetch('/v2/orders/batch-retrieve', {
-        method: 'POST',
-        body: JSON.stringify({ order_ids: batch, location_id: S.locationId })
-      });
-      all.push(...(data.orders || []));
-    } catch(e) {
-      // Orders are optional — fees still tracked from payments
-    }
+  const batch = orderIds.slice(i, i + 100);
+  try {
+  const data = await sqFetch('/v2/orders/batch-retrieve', {
+  method: 'POST',
+  body: JSON.stringify({ order_ids: batch, location_id: S.locationId })
+  });
+  all.push(...(data.orders || []));
+  } catch(e) {
+  // Orders are optional — fees still tracked from payments
+  }
   }
   return all;
 }
@@ -940,8 +950,8 @@ function buildSaleRecord(payment, order) {
   const gross = sqCents(payment.total_money || payment.amount_money);
   // Real fee from payment object
   const realFee = (payment.processing_fee || []).reduce((s, f) => {
-    const a = sqCents(f.amount_money);
-    return s + (a < 0 ? -a : a); // handle refunded fees (negative amounts)
+  const a = sqCents(f.amount_money);
+  return s + (a < 0 ? -a : a); // handle refunded fees (negative amounts)
   }, 0);
   // Fallback: estimate 2.6% + $0.15
   const estFee = parseFloat((gross * 0.026 + 0.15).toFixed(2));
@@ -951,35 +961,35 @@ function buildSaleRecord(payment, order) {
   let tax = 0;
   let items = [];
   if (order) {
-    tax = sqCents(order.total_tax_money);
-    items = (order.line_items || []).map(li => ({
-      name: li.name || 'Unknown Item',
-      qty: parseInt(li.quantity) || 1,
-      price: sqCents(li.total_money)
-    }));
+  tax = sqCents(order.total_tax_money);
+  items = (order.line_items || []).map(li => ({
+  name: li.name || 'Unknown Item',
+  qty: parseInt(li.quantity) || 1,
+  price: sqCents(li.total_money)
+  }));
   }
 
   const net = parseFloat((gross - fee - tax).toFixed(2));
 
   return {
-    id: payment.id,
-    date: payment.created_at,
-    dateStr: payment.created_at.slice(0, 10),
-    gross: parseFloat(gross.toFixed(2)),
-    fee,
-    feeEstimated,
-    tax: parseFloat(tax.toFixed(2)),
-    net,
-    items,
-    orderId: payment.order_id || null,
-    status: payment.status || 'COMPLETED'
+  id: payment.id,
+  date: payment.created_at,
+  dateStr: payment.created_at.slice(0, 10),
+  gross: parseFloat(gross.toFixed(2)),
+  fee,
+  feeEstimated,
+  tax: parseFloat(tax.toFixed(2)),
+  net,
+  items,
+  orderId: payment.order_id || null,
+  status: payment.status || 'COMPLETED'
   };
 }
 
 async function syncSquare() {
   if (!S.apiKey) {
-    setInlineError('sq-sync-error', 'Square is not connected. Go to Settings to add your API key.', true);
-    return;
+  setInlineError('sq-sync-error', 'Square is not connected. Go to Settings to add your API key.', true);
+  return;
   }
   if (S.syncing) return;
   S.syncing = true;
@@ -987,55 +997,55 @@ async function syncSquare() {
   clearEl('sq-sync-error');
 
   try {
-    // Sync last 365 days
-    const end = new Date();
-    const start = new Date();
-    start.setDate(start.getDate() - 365);
+  // Sync last 365 days
+  const end = new Date();
+  const start = new Date();
+  start.setDate(start.getDate() - 365);
 
-    const payments = await fetchAllPayments(start.toISOString(), end.toISOString());
-    const validPayments = payments.filter(p =>
-      p.status !== 'CANCELED' && p.status !== 'FAILED' && p.status !== 'DECLINED'
-    );
+  const payments = await fetchAllPayments(start.toISOString(), end.toISOString());
+  const validPayments = payments.filter(p =>
+  p.status !== 'CANCELED' && p.status !== 'FAILED' && p.status !== 'DECLINED'
+  );
 
-    const orderIds = validPayments.filter(p => p.order_id).map(p => p.order_id);
-    const orders = await fetchOrdersBatch(orderIds);
-    const orderMap = {};
-    orders.forEach(o => { orderMap[o.id] = o; });
+  const orderIds = validPayments.filter(p => p.order_id).map(p => p.order_id);
+  const orders = await fetchOrdersBatch(orderIds);
+  const orderMap = {};
+  orders.forEach(o => { orderMap[o.id] = o; });
 
-    const newRecords = validPayments.map(p =>
-      buildSaleRecord(p, p.order_id ? orderMap[p.order_id] : null)
-    );
+  const newRecords = validPayments.map(p =>
+  buildSaleRecord(p, p.order_id ? orderMap[p.order_id] : null)
+  );
 
-    // Find truly new sales (not seen before) for inventory deduction
-    const prevIds = new Set(S.squareSales.map(s => s.id));
-    const brandNew = newRecords.filter(r => !prevIds.has(r.id));
+  // Find truly new sales (not seen before) for inventory deduction
+  const prevIds = new Set(S.squareSales.map(s => s.id));
+  const brandNew = newRecords.filter(r => !prevIds.has(r.id));
 
-    // Replace Square sales (keep all)
-    S.squareSales = newRecords;
+  // Replace Square sales (keep all)
+  S.squareSales = newRecords;
 
-    // Auto-deduct inventory for brand new sales only
-    autoDeductFromSquare(brandNew);
+  // Auto-deduct inventory for brand new sales only
+  autoDeductFromSquare(brandNew);
 
-    S.lastSync = new Date().toISOString();
-    saveState();
+  S.lastSync = new Date().toISOString();
+  saveState();
 
-    const status = document.getElementById('sync-status');
-    if (status) {
-      status.innerHTML = '<span style="color:var(--green)">✓ Synced ' + newRecords.length + ' txns</span>';
-      setTimeout(() => {
-        if (status) status.textContent = 'Last sync: ' + fmtDateTime(S.lastSync);
-      }, 4000);
-    }
+  const status = document.getElementById('sync-status');
+  if (status) {
+  status.innerHTML = '<span style="color:var(--green)">✓ Synced ' + newRecords.length + ' txns</span>';
+  setTimeout(() => {
+  if (status) status.textContent = 'Last sync: ' + fmtDateTime(S.lastSync);
+  }, 4000);
+  }
 
-    refreshCurrentTab();
-    updateLowStockBadge();
+  refreshCurrentTab();
+  updateLowStockBadge();
   } catch(e) {
-    setInlineError('sq-sync-error', 'Sync failed: ' + e.message, true);
-    const status = document.getElementById('sync-status');
-    if (status) status.innerHTML = '<span style="color:var(--red)">⚠ Sync failed</span>';
+  setInlineError('sq-sync-error', 'Sync failed: ' + e.message, true);
+  const status = document.getElementById('sync-status');
+  if (status) status.innerHTML = '<span style="color:var(--red)">Sync failed</span>';
   } finally {
-    S.syncing = false;
-    setSyncBtnLoading(false);
+  S.syncing = false;
+  setSyncBtnLoading(false);
   }
 }
 
@@ -1056,39 +1066,39 @@ function getDateRange() {
   end = new Date('2099-12-31T23:59:59');
 
   switch (S.period) {
-    case 'today':
-      start = new Date(now);
-      start.setHours(0, 0, 0, 0);
-      end = new Date(now);
-      end.setHours(23, 59, 59, 999);
-      break;
-    case 'week': {
-      start = new Date(now);
-      start.setDate(now.getDate() - now.getDay());
-      start.setHours(0, 0, 0, 0);
-      end = new Date(now);
-      end.setDate(now.getDate() - now.getDay() + 6);
-      end.setHours(23, 59, 59, 999);
-      break;
-    }
-    case 'month':
-      start = new Date(now.getFullYear(), now.getMonth(), 1);
-      end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
-      break;
-    case 'year':
-      start = new Date(now.getFullYear(), 0, 1);
-      end = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
-      break;
-    case 'all':
-      start = new Date('2000-01-01');
-      break;
-    case 'custom':
-      start = S.customStart ? new Date(S.customStart + 'T00:00:00') : new Date('2000-01-01');
-      end = S.customEnd ? new Date(S.customEnd + 'T23:59:59') : end;
-      break;
-    default:
-      start = new Date(now.getFullYear(), now.getMonth(), 1);
-      end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+  case 'today':
+  start = new Date(now);
+  start.setHours(0, 0, 0, 0);
+  end = new Date(now);
+  end.setHours(23, 59, 59, 999);
+  break;
+  case 'week': {
+  start = new Date(now);
+  start.setDate(now.getDate() - now.getDay());
+  start.setHours(0, 0, 0, 0);
+  end = new Date(now);
+  end.setDate(now.getDate() - now.getDay() + 6);
+  end.setHours(23, 59, 59, 999);
+  break;
+  }
+  case 'month':
+  start = new Date(now.getFullYear(), now.getMonth(), 1);
+  end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+  break;
+  case 'year':
+  start = new Date(now.getFullYear(), 0, 1);
+  end = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
+  break;
+  case 'all':
+  start = new Date('2000-01-01');
+  break;
+  case 'custom':
+  start = S.customStart ? new Date(S.customStart + 'T00:00:00') : new Date('2000-01-01');
+  end = S.customEnd ? new Date(S.customEnd + 'T23:59:59') : end;
+  break;
+  default:
+  start = new Date(now.getFullYear(), now.getMonth(), 1);
+  end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
   }
   return { start, end };
 }
@@ -1112,7 +1122,7 @@ function fmtDateTime(str) {
   const d = new Date(str);
   if (isNaN(d)) return '';
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) +
-    ' ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  ' ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 }
 
 function fmtMoney(n) {
@@ -1145,20 +1155,20 @@ function calcTotals() {
   const costs = filteredCosts();
 
   const sqGross  = sq.reduce((s, x) => s + (x.gross || 0), 0);
-  const sqFees   = sq.reduce((s, x) => s + (x.fee   || 0), 0);
-  const sqTax    = sq.reduce((s, x) => s + (x.tax   || 0), 0);
+  const sqFees  = sq.reduce((s, x) => s + (x.fee  || 0), 0);
+  const sqTax  = sq.reduce((s, x) => s + (x.tax  || 0), 0);
   const cashGross = cash.reduce((s, x) => s + (x.amount || 0), 0);
-  const cashTax   = cash.reduce((s, x) => s + (x.tax    || 0), 0);
+  const cashTax  = cash.reduce((s, x) => s + (x.tax  || 0), 0);
   const totalGross = sqGross + cashGross;
   const totalFees  = sqFees;
-  const totalTax   = sqTax + cashTax;
+  const totalTax  = sqTax + cashTax;
   const totalCosts = costs.reduce((s, x) => s + (x.amount || 0), 0);
   const netProfit  = totalGross - totalFees - totalTax - totalCosts;
 
   return {
-    sqGross, sqFees, sqTax, sqCount: sq.length,
-    cashGross, cashTax, cashCount: cash.length,
-    totalGross, totalFees, totalTax, totalCosts, netProfit
+  sqGross, sqFees, sqTax, sqCount: sq.length,
+  cashGross, cashTax, cashCount: cash.length,
+  totalGross, totalFees, totalTax, totalCosts, netProfit
   };
 }
 
@@ -1167,11 +1177,11 @@ function calcTotals() {
 // ============================================================
 function autoDeductFromSquare(newSales) {
   newSales.forEach(sale => {
-    if (S.processedSaleIds.has(sale.id)) return;
-    S.processedSaleIds.add(sale.id);
-    (sale.items || []).forEach(item => {
-      matchAndDeduct(item.name, item.qty || 1);
-    });
+  if (S.processedSaleIds.has(sale.id)) return;
+  S.processedSaleIds.add(sale.id);
+  (sale.items || []).forEach(item => {
+  matchAndDeduct(item.name, item.qty || 1);
+  });
   });
 }
 
@@ -1200,20 +1210,20 @@ function updateLowStockBadge() {
 function showTab(name) {
   S.tab = name;
   document.querySelectorAll('.nav-tab').forEach(btn =>
-    btn.classList.toggle('active', btn.dataset.tab === name)
+  btn.classList.toggle('active', btn.dataset.tab === name)
   );
   document.querySelectorAll('.tab-content').forEach(el =>
-    el.classList.toggle('active', el.id === 'tab-' + name)
+  el.classList.toggle('active', el.id === 'tab-' + name)
   );
   renderTab(name);
 }
 
 function renderTab(name) {
   switch (name) {
-    case 'overview':  renderOverview();   break;
-    case 'sales':     renderSales();      break;
-    case 'inventory': renderInventory();  break;
-    case 'costs':     renderCosts();      break;
+  case 'overview':  renderOverview();  break;
+  case 'sales':  renderSales();  break;
+  case 'inventory': renderInventory();  break;
+  case 'costs':  renderCosts();  break;
   }
 }
 
@@ -1228,49 +1238,49 @@ function renderOverview() {
   const totalTx = t.sqCount + t.cashCount;
   const invRetail = S.inventory.reduce((sum, i) => sum + (i.sellPrice || 0) * (i.qty || 0), 0);
   const metrics = [
-    { icon: '💰', label: 'Total Revenue',          value: fmtMoney(t.totalGross), cls: 'green',  sub: totalTx + ' transactions' },
-    { icon: '⬛', label: 'Square Card Sales',       value: fmtMoney(t.sqGross),    cls: 'green',  sub: t.sqCount + ' transactions' },
-    { icon: '💵', label: 'Cash / Other Sales',      value: fmtMoney(t.cashGross),  cls: 'green',  sub: t.cashCount + ' entries' },
-    { icon: '🏦', label: 'Square Processing Fees',  value: fmtMoney(t.sqFees),     cls: 'red' },
-    { icon: '🏛',  label: 'WI Tax Collected',        value: fmtMoney(t.totalTax),   cls: 'red' },
-    { icon: '📋', label: 'Business Expenses',       value: fmtMoney(t.totalCosts), cls: 'red' },
-    { icon: '📈', label: 'Net Profit',              value: fmtMoney(t.netProfit),  cls: t.netProfit >= 0 ? 'green' : 'red' },
-    { icon: '📦', label: 'Inventory Retail Value',  value: fmtMoney(invRetail),    cls: 'green',  sub: S.inventory.reduce((s,i) => s + (i.qty||0), 0) + ' units in stock' }
+  { icon: '', label: 'Total Revenue',  value: fmtMoney(t.totalGross), cls: 'green',  sub: totalTx + ' transactions' },
+  { icon: '', label: 'Square Card Sales',  value: fmtMoney(t.sqGross),  cls: 'green',  sub: t.sqCount + ' transactions' },
+  { icon: '', label: 'Cash / Other Sales',  value: fmtMoney(t.cashGross),  cls: 'green',  sub: t.cashCount + ' entries' },
+  { icon: '', label: 'Square Processing Fees',  value: fmtMoney(t.sqFees),  cls: 'red' },
+  { icon: '',  label: 'WI Tax Collected',  value: fmtMoney(t.totalTax),  cls: 'red' },
+  { icon: '', label: 'Business Expenses',  value: fmtMoney(t.totalCosts), cls: 'red' },
+  { icon: '', label: 'Net Profit',  value: fmtMoney(t.netProfit),  cls: t.netProfit >= 0 ? 'green' : 'red' },
+  { icon: '', label: 'Inventory Retail Value',  value: fmtMoney(invRetail),  cls: 'green',  sub: S.inventory.reduce((s,i) => s + (i.qty||0), 0) + ' units in stock' }
   ];
 
   const grid = document.getElementById('overview-metrics');
   if (grid) {
-    grid.innerHTML = metrics.map(m => `
-      <div class="metric-card">
-        <div class="metric-icon">${m.icon}</div>
-        <div class="metric-label">${esc(m.label)}</div>
-        <div class="metric-value ${m.cls || ''}">${m.value}</div>
-        ${m.sub ? '<div class="metric-sub">' + esc(m.sub) + '</div>' : ''}
-      </div>
-    `).join('');
+  grid.innerHTML = metrics.map(m => `
+  <div class="metric-card">
+  ${m.icon ? '<div class="metric-icon">' + m.icon + '</div>' : ''}
+  <div class="metric-label">${esc(m.label)}</div>
+  <div class="metric-value ${m.cls || ''}">${m.value}</div>
+  ${m.sub ? '<div class="metric-sub">' + esc(m.sub) + '</div>' : ''}
+  </div>
+  `).join('');
   }
 
   requestAnimationFrame(() => drawRevenueChart());
 
   // Recent combined sales
-  const sqRecent   = filteredSqSales().map(s => ({ date: s.date, desc: normalizeSqDesc(s.description || (s.items && s.items.length ? s.items.map(i=>normalizeSqDesc(i.name)).join(', ') : '—')), amount: s.gross, net: s.net, src: 'Square' }));
+  const sqRecent  = filteredSqSales().map(s => ({ date: s.date, desc: normalizeSqDesc(s.description || (s.items && s.items.length ? s.items.map(i=>normalizeSqDesc(i.name)).join(', ') : '—')), amount: s.gross, net: s.net, src: 'Square' }));
   const cashRecent = filteredCashSales().map(s => ({ date: s.date, desc: s.category || '—', amount: s.amount, net: s.amount - (s.tax||0), src: 'Cash' }));
   const recent = [...sqRecent, ...cashRecent].sort((a,b) => new Date(b.date)-new Date(a.date)).slice(0, 10);
   const elRecent = document.getElementById('ov-recent-sales');
   if (elRecent) {
-    if (!recent.length) {
-      elRecent.innerHTML = emptyHTML('No sales this period', 'Import a Square CSV or click "+ Add Sale" in the Sales tab.');
-    } else {
-      elRecent.innerHTML = '<div class="table-wrap"><table>' +
-        '<thead><tr><th>Date</th><th>Description</th><th>Amount</th><th>Net</th><th>Source</th></tr></thead><tbody>' +
-        recent.map(s =>
-          '<tr><td>' + fmtDate(s.date) + '</td>' +
-          '<td class="muted">' + esc(s.desc) + '</td>' +
-          '<td class="right green">' + fmtMoney(s.amount) + '</td>' +
-          '<td class="right">' + fmtMoney(s.net) + '</td>' +
-          '<td><span class="tag ' + (s.src==='Square' ? 'tag-blue' : 'tag-green') + '">' + s.src + '</span></td></tr>'
-        ).join('') + '</tbody></table></div>';
-    }
+  if (!recent.length) {
+  elRecent.innerHTML = emptyHTML('No sales this period', 'Import a Square CSV or click "+ Add Sale" in the Sales tab.');
+  } else {
+  elRecent.innerHTML = '<div class="table-wrap"><table>' +
+  '<thead><tr><th>Date</th><th>Description</th><th>Amount</th><th>Net</th><th>Source</th></tr></thead><tbody>' +
+  recent.map(s =>
+  '<tr><td>' + fmtDate(s.date) + '</td>' +
+  '<td class="muted">' + esc(s.desc) + '</td>' +
+  '<td class="right green">' + fmtMoney(s.amount) + '</td>' +
+  '<td class="right">' + fmtMoney(s.net) + '</td>' +
+  '<td><span class="tag ' + (s.src==='Square' ? 'tag-blue' : 'tag-green') + '">' + s.src + '</span></td></tr>'
+  ).join('') + '</tbody></table></div>';
+  }
   }
 
   renderDonutChart();
@@ -1284,17 +1294,17 @@ function drawRevenueChart() {
   if (!canvas) return;
 
   let { start, end } = getDateRange();
-  const sqSales   = filteredSqSales();
+  const sqSales  = filteredSqSales();
   const cashSales = filteredCashSales();
 
   // For "all time", derive range from actual data instead of 2000–2099
   if (S.period === 'all') {
-    const allDates = [...sqSales.map(s => s.date), ...cashSales.map(s => s.date)].filter(Boolean).map(d => new Date(d));
-    if (!allDates.length) { canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height); return; }
-    start = new Date(Math.min(...allDates));
-    end   = new Date(Math.max(...allDates));
-    start.setHours(0,0,0,0);
-    end.setHours(23,59,59,999);
+  const allDates = [...sqSales.map(s => s.date), ...cashSales.map(s => s.date)].filter(Boolean).map(d => new Date(d));
+  if (!allDates.length) { canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height); return; }
+  start = new Date(Math.min(...allDates));
+  end  = new Date(Math.max(...allDates));
+  start.setHours(0,0,0,0);
+  end.setHours(23,59,59,999);
   }
 
   // Build day list
@@ -1304,8 +1314,8 @@ function drawRevenueChart() {
   const endDay = new Date(end);
   endDay.setHours(0, 0, 0, 0);
   while (cursor <= endDay && days.length < 400) {
-    days.push(cursor.toISOString().slice(0, 10));
-    cursor.setDate(cursor.getDate() + 1);
+  days.push(cursor.toISOString().slice(0, 10));
+  cursor.setDate(cursor.getDate() + 1);
   }
 
   if (!days.length) return;
@@ -1318,32 +1328,32 @@ function drawRevenueChart() {
   let labels, sqVals, cashVals, totalVals;
 
   if (days.length > 90) {
-    // Aggregate by week
-    const weeks = {};
-    days.forEach(day => {
-      const dt = new Date(day + 'T00:00:00');
-      const wkStart = new Date(dt);
-      wkStart.setDate(dt.getDate() - dt.getDay());
-      const key = wkStart.toISOString().slice(0,10);
-      if (!weeks[key]) weeks[key] = { sq: 0, cash: 0 };
-      weeks[key].sq   += sqByDay[day]   || 0;
-      weeks[key].cash += cashByDay[day] || 0;
-    });
-    const wkKeys = Object.keys(weeks).sort();
-    labels = wkKeys.map(k => { const d = new Date(k+'T00:00:00'); return (d.getMonth()+1)+'/'+d.getDate(); });
-    sqVals    = wkKeys.map(k => weeks[k].sq);
-    cashVals  = wkKeys.map(k => weeks[k].cash);
-    totalVals = wkKeys.map((_,i) => sqVals[i] + cashVals[i]);
+  // Aggregate by week
+  const weeks = {};
+  days.forEach(day => {
+  const dt = new Date(day + 'T00:00:00');
+  const wkStart = new Date(dt);
+  wkStart.setDate(dt.getDate() - dt.getDay());
+  const key = wkStart.toISOString().slice(0,10);
+  if (!weeks[key]) weeks[key] = { sq: 0, cash: 0 };
+  weeks[key].sq  += sqByDay[day]  || 0;
+  weeks[key].cash += cashByDay[day] || 0;
+  });
+  const wkKeys = Object.keys(weeks).sort();
+  labels = wkKeys.map(k => { const d = new Date(k+'T00:00:00'); return (d.getMonth()+1)+'/'+d.getDate(); });
+  sqVals  = wkKeys.map(k => weeks[k].sq);
+  cashVals  = wkKeys.map(k => weeks[k].cash);
+  totalVals = wkKeys.map((_,i) => sqVals[i] + cashVals[i]);
   } else if (days.length > 30) {
-    labels = days.map(d => { const dt = new Date(d+'T00:00:00'); return (dt.getMonth()+1)+'/'+dt.getDate(); });
-    sqVals    = days.map(d => sqByDay[d]   || 0);
-    cashVals  = days.map(d => cashByDay[d] || 0);
-    totalVals = days.map((_,i) => sqVals[i] + cashVals[i]);
+  labels = days.map(d => { const dt = new Date(d+'T00:00:00'); return (dt.getMonth()+1)+'/'+dt.getDate(); });
+  sqVals  = days.map(d => sqByDay[d]  || 0);
+  cashVals  = days.map(d => cashByDay[d] || 0);
+  totalVals = days.map((_,i) => sqVals[i] + cashVals[i]);
   } else {
-    labels = days.map(d => { const dt = new Date(d+'T00:00:00'); return String(dt.getDate()); });
-    sqVals    = days.map(d => sqByDay[d]   || 0);
-    cashVals  = days.map(d => cashByDay[d] || 0);
-    totalVals = days.map((_,i) => sqVals[i] + cashVals[i]);
+  labels = days.map(d => { const dt = new Date(d+'T00:00:00'); return String(dt.getDate()); });
+  sqVals  = days.map(d => sqByDay[d]  || 0);
+  cashVals  = days.map(d => cashByDay[d] || 0);
+  totalVals = days.map((_,i) => sqVals[i] + cashVals[i]);
   }
 
   const w = canvas.parentElement ? canvas.parentElement.clientWidth - 32 : 600;
@@ -1352,16 +1362,16 @@ function drawRevenueChart() {
 
   const ctx = canvas.getContext('2d');
   renderBarChart(ctx, canvas.width, canvas.height, labels, [
-    { label: 'Square', data: sqVals,   color: '#1a7a40' },
-    { label: 'Cash',   data: cashVals, color: '#5ddb8a' }
+  { label: 'Square', data: sqVals,  color: '#1a7a40' },
+  { label: 'Cash',  data: cashVals, color: '#5ddb8a' }
   ]);
 
   const legend = document.getElementById('revenue-legend');
   if (legend) {
-    legend.innerHTML = [
-      { l: 'Square', c: '#1a7a40' },
-      { l: 'Cash',   c: '#5ddb8a' }
-    ].map(x => '<div class="legend-item"><div class="legend-dot" style="background:' + x.c + '"></div>' + x.l + '</div>').join('');
+  legend.innerHTML = [
+  { l: 'Square', c: '#1a7a40' },
+  { l: 'Cash',  c: '#5ddb8a' }
+  ].map(x => '<div class="legend-item"><div class="legend-dot" style="background:' + x.c + '"></div>' + x.l + '</div>').join('');
   }
 }
 
@@ -1380,18 +1390,18 @@ function renderBarChart(ctx, w, h, labels, datasets) {
 
   // Grid + Y tick labels
   for (let i = 0; i <= ticks; i++) {
-    const y = pad.top + ch - (i / ticks) * ch;
-    ctx.strokeStyle = 'rgba(80,80,100,0.5)';
-    ctx.lineWidth   = i === 0 ? 1.5 : 1;
-    ctx.beginPath();
-    ctx.moveTo(pad.left, y);
-    ctx.lineTo(pad.left + cw, y);
-    ctx.stroke();
-    ctx.fillStyle = '#9090a8';
-    ctx.font = '10px sans-serif';
-    ctx.textAlign = 'right';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('$' + shortNum(maxVal * i / ticks), pad.left - 6, y);
+  const y = pad.top + ch - (i / ticks) * ch;
+  ctx.strokeStyle = 'rgba(80,80,100,0.5)';
+  ctx.lineWidth  = i === 0 ? 1.5 : 1;
+  ctx.beginPath();
+  ctx.moveTo(pad.left, y);
+  ctx.lineTo(pad.left + cw, y);
+  ctx.stroke();
+  ctx.fillStyle = '#9090a8';
+  ctx.font = '10px sans-serif';
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('$' + shortNum(maxVal * i / ticks), pad.left - 6, y);
   }
 
   // Y-axis line
@@ -1414,23 +1424,23 @@ function renderBarChart(ctx, w, h, labels, datasets) {
   ctx.restore();
 
   // Stacked bars
-  const barW   = Math.max(2, (cw / n) * 0.7);
+  const barW  = Math.max(2, (cw / n) * 0.7);
   const barGap = cw / n;
   labels.forEach((_, i) => {
-    const x = pad.left + i * barGap + (barGap - barW) / 2;
-    let yBase = pad.top + ch;
-    datasets.forEach(ds => {
-      const val = ds.data[i] || 0;
-      if (val <= 0) return;
-      const barH = (val / maxVal) * ch;
-      yBase -= barH;
-      ctx.fillStyle = ds.color;
-      ctx.globalAlpha = 0.85;
-      ctx.beginPath();
-      ctx.roundRect ? ctx.roundRect(x, yBase, barW, barH, [3, 3, 0, 0]) : ctx.rect(x, yBase, barW, barH);
-      ctx.fill();
-      ctx.globalAlpha = 1;
-    });
+  const x = pad.left + i * barGap + (barGap - barW) / 2;
+  let yBase = pad.top + ch;
+  datasets.forEach(ds => {
+  const val = ds.data[i] || 0;
+  if (val <= 0) return;
+  const barH = (val / maxVal) * ch;
+  yBase -= barH;
+  ctx.fillStyle = ds.color;
+  ctx.globalAlpha = 0.85;
+  ctx.beginPath();
+  ctx.roundRect ? ctx.roundRect(x, yBase, barW, barH, [3, 3, 0, 0]) : ctx.rect(x, yBase, barW, barH);
+  ctx.fill();
+  ctx.globalAlpha = 1;
+  });
   });
 
   // X tick labels
@@ -1440,9 +1450,9 @@ function renderBarChart(ctx, w, h, labels, datasets) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
   labels.forEach((lbl, i) => {
-    if (i % step !== 0 && i !== n - 1) return;
-    const x = pad.left + i * barGap + barGap / 2;
-    ctx.fillText(lbl, x, pad.top + ch + 6);
+  if (i % step !== 0 && i !== n - 1) return;
+  const x = pad.left + i * barGap + barGap / 2;
+  ctx.fillText(lbl, x, pad.top + ch + 6);
   });
 
   // X-axis title
@@ -1456,14 +1466,14 @@ function renderBarChart(ctx, w, h, labels, datasets) {
 function niceNum(v) {
   if (v <= 0) return 100;
   const mag = Math.pow(10, Math.floor(Math.log10(v)));
-  const r   = v / mag;
-  const n   = r <= 1 ? 1 : r <= 2 ? 2 : r <= 5 ? 5 : 10;
+  const r  = v / mag;
+  const n  = r <= 1 ? 1 : r <= 2 ? 2 : r <= 5 ? 5 : 10;
   return n * mag;
 }
 
 function shortNum(n) {
   if (n >= 1000000) return (n/1000000).toFixed(1) + 'M';
-  if (n >= 1000)    return (n/1000).toFixed(1) + 'k';
+  if (n >= 1000)  return (n/1000).toFixed(1) + 'k';
   return n.toFixed(0);
 }
 
@@ -1479,30 +1489,30 @@ function renderAllSalesTable() {
   if (!el) return;
 
   // Merge Square + Cash, tag each with source, sort newest first
-  const sqSales   = filteredSqSales().map(s => ({
-    _src: 'square', _id: s.id,
-    date: s.date,
-    desc: normalizeSqDesc(s.description || (s.items && s.items.length
-      ? s.items.map(i => normalizeSqDesc(i.name) + (i.qty > 1 ? ' ×'+i.qty : '')).join(', ')
-      : '—')),
-    gross: s.gross,
-    fee:   s.fee,
-    feeEst: s.feeEstimated,
-    tax:   s.tax,
-    net:   s.net,
-    note:  '',
-    paymentMethod: s.paymentMethod || 'Card'
+  const sqSales  = filteredSqSales().map(s => ({
+  _src: 'square', _id: s.id,
+  date: s.date,
+  desc: normalizeSqDesc(s.description || (s.items && s.items.length
+  ? s.items.map(i => normalizeSqDesc(i.name) + (i.qty > 1 ? ' ×'+i.qty : '')).join(', ')
+  : '—')),
+  gross: s.gross,
+  fee:  s.fee,
+  feeEst: s.feeEstimated,
+  tax:  s.tax,
+  net:  s.net,
+  note:  '',
+  paymentMethod: s.paymentMethod || 'Card'
   }));
   const cashSales = filteredCashSales().map(s => ({
-    _src: 'cash', _id: s.id,
-    date: s.date,
-    desc: s.category || '—',
-    gross: s.amount,
-    fee:   0,
-    feeEst: false,
-    tax:   s.tax || 0,
-    net:   s.amount - (s.tax || 0),
-    note:  s.notes || ''
+  _src: 'cash', _id: s.id,
+  date: s.date,
+  desc: s.category || '—',
+  gross: s.amount,
+  fee:  0,
+  feeEst: false,
+  tax:  s.tax || 0,
+  net:  s.amount - (s.tax || 0),
+  note:  s.notes || ''
   }));
 
   const allUnfiltered = [...sqSales, ...cashSales].sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -1511,107 +1521,107 @@ function renderAllSalesTable() {
   const q = (document.getElementById('sales-search')?.value || '').toLowerCase().trim();
   const srcFilter = document.getElementById('sales-source-filter')?.value || 'all';
   const all = allUnfiltered.filter(s => {
-    if (q) {
-      const hay = ((s.desc || '') + ' ' + (s.note || '')).toLowerCase();
-      if (!hay.includes(q)) return false;
-    }
-    if (srcFilter === 'square-card') return s._src === 'square' && s.paymentMethod !== 'Cash';
-    if (srcFilter === 'square-cash') return s._src === 'square' && s.paymentMethod === 'Cash';
-    if (srcFilter === 'cash')        return s._src === 'cash';
-    return true;
+  if (q) {
+  const hay = ((s.desc || '') + ' ' + (s.note || '')).toLowerCase();
+  if (!hay.includes(q)) return false;
+  }
+  if (srcFilter === 'square-card') return s._src === 'square' && s.paymentMethod !== 'Cash';
+  if (srcFilter === 'square-cash') return s._src === 'square' && s.paymentMethod === 'Cash';
+  if (srcFilter === 'cash')  return s._src === 'cash';
+  return true;
   });
 
   const lbl = document.getElementById('all-sales-count');
   if (lbl) {
-    const filterActive = q || srcFilter !== 'all';
-    lbl.textContent = filterActive
-      ? all.length + ' of ' + allUnfiltered.length + ' transactions'
-      : (all.length ? all.length + ' transactions' : '');
+  const filterActive = q || srcFilter !== 'all';
+  lbl.textContent = filterActive
+  ? all.length + ' of ' + allUnfiltered.length + ' transactions'
+  : (all.length ? all.length + ' transactions' : '');
   }
 
   if (!all.length) {
-    const filterActive = q || srcFilter !== 'all';
-    el.innerHTML = emptyHTML(
-      filterActive ? 'No sales match your filters' : 'No sales this period',
-      filterActive ? 'Try clearing the search or source filter.' : 'Import a Square CSV or click "+ Add Sale" to record a cash transaction.'
-    );
-    const totBar = document.getElementById('sales-total-bar');
-    if (totBar) totBar.style.display = 'none';
-    return;
+  const filterActive = q || srcFilter !== 'all';
+  el.innerHTML = emptyHTML(
+  filterActive ? 'No sales match your filters' : 'No sales this period',
+  filterActive ? 'Try clearing the search or source filter.' : 'Import a Square CSV or click "+ Add Sale" to record a cash transaction.'
+  );
+  const totBar = document.getElementById('sales-total-bar');
+  if (totBar) totBar.style.display = 'none';
+  return;
   }
 
   el.innerHTML =
-    '<div class="bulk-bar" id="bulk-bar-all">' +
-      '<span class="sel-count" id="bulk-count-all">0 selected</span>' +
-      '<button class="btn btn-danger btn-sm" onclick="deleteSelectedAll()">🗑 Delete Selected</button>' +
-      '<button class="btn btn-secondary btn-sm" onclick="clearSelection(\'all-tbl\',\'bulk-bar-all\',\'bulk-count-all\')">✕ Clear</button>' +
-    '</div>' +
-    '<div class="table-wrap"><table id="all-tbl">' +
-    '<thead><tr>' +
-    '<th class="cb-col"><input type="checkbox" class="select-all-cb" onchange="toggleSelectAll(\'all-tbl\',this,\'bulk-bar-all\',\'bulk-count-all\')" title="Select all"></th>' +
-    '<th onclick="sortTable(\'all-tbl\',1)">Date</th>' +
-    '<th onclick="sortTable(\'all-tbl\',2)">Description</th>' +
-    '<th onclick="sortTable(\'all-tbl\',3,true)">Amount</th>' +
-    '<th onclick="sortTable(\'all-tbl\',4,true)">Fee</th>' +
-    '<th onclick="sortTable(\'all-tbl\',5,true)">Tax</th>' +
-    '<th onclick="sortTable(\'all-tbl\',6,true)">Net</th>' +
-    '<th onclick="sortTable(\'all-tbl\',7)">Source</th>' +
-    '<th>Actions</th>' +
-    '</tr></thead><tbody>' +
-    all.map(s => {
-      const srcTag = s._src === 'square'
-        ? (s.paymentMethod === 'Cash'
-            ? '<span class="tag tag-amber">Square · Cash</span>'
-            : '<span class="tag tag-blue">Square · Card</span>')
-        : '<span class="tag tag-green">Cash</span>';
-      const feeCell = s._src === 'square'
-        ? fmtMoney(s.fee) + (s.feeEst ? '<span title="Estimated" style="color:var(--text3);font-size:10px;margin-left:3px">est</span>' : '')
-        : '<span style="color:var(--text3)">—</span>';
-      const editBtn = s._src === 'square'
-        ? '<button class="btn btn-secondary btn-sm" onclick="openModal(\'edit-sq-sale\',\'' + escA(s._id) + '\')">Edit</button>'
-        : '<button class="btn btn-secondary btn-sm" onclick="openModal(\'edit-cash-sale\',\'' + escA(s._id) + '\')">Edit</button>';
-      return '<tr>' +
-        '<td class="cb-col"><input type="checkbox" class="row-cb" data-id="' + escA(s._id) + '" data-src="' + s._src + '" onchange="onRowCbChange(\'bulk-bar-all\',\'bulk-count-all\',\'all-tbl\')"></td>' +
-        '<td>' + fmtDate(s.date) + '</td>' +
-        '<td class="muted">' + esc(s.desc) + (s.note ? ' <span style="color:var(--text3);font-size:11px">— ' + esc(s.note) + '</span>' : '') + '</td>' +
-        '<td class="right green">' + fmtMoney(s.gross) + '</td>' +
-        '<td class="right red">' + feeCell + '</td>' +
-        '<td class="right">' + fmtMoney(s.tax) + '</td>' +
-        '<td class="right">' + fmtMoney(s.net) + '</td>' +
-        '<td>' + srcTag + '</td>' +
-        '<td>' + editBtn + '</td>' +
-        '</tr>';
-    }).join('') +
-    '</tbody></table></div>';
+  '<div class="bulk-bar" id="bulk-bar-all">' +
+  '<span class="sel-count" id="bulk-count-all">0 selected</span>' +
+  '<button class="btn btn-danger btn-sm" onclick="deleteSelectedAll()">Delete Selected</button>' +
+  '<button class="btn btn-secondary btn-sm" onclick="clearSelection(\'all-tbl\',\'bulk-bar-all\',\'bulk-count-all\')">✕ Clear</button>' +
+  '</div>' +
+  '<div class="table-wrap"><table id="all-tbl">' +
+  '<thead><tr>' +
+  '<th class="cb-col"><input type="checkbox" class="select-all-cb" onchange="toggleSelectAll(\'all-tbl\',this,\'bulk-bar-all\',\'bulk-count-all\')" title="Select all"></th>' +
+  '<th onclick="sortTable(\'all-tbl\',1)">Date</th>' +
+  '<th onclick="sortTable(\'all-tbl\',2)">Description</th>' +
+  '<th onclick="sortTable(\'all-tbl\',3,true)">Amount</th>' +
+  '<th onclick="sortTable(\'all-tbl\',4,true)">Fee</th>' +
+  '<th onclick="sortTable(\'all-tbl\',5,true)">Tax</th>' +
+  '<th onclick="sortTable(\'all-tbl\',6,true)">Net</th>' +
+  '<th onclick="sortTable(\'all-tbl\',7)">Source</th>' +
+  '<th>Actions</th>' +
+  '</tr></thead><tbody>' +
+  all.map(s => {
+  const srcTag = s._src === 'square'
+  ? (s.paymentMethod === 'Cash'
+  ? '<span class="tag tag-amber">Square · Cash</span>'
+  : '<span class="tag tag-blue">Square · Card</span>')
+  : '<span class="tag tag-green">Cash</span>';
+  const feeCell = s._src === 'square'
+  ? fmtMoney(s.fee) + (s.feeEst ? '<span title="Estimated" style="color:var(--text3);font-size:10px;margin-left:3px">est</span>' : '')
+  : '<span style="color:var(--text3)">—</span>';
+  const editBtn = s._src === 'square'
+  ? '<button class="btn btn-secondary btn-sm" onclick="openModal(\'edit-sq-sale\',\'' + escA(s._id) + '\')">Edit</button>'
+  : '<button class="btn btn-secondary btn-sm" onclick="openModal(\'edit-cash-sale\',\'' + escA(s._id) + '\')">Edit</button>';
+  return '<tr>' +
+  '<td class="cb-col"><input type="checkbox" class="row-cb" data-id="' + escA(s._id) + '" data-src="' + s._src + '" onchange="onRowCbChange(\'bulk-bar-all\',\'bulk-count-all\',\'all-tbl\')"></td>' +
+  '<td>' + fmtDate(s.date) + '</td>' +
+  '<td class="muted">' + esc(s.desc) + (s.note ? ' <span style="color:var(--text3);font-size:11px">— ' + esc(s.note) + '</span>' : '') + '</td>' +
+  '<td class="right green">' + fmtMoney(s.gross) + '</td>' +
+  '<td class="right red">' + feeCell + '</td>' +
+  '<td class="right">' + fmtMoney(s.tax) + '</td>' +
+  '<td class="right">' + fmtMoney(s.net) + '</td>' +
+  '<td>' + srcTag + '</td>' +
+  '<td>' + editBtn + '</td>' +
+  '</tr>';
+  }).join('') +
+  '</tbody></table></div>';
 
   // Totals bar — sums the currently filtered set
   const totBar = document.getElementById('sales-total-bar');
   if (totBar) {
-    const tot = all.reduce((a, s) => ({
-      gross: a.gross + (s.gross || 0),
-      fee:   a.fee   + (s.fee   || 0),
-      tax:   a.tax   + (s.tax   || 0),
-      net:   a.net   + (s.net   || 0)
-    }), { gross: 0, fee: 0, tax: 0, net: 0 });
-    const filterActive = q || srcFilter !== 'all';
-    const label = filterActive
-      ? 'Filtered Totals (' + all.length + ' of ' + allUnfiltered.length + ')'
-      : 'Totals (' + all.length + ')';
-    totBar.style.display = 'block';
-    totBar.innerHTML =
-      '<span class="text-muted fw600" style="margin-right:14px">' + label + ':</span>' +
-      '<span style="margin-right:14px"><span class="text-muted">Gross </span><span style="color:var(--green);font-weight:700">' + fmtMoney(tot.gross) + '</span></span>' +
-      '<span style="margin-right:14px"><span class="text-muted">Fees </span><span style="color:var(--red);font-weight:700">' + fmtMoney(tot.fee) + '</span></span>' +
-      '<span style="margin-right:14px"><span class="text-muted">Tax </span><span style="font-weight:700">' + fmtMoney(tot.tax) + '</span></span>' +
-      '<span><span class="text-muted">Net </span><span style="font-weight:700">' + fmtMoney(tot.net) + '</span></span>';
+  const tot = all.reduce((a, s) => ({
+  gross: a.gross + (s.gross || 0),
+  fee:  a.fee  + (s.fee  || 0),
+  tax:  a.tax  + (s.tax  || 0),
+  net:  a.net  + (s.net  || 0)
+  }), { gross: 0, fee: 0, tax: 0, net: 0 });
+  const filterActive = q || srcFilter !== 'all';
+  const label = filterActive
+  ? 'Filtered Totals (' + all.length + ' of ' + allUnfiltered.length + ')'
+  : 'Totals (' + all.length + ')';
+  totBar.style.display = 'block';
+  totBar.innerHTML =
+  '<span class="text-muted fw600" style="margin-right:14px">' + label + ':</span>' +
+  '<span style="margin-right:14px"><span class="text-muted">Gross </span><span style="color:var(--green);font-weight:700">' + fmtMoney(tot.gross) + '</span></span>' +
+  '<span style="margin-right:14px"><span class="text-muted">Fees </span><span style="color:var(--red);font-weight:700">' + fmtMoney(tot.fee) + '</span></span>' +
+  '<span style="margin-right:14px"><span class="text-muted">Tax </span><span style="font-weight:700">' + fmtMoney(tot.tax) + '</span></span>' +
+  '<span><span class="text-muted">Net </span><span style="font-weight:700">' + fmtMoney(tot.net) + '</span></span>';
   }
 }
 
 function clearSalesFilters() {
   const search = document.getElementById('sales-search');
-  const src    = document.getElementById('sales-source-filter');
+  const src  = document.getElementById('sales-source-filter');
   if (search) search.value = '';
-  if (src)    src.value    = 'all';
+  if (src)  src.value  = 'all';
   renderAllSalesTable();
 }
 
@@ -1634,12 +1644,12 @@ function deleteSelectedAll() {
   if (!tbl) return;
   const checked = [...tbl.querySelectorAll('input.row-cb:checked')];
   if (!checked.length) return;
-  const sqIds   = new Set(checked.filter(c => c.dataset.src === 'square').map(c => c.dataset.id));
+  const sqIds  = new Set(checked.filter(c => c.dataset.src === 'square').map(c => c.dataset.id));
   const cashIds = new Set(checked.filter(c => c.dataset.src === 'cash').map(c => c.dataset.id));
   appConfirm('Delete ' + checked.length + ' selected sale(s)? This cannot be undone.', 'Delete All', () => {
-    if (sqIds.size)   S.squareSales = S.squareSales.filter(x => !sqIds.has(x.id));
-    if (cashIds.size) S.cashSales   = S.cashSales.filter(x => !cashIds.has(x.id));
-    saveState(); refreshCurrentTab();
+  if (sqIds.size)  S.squareSales = S.squareSales.filter(x => !sqIds.has(x.id));
+  if (cashIds.size) S.cashSales  = S.cashSales.filter(x => !cashIds.has(x.id));
+  saveState(); refreshCurrentTab();
   });
 }
 
@@ -1655,36 +1665,80 @@ function renderSealedTable() {
   const el = document.getElementById('sealed-inv-table');
   if (!el) return;
 
+  // Populate SKU filter dropdown if not yet populated
+  const skuSel = document.getElementById('inv-sku-filter');
+  if (skuSel && skuSel.options.length <= 1) {
+  SKU_TYPES.forEach(t => {
+  const opt = document.createElement('option');
+  opt.value = t; opt.textContent = t;
+  skuSel.appendChild(opt);
+  });
+  }
+
+  // Apply filters
+  const q = (document.getElementById('inv-search')?.value || '').toLowerCase().trim();
+  const skuFilter = document.getElementById('inv-sku-filter')?.value || 'all';
+  const filtered = S.inventory.filter(i => {
+  if (q) {
+  const hay = ((i.name || '') + ' ' + (i.set || '')).toLowerCase();
+  if (!hay.includes(q)) return false;
+  }
+  if (skuFilter !== 'all' && (i.skuType || 'Other') !== skuFilter) return false;
+  return true;
+  });
+
+  // Update count label
+  const countLbl = document.getElementById('inv-count-label');
+  if (countLbl) {
+  const filterActive = q || skuFilter !== 'all';
+  countLbl.textContent = filterActive
+  ? filtered.length + ' of ' + S.inventory.length + ' items'
+  : (S.inventory.length ? S.inventory.length + ' items' : '');
+  }
+
   if (!S.inventory.length) {
-    el.innerHTML = emptyHTML('No inventory items', 'Click "+ Add Item" to add your first sealed product.');
-    return;
+  el.innerHTML = emptyHTML('No inventory items', 'Click "+ Add Item" to add your first sealed product.');
+  return;
+  }
+
+  if (!filtered.length) {
+  el.innerHTML = emptyHTML('No items match your filters', 'Try clearing the search or SKU filter.');
+  return;
   }
 
   el.innerHTML = '<div class="table-wrap"><table id="inv-tbl">' +
-    '<thead><tr>' +
-    '<th onclick="sortTable(\'inv-tbl\',0)">Item Name</th>' +
-    '<th onclick="sortTable(\'inv-tbl\',1)">Set</th>' +
-    '<th onclick="sortTable(\'inv-tbl\',2)">SKU Type</th>' +
-    '<th onclick="sortTable(\'inv-tbl\',3,true)">Qty</th>' +
-    '<th onclick="sortTable(\'inv-tbl\',4,true)">Cost</th>' +
-    '<th onclick="sortTable(\'inv-tbl\',5,true)">Sell Price</th>' +
-    '<th>Actions</th>' +
-    '</tr></thead><tbody>' +
-    S.inventory.map(i => {
-      const manualBadge = i.manualCount ? ' <span title="Manual count — skipped on Square import" style="color:var(--red);margin-left:4px">📌</span>' : '';
-      return '<tr>' +
-        '<td>' + esc(i.name) + manualBadge + '</td>' +
-        '<td class="muted">' + esc(i.set || '—') + '</td>' +
-        '<td><span class="tag tag-blue">' + esc(i.skuType || '—') + '</span></td>' +
-        '<td class="right">' + (i.qty || 0) + '</td>' +
-        '<td class="right">' + fmtMoney(i.cost) + '</td>' +
-        '<td class="right green">' + fmtMoney(i.sellPrice) + '</td>' +
-        '<td>' +
-        '<button class="btn btn-secondary btn-sm" onclick="openModal(\'edit-inventory\',\'' + escA(i.id) + '\')">Edit</button> ' +
-        '<button class="btn btn-danger btn-sm" onclick="deleteInvItem(\'' + escA(i.id) + '\')">Del</button>' +
-        '</td></tr>';
-    }).join('') +
-    '</tbody></table></div>';
+  '<thead><tr>' +
+  '<th onclick="sortTable(\'inv-tbl\',0)">Item Name</th>' +
+  '<th onclick="sortTable(\'inv-tbl\',1)">Set</th>' +
+  '<th onclick="sortTable(\'inv-tbl\',2)">SKU Type</th>' +
+  '<th onclick="sortTable(\'inv-tbl\',3,true)">Qty</th>' +
+  '<th onclick="sortTable(\'inv-tbl\',4,true)">Cost</th>' +
+  '<th onclick="sortTable(\'inv-tbl\',5,true)">Sell Price</th>' +
+  '<th>Actions</th>' +
+  '</tr></thead><tbody>' +
+  filtered.map(i => {
+  const manualBadge = i.manualCount ? ' <span class="tag tag-amber" title="Manual count — skipped on Square import" style="font-size:9px;padding:1px 6px;margin-left:6px">MANUAL</span>' : '';
+  return '<tr>' +
+  '<td>' + esc(i.name) + manualBadge + '</td>' +
+  '<td class="muted">' + esc(i.set || '—') + '</td>' +
+  '<td><span class="tag tag-blue">' + esc(i.skuType || '—') + '</span></td>' +
+  '<td class="right">' + (i.qty || 0) + '</td>' +
+  '<td class="right">' + fmtMoney(i.cost) + '</td>' +
+  '<td class="right green">' + fmtMoney(i.sellPrice) + '</td>' +
+  '<td>' +
+  '<button class="btn btn-secondary btn-sm" onclick="openModal(\'edit-inventory\',\'' + escA(i.id) + '\')">Edit</button> ' +
+  '<button class="btn btn-danger btn-sm" onclick="deleteInvItem(\'' + escA(i.id) + '\')">Del</button>' +
+  '</td></tr>';
+  }).join('') +
+  '</tbody></table></div>';
+}
+
+function clearInvFilters() {
+  const search = document.getElementById('inv-search');
+  const sku    = document.getElementById('inv-sku-filter');
+  if (search) search.value = '';
+  if (sku)    sku.value    = 'all';
+  renderSealedTable();
 }
 
 
@@ -1692,30 +1746,30 @@ function renderSealedTable() {
 function buildItemMap() {
   const map = {};
   filteredSqSales().forEach(sale => {
-    // Build item list — re-parse descriptions to handle "2 x Item" stored in old imports
-    let itemList = (sale.items && sale.items.length) ? sale.items : [];
-    if (!itemList.length && sale.description) {
-      itemList = parseSqItemDesc(sale.description, sale.gross);
-    }
-    itemList.forEach(item => {
-      if (!item.name) return;
-      // Re-parse name in case old data still has "2 x Item" prefix
-      const parsed = parseSqItemDesc(item.name, (item.qty || 1) * (item.price || 0));
-      parsed.forEach(p => {
-        const k = p.name.toLowerCase().trim();
-        if (!map[k]) map[k] = { name: p.name, units: 0, revenue: 0, src: 'Square' };
-        map[k].units   += p.qty;
-        map[k].revenue += p.qty * p.price;
-      });
-    });
+  // Build item list — re-parse descriptions to handle "2 x Item" stored in old imports
+  let itemList = (sale.items && sale.items.length) ? sale.items : [];
+  if (!itemList.length && sale.description) {
+  itemList = parseSqItemDesc(sale.description, sale.gross);
+  }
+  itemList.forEach(item => {
+  if (!item.name) return;
+  // Re-parse name in case old data still has "2 x Item" prefix
+  const parsed = parseSqItemDesc(item.name, (item.qty || 1) * (item.price || 0));
+  parsed.forEach(p => {
+  const k = p.name.toLowerCase().trim();
+  if (!map[k]) map[k] = { name: p.name, units: 0, revenue: 0, src: 'Square' };
+  map[k].units  += p.qty;
+  map[k].revenue += p.qty * p.price;
+  });
+  });
   });
   filteredCashSales().forEach(sale => {
-    if (!sale.category) return;
-    const k = sale.category.toLowerCase().trim();
-    if (!map[k]) map[k] = { name: sale.category, units: 0, revenue: 0, src: 'Cash' };
-    else if (map[k].src === 'Square') map[k].src = 'Both';
-    map[k].units   += 1;
-    map[k].revenue += sale.amount || 0;
+  if (!sale.category) return;
+  const k = sale.category.toLowerCase().trim();
+  if (!map[k]) map[k] = { name: sale.category, units: 0, revenue: 0, src: 'Cash' };
+  else if (map[k].src === 'Square') map[k].src = 'Both';
+  map[k].units  += 1;
+  map[k].revenue += sale.amount || 0;
   });
   return Object.values(map).sort((a, b) => b.revenue - a.revenue);
 }
@@ -1723,23 +1777,23 @@ function buildItemMap() {
 function buildSetMap() {
   const map = {};
   const lookupSet = name => {
-    if (!name) return null;
-    const inv = S.inventory.find(i => i.name && i.name.toLowerCase() === name.toLowerCase());
-    return inv ? inv.set : null;
+  if (!name) return null;
+  const inv = S.inventory.find(i => i.name && i.name.toLowerCase() === name.toLowerCase());
+  return inv ? inv.set : null;
   };
   filteredSqSales().forEach(sale => {
-    (sale.items || []).forEach(item => {
-      const setName = lookupSet(item.name) || 'Unknown Set';
-      if (!map[setName]) map[setName] = { set: setName, revenue: 0, units: 0 };
-      map[setName].revenue += item.price || 0;
-      map[setName].units   += item.qty || 1;
-    });
+  (sale.items || []).forEach(item => {
+  const setName = lookupSet(item.name) || 'Unknown Set';
+  if (!map[setName]) map[setName] = { set: setName, revenue: 0, units: 0 };
+  map[setName].revenue += item.price || 0;
+  map[setName].units  += item.qty || 1;
+  });
   });
   filteredCashSales().forEach(sale => {
-    const setName = lookupSet(sale.category) || 'Singles / Other';
-    if (!map[setName]) map[setName] = { set: setName, revenue: 0, units: 0 };
-    map[setName].revenue += sale.amount || 0;
-    map[setName].units   += 1;
+  const setName = lookupSet(sale.category) || 'Singles / Other';
+  if (!map[setName]) map[setName] = { set: setName, revenue: 0, units: 0 };
+  map[setName].revenue += sale.amount || 0;
+  map[setName].units  += 1;
   });
   return Object.values(map).sort((a, b) => b.revenue - a.revenue);
 }
@@ -1749,33 +1803,33 @@ function renderDonutChart() {
   const canvas = document.getElementById('donut-chart');
   if (!canvas) return;
 
-  const sqRev   = filteredSqSales().reduce((s, x) => s + (x.gross || 0), 0);
+  const sqRev  = filteredSqSales().reduce((s, x) => s + (x.gross || 0), 0);
   const cashSales = filteredCashSales();
 
   // Split cash into sealed vs singles
   const cashSealed = cashSales.filter(s => {
-    const k = (s.category || '').toLowerCase().trim();
-    return S.inventory.some(i => i.name && i.name.toLowerCase().trim() === k);
+  const k = (s.category || '').toLowerCase().trim();
+  return S.inventory.some(i => i.name && i.name.toLowerCase().trim() === k);
   }).reduce((s, x) => s + (x.amount || 0), 0);
   const cashSingles = cashSales.reduce((s, x) => s + (x.amount || 0), 0) - cashSealed;
 
   const data = [
-    { label: 'Square Sales',  value: sqRev,       color: '#f0c040' },
-    { label: 'Cash — Sealed', value: cashSealed,   color: '#3fb950' },
-    { label: 'Cash — Singles',value: cashSingles,  color: '#58a6ff' }
+  { label: 'Square Sales',  value: sqRev,  color: '#f0c040' },
+  { label: 'Cash — Sealed', value: cashSealed,  color: '#3fb950' },
+  { label: 'Cash — Singles',value: cashSingles,  color: '#58a6ff' }
   ].filter(d => d.value > 0);
 
   const ctx = canvas.getContext('2d');
   canvas.width = 240; canvas.height = 240;
 
   if (!data.length) {
-    ctx.fillStyle = '#6e7681';
-    ctx.font = '13px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('No data', 120, 120);
-    document.getElementById('donut-legend').innerHTML = '';
-    return;
+  ctx.fillStyle = '#6e7681';
+  ctx.font = '13px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('No data', 120, 120);
+  document.getElementById('donut-legend').innerHTML = '';
+  return;
   }
 
   const total = data.reduce((s, d) => s + d.value, 0);
@@ -1784,14 +1838,14 @@ function renderDonutChart() {
 
   ctx.clearRect(0, 0, 240, 240);
   data.forEach(d => {
-    const sweep = (d.value / total) * 2 * Math.PI;
-    ctx.beginPath();
-    ctx.moveTo(cx, cy);
-    ctx.arc(cx, cy, r, angle, angle + sweep);
-    ctx.closePath();
-    ctx.fillStyle = d.color;
-    ctx.fill();
-    angle += sweep;
+  const sweep = (d.value / total) * 2 * Math.PI;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  ctx.arc(cx, cy, r, angle, angle + sweep);
+  ctx.closePath();
+  ctx.fillStyle = d.color;
+  ctx.fill();
+  angle += sweep;
   });
   // Donut hole
   ctx.beginPath();
@@ -1807,12 +1861,12 @@ function renderDonutChart() {
 
   const legend = document.getElementById('donut-legend');
   if (legend) {
-    legend.innerHTML = data.map(d =>
-      '<div class="legend-item">' +
-      '<div class="legend-dot" style="background:' + d.color + '"></div>' +
-      esc(d.label) + ': ' + fmtMoney(d.value) + ' (' + fmtPct(d.value/total*100) + ')' +
-      '</div>'
-    ).join('');
+  legend.innerHTML = data.map(d =>
+  '<div class="legend-item">' +
+  '<div class="legend-dot" style="background:' + d.color + '"></div>' +
+  esc(d.label) + ': ' + fmtMoney(d.value) + ' (' + fmtPct(d.value/total*100) + ')' +
+  '</div>'
+  ).join('');
   }
 }
 
@@ -1821,7 +1875,7 @@ function renderDonutChart() {
 // RENDER: COSTS
 // ============================================================
 function renderCosts() {
-  const el   = document.getElementById('costs-table-wrap');
+  const el  = document.getElementById('costs-table-wrap');
   const totEl = document.getElementById('costs-total-bar');
   if (!el) return;
 
@@ -1830,53 +1884,53 @@ function renderCosts() {
   // Keyword filter: matches name + notes
   const q = (document.getElementById('costs-search')?.value || '').toLowerCase().trim();
   const costs = q
-    ? costsAll.filter(c => ((c.name || '') + ' ' + (c.notes || '')).toLowerCase().includes(q))
-    : costsAll;
+  ? costsAll.filter(c => ((c.name || '') + ' ' + (c.notes || '')).toLowerCase().includes(q))
+  : costsAll;
 
   if (!costs.length) {
-    el.innerHTML = emptyHTML(
-      q ? 'No expenses match "' + q + '"' : 'No expenses logged',
-      q ? 'Try clearing the search or pick a different keyword.' : 'Click "+ Add Expense" to track business costs like table fees, gas, and supplies.'
-    );
-    if (totEl) totEl.style.display = 'none';
-    return;
+  el.innerHTML = emptyHTML(
+  q ? 'No expenses match "' + q + '"' : 'No expenses logged',
+  q ? 'Try clearing the search or pick a different keyword.' : 'Click "+ Add Expense" to track business costs like table fees, gas, and supplies.'
+  );
+  if (totEl) totEl.style.display = 'none';
+  return;
   }
 
   el.innerHTML =
-    '<div class="bulk-bar" id="bulk-bar-costs">' +
-      '<span class="sel-count" id="bulk-count-costs">0 selected</span>' +
-      '<button class="btn btn-danger btn-sm" onclick="deleteSelected(\'costs\')">🗑 Delete Selected</button>' +
-      '<button class="btn btn-secondary btn-sm" onclick="clearSelection(\'costs-tbl\',\'bulk-bar-costs\',\'bulk-count-costs\')">✕ Clear</button>' +
-    '</div>' +
-    '<div class="table-wrap"><table id="costs-tbl">' +
-    '<thead><tr>' +
-    '<th class="cb-col"><input type="checkbox" class="select-all-cb" onchange="toggleSelectAll(\'costs-tbl\',this,\'bulk-bar-costs\',\'bulk-count-costs\')" title="Select all"></th>' +
-    '<th onclick="sortTable(\'costs-tbl\',1)">Date</th>' +
-    '<th onclick="sortTable(\'costs-tbl\',2)">Name</th>' +
-    '<th onclick="sortTable(\'costs-tbl\',3,true)">Amount</th>' +
-    '<th onclick="sortTable(\'costs-tbl\',4)">Notes</th>' +
-    '<th>Actions</th>' +
-    '</tr></thead><tbody>' +
-    costs.map(c =>
-      '<tr>' +
-      '<td class="cb-col"><input type="checkbox" class="row-cb" data-id="' + escA(c.id) + '" onchange="onRowCbChange(\'bulk-bar-costs\',\'bulk-count-costs\',\'costs-tbl\')"></td>' +
-      '<td>' + fmtDate(c.date) + '</td>' +
-      '<td>' + esc(c.name) + '</td>' +
-      '<td class="right red">' + fmtMoney(c.amount) + '</td>' +
-      '<td class="muted">' + esc(c.notes || '—') + '</td>' +
-      '<td>' +
-        '<button class="btn btn-secondary btn-sm" onclick="openModal(\'edit-cost\',\'' + escA(c.id) + '\')">Edit</button> ' +
-        '<button class="btn btn-danger btn-sm" onclick="deleteCost(\'' + escA(c.id) + '\')">Del</button>' +
-      '</td>' +
-      '</tr>'
-    ).join('') + '</tbody></table></div>';
+  '<div class="bulk-bar" id="bulk-bar-costs">' +
+  '<span class="sel-count" id="bulk-count-costs">0 selected</span>' +
+  '<button class="btn btn-danger btn-sm" onclick="deleteSelected(\'costs\')">Delete Selected</button>' +
+  '<button class="btn btn-secondary btn-sm" onclick="clearSelection(\'costs-tbl\',\'bulk-bar-costs\',\'bulk-count-costs\')">✕ Clear</button>' +
+  '</div>' +
+  '<div class="table-wrap"><table id="costs-tbl">' +
+  '<thead><tr>' +
+  '<th class="cb-col"><input type="checkbox" class="select-all-cb" onchange="toggleSelectAll(\'costs-tbl\',this,\'bulk-bar-costs\',\'bulk-count-costs\')" title="Select all"></th>' +
+  '<th onclick="sortTable(\'costs-tbl\',1)">Date</th>' +
+  '<th onclick="sortTable(\'costs-tbl\',2)">Name</th>' +
+  '<th onclick="sortTable(\'costs-tbl\',3,true)">Amount</th>' +
+  '<th onclick="sortTable(\'costs-tbl\',4)">Notes</th>' +
+  '<th>Actions</th>' +
+  '</tr></thead><tbody>' +
+  costs.map(c =>
+  '<tr>' +
+  '<td class="cb-col"><input type="checkbox" class="row-cb" data-id="' + escA(c.id) + '" onchange="onRowCbChange(\'bulk-bar-costs\',\'bulk-count-costs\',\'costs-tbl\')"></td>' +
+  '<td>' + fmtDate(c.date) + '</td>' +
+  '<td>' + esc(c.name) + '</td>' +
+  '<td class="right red">' + fmtMoney(c.amount) + '</td>' +
+  '<td class="muted">' + esc(c.notes || '—') + '</td>' +
+  '<td>' +
+  '<button class="btn btn-secondary btn-sm" onclick="openModal(\'edit-cost\',\'' + escA(c.id) + '\')">Edit</button> ' +
+  '<button class="btn btn-danger btn-sm" onclick="deleteCost(\'' + escA(c.id) + '\')">Del</button>' +
+  '</td>' +
+  '</tr>'
+  ).join('') + '</tbody></table></div>';
 
   const total = costs.reduce((s, c) => s + (c.amount || 0), 0);
   if (totEl) {
-    totEl.style.display = 'block';
-    const label = q ? 'Filtered Total (' + costs.length + ' of ' + costsAll.length + '): ' : 'Total Expenses: ';
-    totEl.innerHTML = '<span class="text-muted fw600">' + label + '</span>' +
-      '<span style="color:var(--red);font-size:16px;font-weight:700">' + fmtMoney(total) + '</span>';
+  totEl.style.display = 'block';
+  const label = q ? 'Filtered Total (' + costs.length + ' of ' + costsAll.length + '): ' : 'Total Expenses: ';
+  totEl.innerHTML = '<span class="text-muted fw600">' + label + '</span>' +
+  '<span style="color:var(--red);font-size:16px;font-weight:700">' + fmtMoney(total) + '</span>';
   }
 }
 
@@ -1899,19 +1953,19 @@ function generateReport() {
   // Temporarily override period
   const savedPeriod = S.period, savedCS = S.customStart, savedCE = S.customEnd;
   if (period === 'custom') {
-    S.period = 'custom';
-    S.customStart = document.getElementById('report-start')?.value || '';
-    S.customEnd   = document.getElementById('report-end')?.value   || '';
+  S.period = 'custom';
+  S.customStart = document.getElementById('report-start')?.value || '';
+  S.customEnd  = document.getElementById('report-end')?.value  || '';
   } else {
-    S.period = period;
+  S.period = period;
   }
 
   const { start, end } = getDateRange();
-  const t        = calcTotals();
+  const t  = calcTotals();
   const topItems = buildItemMap().slice(0, 10);
   const topSets  = buildSetMap().slice(0, 8);
   const lowStock = getLowStockItems();
-  const costs    = filteredCosts();
+  const costs  = filteredCosts();
   const periodLbl = fmtDate(start.toISOString()) + ' – ' + fmtDate(end.toISOString());
 
   // Restore
@@ -1962,36 +2016,36 @@ ${topSets.length ? `
 ${S.inventory.length ? `
 <table style="width:100%;border-collapse:collapse;font-size:10.5pt">
   <thead><tr style="background:#f0f0f0">
-    <th style="padding:6px 8px;border:1px solid #ddd;text-align:left">Item</th>
-    <th style="padding:6px 8px;border:1px solid #ddd;text-align:left">SKU Type</th>
-    <th style="padding:6px 8px;border:1px solid #ddd;text-align:left">Set</th>
-    <th style="padding:6px 8px;border:1px solid #ddd;text-align:right">Qty</th>
-    <th style="padding:6px 8px;border:1px solid #ddd;text-align:right">Sell Price</th>
-    <th style="padding:6px 8px;border:1px solid #ddd">Status</th>
+  <th style="padding:6px 8px;border:1px solid #ddd;text-align:left">Item</th>
+  <th style="padding:6px 8px;border:1px solid #ddd;text-align:left">SKU Type</th>
+  <th style="padding:6px 8px;border:1px solid #ddd;text-align:left">Set</th>
+  <th style="padding:6px 8px;border:1px solid #ddd;text-align:right">Qty</th>
+  <th style="padding:6px 8px;border:1px solid #ddd;text-align:right">Sell Price</th>
+  <th style="padding:6px 8px;border:1px solid #ddd">Status</th>
   </tr></thead>
   <tbody>${S.inventory.map((i,idx) => {
-    const low = (i.qty||0) <= (i.reorder||0);
-    return `<tr${idx%2?' style="background:#f9f9f9"':''}>
-      <td style="padding:5px 8px;border:1px solid #ddd">${esc(i.name)}</td>
-      <td style="padding:5px 8px;border:1px solid #ddd">${esc(i.skuType||'—')}</td>
-      <td style="padding:5px 8px;border:1px solid #ddd">${esc(i.set||'—')}</td>
-      <td style="padding:5px 8px;border:1px solid #ddd;text-align:right${low?';color:#c0392b;font-weight:bold':''}">${i.qty||0}</td>
-      <td style="padding:5px 8px;border:1px solid #ddd;text-align:right">${fmtMoney(i.sellPrice)}</td>
-      <td style="padding:5px 8px;border:1px solid #ddd">${low?'⚠ LOW':'OK'}</td>
-    </tr>`;
+  const low = (i.qty||0) <= (i.reorder||0);
+  return `<tr${idx%2?' style="background:#f9f9f9"':''}>
+  <td style="padding:5px 8px;border:1px solid #ddd">${esc(i.name)}</td>
+  <td style="padding:5px 8px;border:1px solid #ddd">${esc(i.skuType||'—')}</td>
+  <td style="padding:5px 8px;border:1px solid #ddd">${esc(i.set||'—')}</td>
+  <td style="padding:5px 8px;border:1px solid #ddd;text-align:right${low?';color:#c0392b;font-weight:bold':''}">${i.qty||0}</td>
+  <td style="padding:5px 8px;border:1px solid #ddd;text-align:right">${fmtMoney(i.sellPrice)}</td>
+  <td style="padding:5px 8px;border:1px solid #ddd">${low?'LOW':'OK'}</td>
+  </tr>`;
   }).join('')}</tbody>
 </table>
-${lowStock.length ? `<p style="color:#c0392b;font-size:9pt;margin-top:6px">⚠ ${lowStock.length} item(s) at or below reorder threshold.</p>` : ''}
+${lowStock.length ? `<p style="color:#c0392b;font-size:9pt;margin-top:6px">${lowStock.length} item(s) at or below reorder threshold.</p>` : ''}
 ` : '<p style="color:#777;font-size:10pt">No inventory on file.</p>'}
 
 ${S.singles.length ? `
 <h2 style="font-size:13pt;border-bottom:1px solid #ccc;padding-bottom:5px;margin:24px 0 10px">4b — Singles Inventory</h2>
 <table style="width:100%;border-collapse:collapse;font-size:10.5pt">
   <thead><tr style="background:#f0f0f0">
-    <th style="padding:6px 8px;border:1px solid #ddd;text-align:left">Set</th>
-    <th style="padding:6px 8px;border:1px solid #ddd;text-align:right">Cards</th>
-    <th style="padding:6px 8px;border:1px solid #ddd;text-align:right">Cost Basis</th>
-    <th style="padding:6px 8px;border:1px solid #ddd;text-align:right">Est. Value</th>
+  <th style="padding:6px 8px;border:1px solid #ddd;text-align:left">Set</th>
+  <th style="padding:6px 8px;border:1px solid #ddd;text-align:right">Cards</th>
+  <th style="padding:6px 8px;border:1px solid #ddd;text-align:right">Cost Basis</th>
+  <th style="padding:6px 8px;border:1px solid #ddd;text-align:right">Est. Value</th>
   </tr></thead>
   <tbody>${S.singles.map((s,i) => `<tr${i%2?' style="background:#f9f9f9"':''}><td style="padding:5px 8px;border:1px solid #ddd">${esc(s.set)}</td><td style="padding:5px 8px;border:1px solid #ddd;text-align:right">${s.count||0}</td><td style="padding:5px 8px;border:1px solid #ddd;text-align:right">${fmtMoney((s.count||0)*(s.avgCost||0))}</td><td style="padding:5px 8px;border:1px solid #ddd;text-align:right">${fmtMoney((s.count||0)*(s.avgSell||0))}</td></tr>`).join('')}</tbody>
 </table>` : ''}
@@ -2001,23 +2055,23 @@ ${S.singles.length ? `
 ${costs.length ? `
 <table style="width:100%;border-collapse:collapse;font-size:10.5pt">
   <thead><tr style="background:#f0f0f0">
-    <th style="padding:6px 8px;border:1px solid #ddd;text-align:left">Date</th>
-    <th style="padding:6px 8px;border:1px solid #ddd;text-align:left">Name</th>
-    <th style="padding:6px 8px;border:1px solid #ddd;text-align:right">Amount</th>
-    <th style="padding:6px 8px;border:1px solid #ddd;text-align:left">Notes</th>
+  <th style="padding:6px 8px;border:1px solid #ddd;text-align:left">Date</th>
+  <th style="padding:6px 8px;border:1px solid #ddd;text-align:left">Name</th>
+  <th style="padding:6px 8px;border:1px solid #ddd;text-align:right">Amount</th>
+  <th style="padding:6px 8px;border:1px solid #ddd;text-align:left">Notes</th>
   </tr></thead>
   <tbody>
-    ${costs.map((c,i) => `<tr${i%2?' style="background:#f9f9f9"':''}><td style="padding:5px 8px;border:1px solid #ddd">${fmtDate(c.date)}</td><td style="padding:5px 8px;border:1px solid #ddd">${esc(c.name)}</td><td style="padding:5px 8px;border:1px solid #ddd;text-align:right">${fmtMoney(c.amount)}</td><td style="padding:5px 8px;border:1px solid #ddd">${esc(c.notes||'—')}</td></tr>`).join('')}
-    <tr style="background:#f0f0f0;font-weight:bold"><td colspan="2" style="padding:6px 8px;border:1px solid #ddd">TOTAL EXPENSES</td><td style="padding:6px 8px;border:1px solid #ddd;text-align:right">${fmtMoney(t.totalCosts)}</td><td style="border:1px solid #ddd"></td></tr>
+  ${costs.map((c,i) => `<tr${i%2?' style="background:#f9f9f9"':''}><td style="padding:5px 8px;border:1px solid #ddd">${fmtDate(c.date)}</td><td style="padding:5px 8px;border:1px solid #ddd">${esc(c.name)}</td><td style="padding:5px 8px;border:1px solid #ddd;text-align:right">${fmtMoney(c.amount)}</td><td style="padding:5px 8px;border:1px solid #ddd">${esc(c.notes||'—')}</td></tr>`).join('')}
+  <tr style="background:#f0f0f0;font-weight:bold"><td colspan="2" style="padding:6px 8px;border:1px solid #ddd">TOTAL EXPENSES</td><td style="padding:6px 8px;border:1px solid #ddd;text-align:right">${fmtMoney(t.totalCosts)}</td><td style="border:1px solid #ddd"></td></tr>
   </tbody>
 </table>` : '<p style="color:#777;font-size:10pt">No expenses for this period.</p>'}
 
 <h2 style="font-size:13pt;border-bottom:1px solid #ccc;padding-bottom:5px;margin:24px 0 10px">6 — Net Profit Summary (P&amp;L)</h2>
 <table style="width:360px;border-collapse:collapse;font-size:11pt">
-  ${pRow('Gross Revenue',             fmtMoney(t.totalGross))}
-  ${pRow('Less: Square Processing Fees', '(' + fmtMoney(t.sqFees)    + ')', false, true)}
-  ${pRow('Less: Tax Collected (WI)',    '(' + fmtMoney(t.totalTax)  + ')', false, true)}
-  ${pRow('Less: Business Expenses',    '(' + fmtMoney(t.totalCosts) + ')', false, true)}
+  ${pRow('Gross Revenue',  fmtMoney(t.totalGross))}
+  ${pRow('Less: Square Processing Fees', '(' + fmtMoney(t.sqFees)  + ')', false, true)}
+  ${pRow('Less: Tax Collected (WI)',  '(' + fmtMoney(t.totalTax)  + ')', false, true)}
+  ${pRow('Less: Business Expenses',  '(' + fmtMoney(t.totalCosts) + ')', false, true)}
   ${pRow('NET PROFIT', fmtMoney(t.netProfit), true, t.netProfit < 0)}
 </table>
 
@@ -2029,13 +2083,13 @@ ${costs.length ? `
 
   const container = document.getElementById('print-report');
   if (container) {
-    container.innerHTML = html;
-    container.style.display = 'block';
+  container.innerHTML = html;
+  container.style.display = 'block';
   }
 
   window.onafterprint = () => {
-    if (container) container.style.display = 'none';
-    window.onafterprint = null;
+  if (container) container.style.display = 'none';
+  window.onafterprint = null;
   };
   window.print();
   // Fallback hide
@@ -2047,8 +2101,8 @@ function pRow(label, val, bold, danger) {
   const fw = bold ? 'font-weight:bold;' : '';
   const vc = danger ? 'color:#c0392b;' : bold ? 'color:#27ae60;' : '';
   return `<tr style="${bg}">
-    <td style="padding:6px 8px;border:1px solid #ddd;${fw}">${esc(label)}</td>
-    <td style="padding:6px 8px;border:1px solid #ddd;text-align:right;${fw}${vc}">${val}</td>
+  <td style="padding:6px 8px;border:1px solid #ddd;${fw}">${esc(label)}</td>
+  <td style="padding:6px 8px;border:1px solid #ddd;text-align:right;${fw}${vc}">${val}</td>
   </tr>`;
 }
 
@@ -2057,92 +2111,92 @@ function pRow(label, val, bold, danger) {
 // ============================================================
 function openModal(type, id) {
   const overlay = document.getElementById('modal-overlay');
-  const title   = document.getElementById('modal-title');
-  const body    = document.getElementById('modal-body');
+  const title  = document.getElementById('modal-title');
+  const body  = document.getElementById('modal-body');
   const footer  = document.getElementById('modal-footer');
   if (!overlay) return;
   overlay.classList.add('open');
 
   switch (type) {
-    case 'add-cash':
-      title.textContent = 'Add Cash Sale';
-      body.innerHTML = buildCashForm();
-      footer.innerHTML = '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveCashSale()">Save Sale</button>';
-      break;
+  case 'add-cash':
+  title.textContent = 'Add Cash Sale';
+  body.innerHTML = buildCashForm();
+  footer.innerHTML = '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveCashSale()">Save Sale</button>';
+  break;
 
-    case 'add-inventory':
-      title.textContent = 'Add Inventory Item';
-      body.innerHTML = buildInvForm();
-      footer.innerHTML = '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveInvItem()">Save Item</button>';
-      break;
+  case 'add-inventory':
+  title.textContent = 'Add Inventory Item';
+  body.innerHTML = buildInvForm();
+  footer.innerHTML = '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveInvItem()">Save Item</button>';
+  break;
 
-    case 'edit-inventory': {
-      const item = S.inventory.find(i => i.id === id);
-      if (!item) { closeModal(); return; }
-      title.textContent = 'Edit Inventory Item';
-      body.innerHTML = buildInvForm(item);
-      footer.innerHTML = '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveInvItem(\'' + escA(id) + '\')">Update Item</button>';
-      break;
-    }
+  case 'edit-inventory': {
+  const item = S.inventory.find(i => i.id === id);
+  if (!item) { closeModal(); return; }
+  title.textContent = 'Edit Inventory Item';
+  body.innerHTML = buildInvForm(item);
+  footer.innerHTML = '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveInvItem(\'' + escA(id) + '\')">Update Item</button>';
+  break;
+  }
 
-    case 'add-singles':
-      title.textContent = 'Add Singles Set';
-      body.innerHTML = buildSinglesForm();
-      footer.innerHTML = '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveSinglesSet()">Save Set</button>';
-      break;
+  case 'add-singles':
+  title.textContent = 'Add Singles Set';
+  body.innerHTML = buildSinglesForm();
+  footer.innerHTML = '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveSinglesSet()">Save Set</button>';
+  break;
 
-    case 'edit-singles': {
-      const s = S.singles.find(x => x.id === id);
-      if (!s) { closeModal(); return; }
-      title.textContent = 'Edit Singles Set';
-      body.innerHTML = buildSinglesForm(s);
-      footer.innerHTML = '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveSinglesSet(\'' + escA(id) + '\')">Update Set</button>';
-      break;
-    }
+  case 'edit-singles': {
+  const s = S.singles.find(x => x.id === id);
+  if (!s) { closeModal(); return; }
+  title.textContent = 'Edit Singles Set';
+  body.innerHTML = buildSinglesForm(s);
+  footer.innerHTML = '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveSinglesSet(\'' + escA(id) + '\')">Update Set</button>';
+  break;
+  }
 
-    case 'add-cost':
-      title.textContent = 'Add Business Expense';
-      body.innerHTML = buildCostForm();
-      footer.innerHTML = '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveCost()">Save Expense</button>';
-      break;
+  case 'add-cost':
+  title.textContent = 'Add Business Expense';
+  body.innerHTML = buildCostForm();
+  footer.innerHTML = '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveCost()">Save Expense</button>';
+  break;
 
-    case 'add-sq-sale':
-      title.textContent = '+ Add Square Transaction';
-      body.innerHTML = buildSqSaleEditForm(null);
-      footer.innerHTML = '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button>' +
-        '<button class="btn btn-primary" onclick="saveSqSaleEdit(null)">Save Sale</button>';
-      break;
+  case 'add-sq-sale':
+  title.textContent = '+ Add Square Transaction';
+  body.innerHTML = buildSqSaleEditForm(null);
+  footer.innerHTML = '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button>' +
+  '<button class="btn btn-primary" onclick="saveSqSaleEdit(null)">Save Sale</button>';
+  break;
 
-    case 'edit-sq-sale': {
-      const sale = S.squareSales.find(x => x.id === id);
-      if (!sale) { closeModal(); return; }
-      title.textContent = '✏️ Edit Sale';
-      body.innerHTML = buildSqSaleEditForm(sale);
-      footer.innerHTML = '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button>' +
-        '<button class="btn btn-danger btn-sm" onclick="deleteSqSale(\'' + escA(id) + '\')" style="margin-right:auto">Delete</button>' +
-        '<button class="btn btn-primary" onclick="saveSqSaleEdit(\'' + escA(id) + '\')">Save Changes</button>';
-      break;
-    }
+  case 'edit-sq-sale': {
+  const sale = S.squareSales.find(x => x.id === id);
+  if (!sale) { closeModal(); return; }
+  title.textContent = 'Edit Sale';
+  body.innerHTML = buildSqSaleEditForm(sale);
+  footer.innerHTML = '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button>' +
+  '<button class="btn btn-danger btn-sm" onclick="deleteSqSale(\'' + escA(id) + '\')" style="margin-right:auto">Delete</button>' +
+  '<button class="btn btn-primary" onclick="saveSqSaleEdit(\'' + escA(id) + '\')">Save Changes</button>';
+  break;
+  }
 
-    case 'edit-cost': {
-      const cost = S.costs.find(x => x.id === id);
-      if (!cost) { closeModal(); return; }
-      title.textContent = '✏️ Edit Expense';
-      body.innerHTML = buildCostForm(cost);
-      footer.innerHTML = '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveCost(\'' + escA(id) + '\')">Update Expense</button>';
-      break;
-    }
+  case 'edit-cost': {
+  const cost = S.costs.find(x => x.id === id);
+  if (!cost) { closeModal(); return; }
+  title.textContent = 'Edit Expense';
+  body.innerHTML = buildCostForm(cost);
+  footer.innerHTML = '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveCost(\'' + escA(id) + '\')">Update Expense</button>';
+  break;
+  }
 
-    case 'edit-cash-sale': {
-      const sale = S.cashSales.find(x => x.id === id);
-      if (!sale) { closeModal(); return; }
-      title.textContent = '✏️ Edit Sale';
-      body.innerHTML = buildCashForm(sale);
-      footer.innerHTML = '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button>' +
-        '<button class="btn btn-danger btn-sm" onclick="deleteCashSale(\'' + escA(id) + '\')" style="margin-right:auto">Delete</button>' +
-        '<button class="btn btn-primary" onclick="saveCashSale(\'' + escA(id) + '\')">Save Changes</button>';
-      break;
-    }
+  case 'edit-cash-sale': {
+  const sale = S.cashSales.find(x => x.id === id);
+  if (!sale) { closeModal(); return; }
+  title.textContent = 'Edit Sale';
+  body.innerHTML = buildCashForm(sale);
+  footer.innerHTML = '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button>' +
+  '<button class="btn btn-danger btn-sm" onclick="deleteCashSale(\'' + escA(id) + '\')" style="margin-right:auto">Delete</button>' +
+  '<button class="btn btn-primary" onclick="saveCashSale(\'' + escA(id) + '\')">Save Changes</button>';
+  break;
+  }
   }
 }
 
@@ -2164,15 +2218,15 @@ function buildCashForm(d) {
 <div id="form-err" class="alert alert-error" style="display:none"></div>
 <div class="form-grid">
   <div class="form-row">
-    <label class="field-label">Date *</label>
-    <input type="date" id="cf-date" value="${dateVal}" />
+  <label class="field-label">Date *</label>
+  <input type="date" id="cf-date" value="${dateVal}" />
   </div>
   <div class="form-row">
-    <label class="field-label">Source</label>
-    <select id="cf-src">
-      <option value="cash" selected>💵 Cash / Other</option>
-      <option value="square">⬛ Square</option>
-    </select>
+  <label class="field-label">Source</label>
+  <select id="cf-src">
+  <option value="cash" selected>Cash / Other</option>
+  <option value="square">Square</option>
+  </select>
   </div>
 </div>
 <div class="form-row">
@@ -2181,12 +2235,12 @@ function buildCashForm(d) {
 </div>
 <div class="form-grid">
   <div class="form-row">
-    <label class="field-label">Sale Amount ($) *</label>
-    <input type="number" id="cf-amt" value="${d?.amount||''}" placeholder="0.00" step="0.01" min="0" oninput="(function(){const g=parseFloat(document.getElementById('cf-amt').value)||0;const t=g*${S.taxRate}/(100+${S.taxRate});const el=document.getElementById('cf-net-display');if(el)el.value=g>0?'$'+(g-t).toFixed(2):'';})()" />
+  <label class="field-label">Sale Amount ($) *</label>
+  <input type="number" id="cf-amt" value="${d?.amount||''}" placeholder="0.00" step="0.01" min="0" oninput="(function(){const g=parseFloat(document.getElementById('cf-amt').value)||0;const t=g*${S.taxRate}/(100+${S.taxRate});const el=document.getElementById('cf-net-display');if(el)el.value=g>0?'$'+(g-t).toFixed(2):'';})()" />
   </div>
   <div class="form-row">
-    <label class="field-label">Net (after tax)</label>
-    <input type="text" id="cf-net-display" readonly style="background:var(--bg3);color:var(--green);font-weight:700" placeholder="—" oninput="void(0)" />
+  <label class="field-label">Net (after tax)</label>
+  <input type="text" id="cf-net-display" readonly style="background:var(--bg3);color:var(--green);font-weight:700" placeholder="—" oninput="void(0)" />
   </div>
 </div>
 <div class="form-row">
@@ -2207,38 +2261,38 @@ function buildInvForm(d) {
 </div>
 <div class="form-grid">
   <div class="form-row">
-    <label class="field-label">Set Name</label>
-    <input type="text" id="if-set" value="${escA(d?.set||'')}" placeholder="e.g. Scarlet &amp; Violet Base" />
+  <label class="field-label">Set Name</label>
+  <input type="text" id="if-set" value="${escA(d?.set||'')}" placeholder="e.g. Scarlet &amp; Violet Base" />
   </div>
   <div class="form-row">
-    <label class="field-label">SKU Type *</label>
-    <select id="if-sku">${SKU_TYPES.map(t => '<option value="' + t + '"' + (d?.skuType===t?' selected':'') + '>' + t + '</option>').join('')}</select>
-  </div>
-</div>
-<div class="form-grid">
-  <div class="form-row">
-    <label class="field-label">Qty In Stock *</label>
-    <input type="number" id="if-qty" value="${d?.qty??''}" placeholder="0" min="0" step="1" />
-  </div>
-  <div class="form-row">
-    <label class="field-label">Reorder Threshold</label>
-    <input type="number" id="if-reorder" value="${d?.reorder??''}" placeholder="2" min="0" step="1" />
+  <label class="field-label">SKU Type *</label>
+  <select id="if-sku">${SKU_TYPES.map(t => '<option value="' + t + '"' + (d?.skuType===t?' selected':'') + '>' + t + '</option>').join('')}</select>
   </div>
 </div>
 <div class="form-grid">
   <div class="form-row">
-    <label class="field-label">Cost Price ($) *</label>
-    <input type="number" id="if-cost" value="${d?.cost??''}" placeholder="0.00" step="0.01" min="0" />
+  <label class="field-label">Qty In Stock *</label>
+  <input type="number" id="if-qty" value="${d?.qty??''}" placeholder="0" min="0" step="1" />
   </div>
   <div class="form-row">
-    <label class="field-label">Sell Price ($) *</label>
-    <input type="number" id="if-sell" value="${d?.sellPrice??''}" placeholder="0.00" step="0.01" min="0" />
+  <label class="field-label">Reorder Threshold</label>
+  <input type="number" id="if-reorder" value="${d?.reorder??''}" placeholder="2" min="0" step="1" />
+  </div>
+</div>
+<div class="form-grid">
+  <div class="form-row">
+  <label class="field-label">Cost Price ($) *</label>
+  <input type="number" id="if-cost" value="${d?.cost??''}" placeholder="0.00" step="0.01" min="0" />
+  </div>
+  <div class="form-row">
+  <label class="field-label">Sell Price ($) *</label>
+  <input type="number" id="if-sell" value="${d?.sellPrice??''}" placeholder="0.00" step="0.01" min="0" />
   </div>
 </div>
 <div class="form-row" style="margin-top:10px;padding:10px 12px;background:rgba(224,32,32,0.08);border:1px solid rgba(224,32,32,0.3);border-radius:6px">
   <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
-    <input type="checkbox" id="if-manual" ${d?.manualCount ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer" />
-    <span><strong>📌 Manual count</strong> — skip this item when importing from Square CSV (preserves qty &amp; price)</span>
+  <input type="checkbox" id="if-manual" ${d?.manualCount ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer" />
+  <span><strong>Manual count</strong> — skip this item when importing from Square CSV (preserves qty &amp; price)</span>
   </label>
 </div>`;
 }
@@ -2252,12 +2306,12 @@ function buildSinglesForm(d) {
 </div>
 <div class="form-grid">
   <div class="form-row">
-    <label class="field-label">Cards In Stock *</label>
-    <input type="number" id="sf-count" value="${d?.count??''}" placeholder="0" min="0" step="1" />
+  <label class="field-label">Cards In Stock *</label>
+  <input type="number" id="sf-count" value="${d?.count??''}" placeholder="0" min="0" step="1" />
   </div>
   <div class="form-row">
-    <label class="field-label">Avg Cost Per Card ($)</label>
-    <input type="number" id="sf-cost" value="${d?.avgCost??''}" placeholder="0.00" step="0.01" min="0" />
+  <label class="field-label">Avg Cost Per Card ($)</label>
+  <input type="number" id="sf-cost" value="${d?.avgCost??''}" placeholder="0.00" step="0.01" min="0" />
   </div>
 </div>
 <div class="form-row">
@@ -2273,12 +2327,12 @@ function buildCostForm(d) {
 <div id="form-err" class="alert alert-error" style="display:none"></div>
 <div class="form-grid">
   <div class="form-row">
-    <label class="field-label">Date *</label>
-    <input type="date" id="cost-date" value="${dateVal}" />
+  <label class="field-label">Date *</label>
+  <input type="date" id="cost-date" value="${dateVal}" />
   </div>
   <div class="form-row">
-    <label class="field-label">Amount ($) *</label>
-    <input type="number" id="cost-amt" value="${d ? d.amount : ''}" placeholder="0.00" step="0.01" min="0" />
+  <label class="field-label">Amount ($) *</label>
+  <input type="number" id="cost-amt" value="${d ? d.amount : ''}" placeholder="0.00" step="0.01" min="0" />
   </div>
 </div>
 <div class="form-row">
@@ -2303,10 +2357,10 @@ function v(id) { return document.getElementById(id)?.value?.trim() || ''; }
 function vn(id) { const n = parseFloat(document.getElementById(id)?.value); return isNaN(n) ? null : n; }
 
 function saveCashSale(editId) {
-  const date   = v('cf-date'), cat = v('cf-cat'), amtRaw = vn('cf-amt');
-  const src    = document.getElementById('cf-src')?.value || 'cash';
-  if (!date)   { showFormErr('Date is required.'); return; }
-  if (!cat)    { showFormErr('Description is required.'); return; }
+  const date  = v('cf-date'), cat = v('cf-cat'), amtRaw = vn('cf-amt');
+  const src  = document.getElementById('cf-src')?.value || 'cash';
+  if (!date)  { showFormErr('Date is required.'); return; }
+  if (!cat)  { showFormErr('Description is required.'); return; }
   if (amtRaw === null || amtRaw <= 0) { showFormErr('Enter a valid sale amount.'); return; }
 
   // Tax is back-calculated (inclusive) — it's already inside the sale amount
@@ -2314,19 +2368,19 @@ function saveCashSale(editId) {
   const dateISO = date + 'T12:00:00Z';
 
   if (src === 'square') {
-    // Move/save as Square sale
-    if (editId) S.cashSales = S.cashSales.filter(x => x.id !== editId);
-    const fee = parseFloat((amtRaw * 0.026 + 0.15).toFixed(2));
-    S.squareSales.push({ id: editId || genId(), date: dateISO, description: cat, gross: amtRaw, fee, tax, net: parseFloat((amtRaw - fee - tax).toFixed(2)), feeEstimated: true, items: [{ name: cat, qty: 1, price: amtRaw }], status: 'COMPLETED', source: 'manual' });
+  // Move/save as Square sale
+  if (editId) S.cashSales = S.cashSales.filter(x => x.id !== editId);
+  const fee = parseFloat((amtRaw * 0.026 + 0.15).toFixed(2));
+  S.squareSales.push({ id: editId || genId(), date: dateISO, description: cat, gross: amtRaw, fee, tax, net: parseFloat((amtRaw - fee - tax).toFixed(2)), feeEstimated: true, items: [{ name: cat, qty: 1, price: amtRaw }], status: 'COMPLETED', source: 'manual' });
   } else {
-    if (editId) {
-      const idx = S.cashSales.findIndex(x => x.id === editId);
-      if (idx >= 0) S.cashSales[idx] = { ...S.cashSales[idx], date: dateISO, category: cat, amount: amtRaw, tax, notes: v('cf-notes') };
-    } else {
-      S.cashSales.push({ id: genId(), date: dateISO, category: cat, amount: amtRaw, tax, notes: v('cf-notes') });
-      const inv = S.inventory.find(i => i.name && i.name.toLowerCase().trim() === cat.toLowerCase().trim());
-      if (inv) inv.qty = Math.max(0, (inv.qty || 0) - 1);
-    }
+  if (editId) {
+  const idx = S.cashSales.findIndex(x => x.id === editId);
+  if (idx >= 0) S.cashSales[idx] = { ...S.cashSales[idx], date: dateISO, category: cat, amount: amtRaw, tax, notes: v('cf-notes') };
+  } else {
+  S.cashSales.push({ id: genId(), date: dateISO, category: cat, amount: amtRaw, tax, notes: v('cf-notes') });
+  const inv = S.inventory.find(i => i.name && i.name.toLowerCase().trim() === cat.toLowerCase().trim());
+  if (inv) inv.qty = Math.max(0, (inv.qty || 0) - 1);
+  }
   }
 
   saveState(); closeModal(); updateLowStockBadge(); refreshCurrentTab();
@@ -2345,19 +2399,19 @@ function saveInvItem(editId) {
   const reorderRaw = vn('if-reorder');
   const manualCount = document.getElementById('if-manual')?.checked || false;
   const item = {
-    id: editId || genId(),
-    name, set: v('if-set'), skuType: sku,
-    qty: Math.max(0, Math.round(qty)),
-    reorder: reorderRaw !== null ? Math.max(0, Math.round(reorderRaw)) : 0,
-    cost, sellPrice: sell,
-    manualCount
+  id: editId || genId(),
+  name, set: v('if-set'), skuType: sku,
+  qty: Math.max(0, Math.round(qty)),
+  reorder: reorderRaw !== null ? Math.max(0, Math.round(reorderRaw)) : 0,
+  cost, sellPrice: sell,
+  manualCount
   };
 
   if (editId) {
-    const idx = S.inventory.findIndex(i => i.id === editId);
-    if (idx >= 0) S.inventory[idx] = item; else S.inventory.push(item);
+  const idx = S.inventory.findIndex(i => i.id === editId);
+  if (idx >= 0) S.inventory[idx] = item; else S.inventory.push(item);
   } else {
-    S.inventory.push(item);
+  S.inventory.push(item);
   }
 
   saveState(); closeModal(); updateLowStockBadge(); renderInventory();
@@ -2365,22 +2419,22 @@ function saveInvItem(editId) {
 
 function saveSinglesSet(editId) {
   const set = v('sf-set'), cntRaw = vn('sf-count');
-  if (!set)      { showFormErr('Set name is required.'); return; }
+  if (!set)  { showFormErr('Set name is required.'); return; }
   if (cntRaw === null) { showFormErr('Card count is required.'); return; }
 
   const s = {
-    id: editId || genId(),
-    set,
-    count: Math.max(0, Math.round(cntRaw)),
-    avgCost: vn('sf-cost') || 0,
-    avgSell: vn('sf-sell') || 0
+  id: editId || genId(),
+  set,
+  count: Math.max(0, Math.round(cntRaw)),
+  avgCost: vn('sf-cost') || 0,
+  avgSell: vn('sf-sell') || 0
   };
 
   if (editId) {
-    const idx = S.singles.findIndex(x => x.id === editId);
-    if (idx >= 0) S.singles[idx] = s; else S.singles.push(s);
+  const idx = S.singles.findIndex(x => x.id === editId);
+  if (idx >= 0) S.singles[idx] = s; else S.singles.push(s);
   } else {
-    S.singles.push(s);
+  S.singles.push(s);
   }
 
   saveState(); closeModal(); renderInventory();
@@ -2395,10 +2449,10 @@ function saveCost(editId) {
   const date = dateRaw + 'T12:00:00Z';
 
   if (editId) {
-    const idx = S.costs.findIndex(x => x.id === editId);
-    if (idx >= 0) S.costs[idx] = { ...S.costs[idx], date, name, amount: amtRaw, notes: v('cost-notes') };
+  const idx = S.costs.findIndex(x => x.id === editId);
+  if (idx >= 0) S.costs[idx] = { ...S.costs[idx], date, name, amount: amtRaw, notes: v('cost-notes') };
   } else {
-    S.costs.push({ id: genId(), date, name, amount: amtRaw, notes: v('cost-notes') });
+  S.costs.push({ id: genId(), date, name, amount: amtRaw, notes: v('cost-notes') });
   }
   saveState(); closeModal(); renderCosts();
 }
@@ -2408,29 +2462,29 @@ function saveCost(editId) {
 // ============================================================
 function deleteCashSale(id) {
   appConfirm('Delete this cash sale? This cannot be undone.', 'Delete', () => {
-    S.cashSales = S.cashSales.filter(s => s.id !== id);
-    saveState(); refreshCurrentTab();
+  S.cashSales = S.cashSales.filter(s => s.id !== id);
+  saveState(); refreshCurrentTab();
   });
 }
 
 function deleteInvItem(id) {
   appConfirm('Delete this inventory item?', 'Delete', () => {
-    S.inventory = S.inventory.filter(i => i.id !== id);
-    saveState(); updateLowStockBadge(); renderInventory();
+  S.inventory = S.inventory.filter(i => i.id !== id);
+  saveState(); updateLowStockBadge(); renderInventory();
   });
 }
 
 function deleteSinglesSet(id) {
   appConfirm('Delete this singles set?', 'Delete', () => {
-    S.singles = S.singles.filter(s => s.id !== id);
-    saveState(); renderInventory();
+  S.singles = S.singles.filter(s => s.id !== id);
+  saveState(); renderInventory();
   });
 }
 
 function deleteCost(id) {
   appConfirm('Delete this expense?', 'Delete', () => {
-    S.costs = S.costs.filter(c => c.id !== id);
-    saveState(); renderCosts();
+  S.costs = S.costs.filter(c => c.id !== id);
+  saveState(); renderCosts();
   });
 }
 
@@ -2449,21 +2503,21 @@ function sortTable(tableId, col, isNum) {
   const rows = Array.from(tbody.rows);
 
   rows.sort((a, b) => {
-    const av = (a.cells[col] ? a.cells[col].textContent.trim() : '');
-    const bv = (b.cells[col] ? b.cells[col].textContent.trim() : '');
-    if (isNum) {
-      const an = parseFloat(av.replace(/[$,%()k]/g, '')) || 0;
-      const bn = parseFloat(bv.replace(/[$,%()k]/g, '')) || 0;
-      return asc ? an - bn : bn - an;
-    }
-    return asc ? av.localeCompare(bv) : bv.localeCompare(av);
+  const av = (a.cells[col] ? a.cells[col].textContent.trim() : '');
+  const bv = (b.cells[col] ? b.cells[col].textContent.trim() : '');
+  if (isNum) {
+  const an = parseFloat(av.replace(/[$,%()k]/g, '')) || 0;
+  const bn = parseFloat(bv.replace(/[$,%()k]/g, '')) || 0;
+  return asc ? an - bn : bn - an;
+  }
+  return asc ? av.localeCompare(bv) : bv.localeCompare(av);
   });
 
   rows.forEach(r => tbody.appendChild(r));
 
   table.querySelectorAll('thead th').forEach((th, i) => {
-    th.classList.remove('sort-asc', 'sort-desc');
-    if (i === col) th.classList.add(asc ? 'sort-asc' : 'sort-desc');
+  th.classList.remove('sort-asc', 'sort-desc');
+  if (i === col) th.classList.add(asc ? 'sort-asc' : 'sort-desc');
   });
 }
 
@@ -2484,11 +2538,11 @@ function updateSqStatusLabel() {
   const lbl = document.getElementById('sq-status-label');
   if (!lbl) return;
   if (S.apiKey) {
-    lbl.className = 'tag tag-green';
-    lbl.textContent = S.sandbox ? 'Sandbox' : 'Live';
+  lbl.className = 'tag tag-green';
+  lbl.textContent = S.sandbox ? 'Sandbox' : 'Live';
   } else {
-    lbl.className = 'tag tag-red';
-    lbl.textContent = 'Not Connected';
+  lbl.className = 'tag tag-red';
+  lbl.textContent = 'Not Connected';
   }
   const syncBtn = document.getElementById('sync-btn');
   if (syncBtn) syncBtn.style.opacity = S.apiKey ? '1' : '0.45';
@@ -2503,21 +2557,21 @@ function disconnectSquare() {
   const panel = document.getElementById('settings-panel');
   if (panel) panel.classList.remove('open');
   appConfirm('Disconnect Square? Your cash sales, inventory, and cost data will be kept.', 'Disconnect', () => {
-    S.apiKey = null;
-    S.locationId = null;
-    S.squareSales = [];
-    saveState();
-    updateSqStatusLabel();
-    refreshCurrentTab();
+  S.apiKey = null;
+  S.locationId = null;
+  S.squareSales = [];
+  saveState();
+  updateSqStatusLabel();
+  refreshCurrentTab();
   });
 }
 
 function clearAllData() {
   const panel = document.getElementById('settings-panel');
   if (panel) panel.classList.remove('open');
-  appConfirm('⚠ CLEAR ALL LOCAL DATA? This will delete all sales, inventory, and cost data. Cannot be undone.', 'Clear Everything', () => {
-    localStorage.clear();
-    location.reload();
+  appConfirm('CLEAR ALL LOCAL DATA? This will delete all sales, inventory, and cost data. Cannot be undone.', 'Clear Everything', () => {
+  localStorage.clear();
+  location.reload();
   });
 }
 
@@ -2526,23 +2580,23 @@ function exportData() {
   if (panel) panel.classList.remove('open');
 
   const backup = {
-    exportedAt: new Date().toISOString(),
-    version: 1,
-    businessName: S.businessName,
-    taxRate: S.taxRate,
-    squareSales: S.squareSales,
-    cashSales: S.cashSales,
-    inventory: S.inventory,
-    singles: S.singles,
-    costs: S.costs,
-    processedSaleIds: [...S.processedSaleIds]
+  exportedAt: new Date().toISOString(),
+  version: 1,
+  businessName: S.businessName,
+  taxRate: S.taxRate,
+  squareSales: S.squareSales,
+  cashSales: S.cashSales,
+  inventory: S.inventory,
+  singles: S.singles,
+  costs: S.costs,
+  processedSaleIds: [...S.processedSaleIds]
   };
 
   const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
   const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
+  const a  = document.createElement('a');
   const date = new Date().toISOString().slice(0, 10);
-  a.href     = url;
+  a.href  = url;
   a.download = 'pokeshop-backup-' + date + '.json';
   document.body.appendChild(a);
   a.click();
@@ -2563,36 +2617,36 @@ function importData(event) {
 
   const reader = new FileReader();
   reader.onload = function(e) {
-    try {
-      const backup = JSON.parse(e.target.result);
+  try {
+  const backup = JSON.parse(e.target.result);
 
-      if (!backup.version || !Array.isArray(backup.cashSales)) {
-        alert('This file doesn\'t look like a valid PokéShop backup.');
-        return;
-      }
+  if (!backup.version || !Array.isArray(backup.cashSales)) {
+  alert('This file doesn\'t look like a valid PokéShop backup.');
+  return;
+  }
 
-      appConfirm('Restore from backup dated ' + (backup.exportedAt ? fmtDate(backup.exportedAt) : 'unknown') + '? This will REPLACE all current data. Cannot be undone.', 'Restore', () => {
-        S.businessName     = backup.businessName     || S.businessName;
-        S.taxRate          = backup.taxRate           ?? S.taxRate;
-        S.squareSales      = backup.squareSales       || [];
-        S.cashSales        = backup.cashSales         || [];
-        S.inventory        = backup.inventory         || [];
-        S.singles          = backup.singles           || [];
-        S.costs            = backup.costs             || [];
-        S.processedSaleIds = new Set(backup.processedSaleIds || []);
-        saveState();
-        updateLowStockBadge();
-        updateSqStatusLabel();
-        refreshCurrentTab();
-        const status = document.getElementById('sync-status');
-        if (status) {
-          status.innerHTML = '<span style="color:var(--green)">✓ Backup restored successfully</span>';
-          setTimeout(() => { if (status) status.textContent = ''; }, 4000);
-        }
-      });
-    } catch(err) {
-      alert('Failed to read backup file: ' + err.message);
-    }
+  appConfirm('Restore from backup dated ' + (backup.exportedAt ? fmtDate(backup.exportedAt) : 'unknown') + '? This will REPLACE all current data. Cannot be undone.', 'Restore', () => {
+  S.businessName  = backup.businessName  || S.businessName;
+  S.taxRate  = backup.taxRate  ?? S.taxRate;
+  S.squareSales  = backup.squareSales  || [];
+  S.cashSales  = backup.cashSales  || [];
+  S.inventory  = backup.inventory  || [];
+  S.singles  = backup.singles  || [];
+  S.costs  = backup.costs  || [];
+  S.processedSaleIds = new Set(backup.processedSaleIds || []);
+  saveState();
+  updateLowStockBadge();
+  updateSqStatusLabel();
+  refreshCurrentTab();
+  const status = document.getElementById('sync-status');
+  if (status) {
+  status.innerHTML = '<span style="color:var(--green)">✓ Backup restored successfully</span>';
+  setTimeout(() => { if (status) status.textContent = ''; }, 4000);
+  }
+  });
+  } catch(err) {
+  alert('Failed to read backup file: ' + err.message);
+  }
   };
   reader.readAsText(file);
 }
@@ -2602,39 +2656,39 @@ function openChangeKeyModal() {
   if (panel) panel.classList.remove('open');
 
   const overlay = document.getElementById('modal-overlay');
-  const title   = document.getElementById('modal-title');
-  const body    = document.getElementById('modal-body');
+  const title  = document.getElementById('modal-title');
+  const body  = document.getElementById('modal-body');
   const footer  = document.getElementById('modal-footer');
   if (!overlay) return;
   overlay.classList.add('open');
   title.textContent = 'Change Square API Key';
   body.innerHTML = `
-    <div id="form-err" class="alert alert-error" style="display:none"></div>
-    <div class="form-row">
-      <label class="field-label">New Access Token</label>
-      <input type="password" id="new-key" placeholder="EAAAl..." />
-    </div>
-    <div class="form-row" style="display:flex;align-items:center;gap:8px">
-      <input type="checkbox" id="new-sandbox" ${S.sandbox?'checked':''} />
-      <label for="new-sandbox" style="color:var(--text2);font-size:13px;margin:0">Use Sandbox mode</label>
-    </div>`;
+  <div id="form-err" class="alert alert-error" style="display:none"></div>
+  <div class="form-row">
+  <label class="field-label">New Access Token</label>
+  <input type="password" id="new-key" placeholder="EAAAl..." />
+  </div>
+  <div class="form-row" style="display:flex;align-items:center;gap:8px">
+  <input type="checkbox" id="new-sandbox" ${S.sandbox?'checked':''} />
+  <label for="new-sandbox" style="color:var(--text2);font-size:13px;margin:0">Use Sandbox mode</label>
+  </div>`;
   footer.innerHTML = '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="applyNewKey()">Update Key</button>';
 }
 
 async function applyNewKey() {
-  const key     = document.getElementById('new-key')?.value?.trim();
+  const key  = document.getElementById('new-key')?.value?.trim();
   const sandbox = document.getElementById('new-sandbox')?.checked || false;
   if (!key) { showFormErr('Please enter a new API key.'); return; }
   try {
-    await validateApiKey(key, sandbox);
-    saveState();
-    closeModal();
-    updateSqStatusLabel();
-    const status = document.getElementById('sync-status');
-    if (status) status.innerHTML = '<span style="color:var(--green)">✓ API key updated</span>';
-    setTimeout(() => { if (status) status.textContent = ''; }, 3000);
+  await validateApiKey(key, sandbox);
+  saveState();
+  closeModal();
+  updateSqStatusLabel();
+  const status = document.getElementById('sync-status');
+  if (status) status.innerHTML = '<span style="color:var(--green)">✓ API key updated</span>';
+  setTimeout(() => { if (status) status.textContent = ''; }, 3000);
   } catch(e) {
-    showFormErr('Connection failed: ' + e.message);
+  showFormErr('Connection failed: ' + e.message);
   }
 }
 
@@ -2654,8 +2708,8 @@ function finishSetup() {
 // Maps Square's generic labels to meaningful names
 const SQ_DESC_MAP = {
   'custom amount': 'Singles',
-  'custom sale':   'Singles',
-  'custom item':   'Singles',
+  'custom sale':  'Singles',
+  'custom item':  'Singles',
   'manual entry':  'Singles',
 };
 function normalizeSqDesc(desc) {
@@ -2670,10 +2724,10 @@ function parseSqItemDesc(rawDesc, totalPrice) {
   // Match leading quantity: "2 x Name", "2x Name", "2 × Name"
   const m = rawDesc.match(/^(\d+)\s*[x×]\s*(.+)/i);
   if (m) {
-    const qty  = parseInt(m[1], 10);
-    const name = normalizeSqDesc(m[2].trim());
-    const unitPrice = parseFloat((totalPrice / qty).toFixed(2));
-    return [{ name, qty, price: unitPrice }];
+  const qty  = parseInt(m[1], 10);
+  const name = normalizeSqDesc(m[2].trim());
+  const unitPrice = parseFloat((totalPrice / qty).toFixed(2));
+  return [{ name, qty, price: unitPrice }];
   }
   return [{ name: normalizeSqDesc(rawDesc), qty: 1, price: totalPrice }];
 }
@@ -2687,118 +2741,118 @@ function importSquareCSV(event) {
 
   const reader = new FileReader();
   reader.onload = function(e) {
-    try {
-      const text    = e.target.result;
-      const records = parseCSV(text);
+  try {
+  const text  = e.target.result;
+  const records = parseCSV(text);
 
-      if (!records.length) {
-        setInlineError('sq-sync-error', 'No rows found in this CSV. Make sure you exported a Transactions CSV from Square.', false);
-        return;
-      }
+  if (!records.length) {
+  setInlineError('sq-sync-error', 'No rows found in this CSV. Make sure you exported a Transactions CSV from Square.', false);
+  return;
+  }
 
-      // Detect column names (Square uses slightly different names depending on export type)
-      const headers = Object.keys(records[0]).map(h => h.trim());
-      const col = name => {
-        const h = headers.find(h => h.toLowerCase().includes(name.toLowerCase()));
-        return h || null;
-      };
+  // Detect column names (Square uses slightly different names depending on export type)
+  const headers = Object.keys(records[0]).map(h => h.trim());
+  const col = name => {
+  const h = headers.find(h => h.toLowerCase().includes(name.toLowerCase()));
+  return h || null;
+  };
 
-      const dateCol  = col('date');
-      const grossCol = col('gross') || col('total collected') || col('amount');
-      const feeCol   = col('fee');
-      const netCol   = col('net');
-      const taxCol   = col('tax');
-      const descCol  = col('description') || col('detail') || col('item');
-      const cashCol  = col('cash');
-      const cardCol  = col('card');
-      const txIdCol  = col('transaction id') || col('payment id') || col('transaction_id') || col('payment_id');
+  const dateCol  = col('date');
+  const grossCol = col('gross') || col('total collected') || col('amount');
+  const feeCol  = col('fee');
+  const netCol  = col('net');
+  const taxCol  = col('tax');
+  const descCol  = col('description') || col('detail') || col('item');
+  const cashCol  = col('cash');
+  const cardCol  = col('card');
+  const txIdCol  = col('transaction id') || col('payment id') || col('transaction_id') || col('payment_id');
 
-      if (!dateCol || !grossCol) {
-        setInlineError('sq-sync-error',
-          'Could not find required columns (Date, Gross Sales/Total Collected). ' +
-          'Make sure you exported a <strong>Transactions CSV</strong> from Square Reports → Sales.', false);
-        return;
-      }
+  if (!dateCol || !grossCol) {
+  setInlineError('sq-sync-error',
+  'Could not find required columns (Date, Gross Sales/Total Collected). ' +
+  'Make sure you exported a <strong>Transactions CSV</strong> from Square Reports → Sales.', false);
+  return;
+  }
 
-      let imported = 0, updated = 0, skipped = 0;
+  let imported = 0, updated = 0, skipped = 0;
 
-      records.forEach((row, idx) => {
-        const dateRaw  = row[dateCol]?.trim();
-        const grossRaw = parseMoney(row[grossCol]);
-        if (!dateRaw || isNaN(grossRaw) || grossRaw <= 0) { skipped++; return; }
+  records.forEach((row, idx) => {
+  const dateRaw  = row[dateCol]?.trim();
+  const grossRaw = parseMoney(row[grossCol]);
+  if (!dateRaw || isNaN(grossRaw) || grossRaw <= 0) { skipped++; return; }
 
-        // Use Square's own Transaction ID when available — stable across exports
-        const sqTxId = txIdCol ? row[txIdCol]?.trim() : '';
-        const id = sqTxId
-          ? 'csv_' + sqTxId.replace(/\W/g,'')
-          : 'csv_' + dateRaw.replace(/\W/g,'') + '_' + grossRaw.toFixed(2).replace('.','');
+  // Use Square's own Transaction ID when available — stable across exports
+  const sqTxId = txIdCol ? row[txIdCol]?.trim() : '';
+  const id = sqTxId
+  ? 'csv_' + sqTxId.replace(/\W/g,'')
+  : 'csv_' + dateRaw.replace(/\W/g,'') + '_' + grossRaw.toFixed(2).replace('.','');
 
-        const fee = feeCol ? Math.abs(parseMoney(row[feeCol])) : parseFloat((grossRaw * 0.026 + 0.15).toFixed(2));
-        const tax = taxCol ? Math.abs(parseMoney(row[taxCol])) : 0;
-        const net = netCol ? parseMoney(row[netCol]) : parseFloat((grossRaw - fee - tax).toFixed(2));
-        const dateISO = normalizeDate(dateRaw);
-        const rawDesc = descCol ? row[descCol]?.trim() : '';
-        const items   = parseSqItemDesc(rawDesc, grossRaw);
-        const cashAmt = cashCol ? parseMoney(row[cashCol]) : 0;
-        const paymentMethod = cashAmt > 0 ? 'Cash' : 'Card';
+  const fee = feeCol ? Math.abs(parseMoney(row[feeCol])) : parseFloat((grossRaw * 0.026 + 0.15).toFixed(2));
+  const tax = taxCol ? Math.abs(parseMoney(row[taxCol])) : 0;
+  const net = netCol ? parseMoney(row[netCol]) : parseFloat((grossRaw - fee - tax).toFixed(2));
+  const dateISO = normalizeDate(dateRaw);
+  const rawDesc = descCol ? row[descCol]?.trim() : '';
+  const items  = parseSqItemDesc(rawDesc, grossRaw);
+  const cashAmt = cashCol ? parseMoney(row[cashCol]) : 0;
+  const paymentMethod = cashAmt > 0 ? 'Cash' : 'Card';
 
-        // For cash transactions: tax is inclusive (backed out of gross), no fee
-        let effectiveTax = parseFloat(tax.toFixed(2));
-        let effectiveFee = parseFloat(fee.toFixed(2));
-        let effectiveNet = parseFloat(net.toFixed(2));
-        if (paymentMethod === 'Cash') {
-          effectiveTax = parseFloat((grossRaw * S.taxRate / (100 + S.taxRate)).toFixed(2));
-          effectiveFee = 0;
-          effectiveNet = parseFloat((grossRaw - effectiveTax).toFixed(2));
-        }
+  // For cash transactions: tax is inclusive (backed out of gross), no fee
+  let effectiveTax = parseFloat(tax.toFixed(2));
+  let effectiveFee = parseFloat(fee.toFixed(2));
+  let effectiveNet = parseFloat(net.toFixed(2));
+  if (paymentMethod === 'Cash') {
+  effectiveTax = parseFloat((grossRaw * S.taxRate / (100 + S.taxRate)).toFixed(2));
+  effectiveFee = 0;
+  effectiveNet = parseFloat((grossRaw - effectiveTax).toFixed(2));
+  }
 
-        // Match by exact ID, or by old idx-suffixed ID, or by date+amount fuzzy match
-        const existing = S.squareSales.find(s =>
-          s.id === id ||
-          s.id.startsWith(id + '_') ||
-          (s.date?.slice(0,10) === dateISO.slice(0,10) && Math.abs((s.gross||0) - grossRaw) < 0.01 && s.source !== 'manual')
-        );
-        if (existing) {
-          existing.id = id; // upgrade to stable ID
-          existing.paymentMethod = paymentMethod;
-          existing.tax = effectiveTax;
-          existing.fee = effectiveFee;
-          existing.net = effectiveNet;
-          updated++;
-          return;
-        }
+  // Match by exact ID, or by old idx-suffixed ID, or by date+amount fuzzy match
+  const existing = S.squareSales.find(s =>
+  s.id === id ||
+  s.id.startsWith(id + '_') ||
+  (s.date?.slice(0,10) === dateISO.slice(0,10) && Math.abs((s.gross||0) - grossRaw) < 0.01 && s.source !== 'manual')
+  );
+  if (existing) {
+  existing.id = id; // upgrade to stable ID
+  existing.paymentMethod = paymentMethod;
+  existing.tax = effectiveTax;
+  existing.fee = effectiveFee;
+  existing.net = effectiveNet;
+  updated++;
+  return;
+  }
 
-        S.squareSales.push({
-          id, date: dateISO, dateStr: dateISO.slice(0, 10),
-          gross: parseFloat(grossRaw.toFixed(2)),
-          fee:   effectiveFee, feeEstimated: paymentMethod === 'Cash' ? false : !feeCol,
-          tax:   effectiveTax,
-          net:   effectiveNet,
-          items, status: 'COMPLETED', paymentMethod
-        });
-        imported++;
-      });
+  S.squareSales.push({
+  id, date: dateISO, dateStr: dateISO.slice(0, 10),
+  gross: parseFloat(grossRaw.toFixed(2)),
+  fee:  effectiveFee, feeEstimated: paymentMethod === 'Cash' ? false : !feeCol,
+  tax:  effectiveTax,
+  net:  effectiveNet,
+  items, status: 'COMPLETED', paymentMethod
+  });
+  imported++;
+  });
 
-      // Auto-deduct inventory for newly imported sales
-      autoDeductFromSquare(S.squareSales.filter(s => s.id.startsWith('csv_') && !S.processedSaleIds.has(s.id)));
+  // Auto-deduct inventory for newly imported sales
+  autoDeductFromSquare(S.squareSales.filter(s => s.id.startsWith('csv_') && !S.processedSaleIds.has(s.id)));
 
-      saveState();
-      updateLowStockBadge();
-      renderSales();
-      refreshCurrentTab();
+  saveState();
+  updateLowStockBadge();
+  renderSales();
+  refreshCurrentTab();
 
-      const status = document.getElementById('sync-status');
-      if (status) {
-        status.innerHTML = '<span style="color:var(--green)">✓ Imported ' + imported + ' new' + (updated ? ', ' + updated + ' updated' : '') + (skipped ? ', ' + skipped + ' skipped' : '') + '</span>';
-        setTimeout(() => { if (status) status.textContent = ''; }, 5000);
-      }
+  const status = document.getElementById('sync-status');
+  if (status) {
+  status.innerHTML = '<span style="color:var(--green)">✓ Imported ' + imported + ' new' + (updated ? ', ' + updated + ' updated' : '') + (skipped ? ', ' + skipped + ' skipped' : '') + '</span>';
+  setTimeout(() => { if (status) status.textContent = ''; }, 5000);
+  }
 
-    } catch(err) {
-      setInlineError('sq-sync-error', 'Failed to parse CSV: ' + err.message, false);
-    }
+  } catch(err) {
+  setInlineError('sq-sync-error', 'Failed to parse CSV: ' + err.message, false);
+  }
 
-    // Reset file input so same file can be re-selected
-    event.target.value = '';
+  // Reset file input so same file can be re-selected
+  event.target.value = '';
   };
   reader.readAsText(file);
 }
@@ -2815,114 +2869,114 @@ function importSquareInventory(event) {
 
   const reader = new FileReader();
   reader.onload = function(e) {
-    try {
-      const rows = parseCSV(e.target.result);
-      if (!rows.length) {
-        if (statusEl) statusEl.innerHTML = '<div class="alert alert-error" style="margin:12px 18px">No rows found — make sure you exported as CSV from the Item Library.</div>';
-        return;
-      }
+  try {
+  const rows = parseCSV(e.target.result);
+  if (!rows.length) {
+  if (statusEl) statusEl.innerHTML = '<div class="alert alert-error" style="margin:12px 18px">No rows found — make sure you exported as CSV from the Item Library.</div>';
+  return;
+  }
 
-      // Square item library columns (normalized):
-      // token, name, description, category, price_1, sku_1, gtin_1, stock_1, etc.
-      // Column names vary slightly by Square version — use flexible matching
-      const allHeaders = Object.keys(rows[0]);
-      const normH = h => h.toLowerCase().replace(/[^a-z0-9]/g,'');
-      // Exact match first, then substring
-      const col = key => {
-        const k = normH(key);
-        return allHeaders.find(h => normH(h) === k) || allHeaders.find(h => normH(h).includes(k));
-      };
+  // Square item library columns (normalized):
+  // token, name, description, category, price_1, sku_1, gtin_1, stock_1, etc.
+  // Column names vary slightly by Square version — use flexible matching
+  const allHeaders = Object.keys(rows[0]);
+  const normH = h => h.toLowerCase().replace(/[^a-z0-9]/g,'');
+  // Exact match first, then substring
+  const col = key => {
+  const k = normH(key);
+  return allHeaders.find(h => normH(h) === k) || allHeaders.find(h => normH(h).includes(k));
+  };
 
-      const nameCol  = col('itemname') || col('name') || col('item') || col('title');
-      const priceCol = col('price') || col('amount');
-      const catCol   = col('category') || col('type');
-      const skuCol   = col('sku');
-      // Square has one "Current Quantity [Location]" column per location — sum them all
-      const qtyCols  = allHeaders.filter(h => normH(h).startsWith('currentquantity'))
-                    || allHeaders.filter(h => normH(h).startsWith('newquantity'));
-      // Fallback to any single qty column if none found
-      const stockCol = qtyCols.length ? null : (col('quantity') || col('qty') || col('stock') || col('onhand'));
+  const nameCol  = col('itemname') || col('name') || col('item') || col('title');
+  const priceCol = col('price') || col('amount');
+  const catCol  = col('category') || col('type');
+  const skuCol  = col('sku');
+  // Square has one "Current Quantity [Location]" column per location — sum them all
+  const qtyCols  = allHeaders.filter(h => normH(h).startsWith('currentquantity'))
+  || allHeaders.filter(h => normH(h).startsWith('newquantity'));
+  // Fallback to any single qty column if none found
+  const stockCol = qtyCols.length ? null : (col('quantity') || col('qty') || col('stock') || col('onhand'));
 
-      if (!nameCol) {
-        if (statusEl) statusEl.innerHTML = '<div class="alert alert-error" style="margin:12px 18px">Could not find a Name column. Make sure you\'re using the Square Item Library export.</div>';
-        return;
-      }
+  if (!nameCol) {
+  if (statusEl) statusEl.innerHTML = '<div class="alert alert-error" style="margin:12px 18px">Could not find a Name column. Make sure you\'re using the Square Item Library export.</div>';
+  return;
+  }
 
-      let added = 0, updated = 0, skipped = 0;
-      const csvNames = new Set();
+  let added = 0, updated = 0, skipped = 0;
+  const csvNames = new Set();
 
-      rows.forEach(row => {
-        const name = row[nameCol]?.trim();
-        if (!name) { skipped++; return; }
+  rows.forEach(row => {
+  const name = row[nameCol]?.trim();
+  if (!name) { skipped++; return; }
 
-        const price    = priceCol ? parseMoney(row[priceCol]) : 0;
-        const category = catCol   ? row[catCol]?.trim()   : '';
-        const parseQty = v => Math.round(parseFloat((v||'').toString().replace(/[^0-9.\-]/g,'')) || 0);
-        const stock    = qtyCols.length
-          ? qtyCols.reduce((sum, c) => sum + parseQty(row[c]), 0)
-          : (stockCol ? parseQty(row[stockCol]) : 0);
-        const skuType  = detectSkuType(name, category);
-        csvNames.add(name.toLowerCase().trim());
+  const price  = priceCol ? parseMoney(row[priceCol]) : 0;
+  const category = catCol  ? row[catCol]?.trim()  : '';
+  const parseQty = v => Math.round(parseFloat((v||'').toString().replace(/[^0-9.\-]/g,'')) || 0);
+  const stock  = qtyCols.length
+  ? qtyCols.reduce((sum, c) => sum + parseQty(row[c]), 0)
+  : (stockCol ? parseQty(row[stockCol]) : 0);
+  const skuType  = detectSkuType(name, category);
+  csvNames.add(name.toLowerCase().trim());
 
-        // Match by name (case-insensitive) — update if exists, add if new
-        const existing = S.inventory.find(i => i.name && i.name.toLowerCase().trim() === name.toLowerCase());
-        if (existing) {
-          if (existing.manualCount) {
-            // Manually-tracked item: preserve qty and price, only update metadata
-            if (catCol && category) existing.set = existing.set || category;
-            skipped++;
-          } else {
-            if (priceCol) existing.sellPrice = price;
-            if (qtyCols.length || stockCol) existing.qty = stock;
-            if (catCol && category) existing.set = existing.set || category;
-            if (skuType !== 'Other') existing.skuType = skuType;
-            updated++;
-          }
-        } else {
-          S.inventory.push({
-            id: genId(),
-            name,
-            set: category || '',
-            skuType,
-            qty: stock,
-            cost: 0,          // cost basis not in Square library — fill manually
-            sellPrice: price,
-            reorder: 0
-          });
-          added++;
-        }
-      });
+  // Match by name (case-insensitive) — update if exists, add if new
+  const existing = S.inventory.find(i => i.name && i.name.toLowerCase().trim() === name.toLowerCase());
+  if (existing) {
+  if (existing.manualCount) {
+  // Manually-tracked item: preserve qty and price, only update metadata
+  if (catCol && category) existing.set = existing.set || category;
+  skipped++;
+  } else {
+  if (priceCol) existing.sellPrice = price;
+  if (qtyCols.length || stockCol) existing.qty = stock;
+  if (catCol && category) existing.set = existing.set || category;
+  if (skuType !== 'Other') existing.skuType = skuType;
+  updated++;
+  }
+  } else {
+  S.inventory.push({
+  id: genId(),
+  name,
+  set: category || '',
+  skuType,
+  qty: stock,
+  cost: 0,  // cost basis not in Square library — fill manually
+  sellPrice: price,
+  reorder: 0
+  });
+  added++;
+  }
+  });
 
-      // Prune inventory: delete items not in CSV, or items in CSV with qty=0.
-      // Manual-count items and items that were just added by this import are exempt.
-      const deletedNames = [];
-      S.inventory = S.inventory.filter(i => {
-        if (i.manualCount) return true;
-        const key = (i.name || '').toLowerCase().trim();
-        const inCsv = csvNames.has(key);
-        const shouldDelete = !inCsv || (i.qty || 0) <= 0;
-        if (shouldDelete) deletedNames.push(i.name);
-        return !shouldDelete;
-      });
-      const deleted = deletedNames.length;
+  // Prune inventory: delete items not in CSV, or items in CSV with qty=0.
+  // Manual-count items and items that were just added by this import are exempt.
+  const deletedNames = [];
+  S.inventory = S.inventory.filter(i => {
+  if (i.manualCount) return true;
+  const key = (i.name || '').toLowerCase().trim();
+  const inCsv = csvNames.has(key);
+  const shouldDelete = !inCsv || (i.qty || 0) <= 0;
+  if (shouldDelete) deletedNames.push(i.name);
+  return !shouldDelete;
+  });
+  const deleted = deletedNames.length;
 
-      saveState();
-      updateLowStockBadge();
-      renderInventory();
+  saveState();
+  updateLowStockBadge();
+  renderInventory();
 
-      if (statusEl) {
-        const deletedList = deleted
-          ? `<br><span style="color:var(--red);font-size:12px"><strong>${deleted}</strong> deleted:</span> <span style="color:var(--text2);font-size:12px">${deletedNames.map(esc).join(', ')}</span>`
-          : '';
-        statusEl.innerHTML = `<div class="alert" style="background:rgba(0,230,118,0.1);border-color:var(--green);color:var(--green);margin:12px 18px;font-size:13px">
-          ✅ Import complete — <strong>${added}</strong> added, <strong>${updated}</strong> updated, <strong>${skipped}</strong> skipped.${deletedList}
-          ${added ? '<br><span style="color:var(--text2);font-size:12px">Tip: fill in the Cost column manually for profit margin tracking.</span>' : ''}
-        </div>`;
-        setTimeout(() => { if (statusEl) statusEl.innerHTML = ''; }, 10000);
-      }
-    } catch(err) {
-      if (statusEl) statusEl.innerHTML = '<div class="alert alert-error" style="margin:12px 18px">Error reading file: ' + esc(err.message) + '</div>';
-    }
+  if (statusEl) {
+  const deletedList = deleted
+  ? `<br><span style="color:var(--red);font-size:12px"><strong>${deleted}</strong> deleted:</span> <span style="color:var(--text2);font-size:12px">${deletedNames.map(esc).join(', ')}</span>`
+  : '';
+  statusEl.innerHTML = `<div class="alert" style="background:rgba(0,230,118,0.1);border-color:var(--green);color:var(--green);margin:12px 18px;font-size:13px">
+  Import complete — <strong>${added}</strong> added, <strong>${updated}</strong> updated, <strong>${skipped}</strong> skipped.${deletedList}
+  ${added ? '<br><span style="color:var(--text2);font-size:12px">Tip: fill in the Cost column manually for profit margin tracking.</span>' : ''}
+  </div>`;
+  setTimeout(() => { if (statusEl) statusEl.innerHTML = ''; }, 10000);
+  }
+  } catch(err) {
+  if (statusEl) statusEl.innerHTML = '<div class="alert alert-error" style="margin:12px 18px">Error reading file: ' + esc(err.message) + '</div>';
+  }
   };
   reader.readAsText(file);
 }
@@ -2930,11 +2984,11 @@ function importSquareInventory(event) {
 // Guess SKU type from item name / category
 function detectSkuType(name, category) {
   const s = (name + ' ' + (category || '')).toLowerCase();
-  if (s.includes('booster box'))                             return 'Booster Box';
+  if (s.includes('booster box'))  return 'Booster Box';
   if (s.includes('booster bundle') || s.includes('bundle')) return 'Booster Bundle';
-  if (s.includes('booster pack') || s.includes('pack'))     return 'Booster Pack';
-  if (s.includes('etb') || s.includes('elite trainer'))     return 'ETB';
-  if (s.includes('tin'))                                     return 'Tin';
+  if (s.includes('booster pack') || s.includes('pack'))  return 'Booster Pack';
+  if (s.includes('etb') || s.includes('elite trainer'))  return 'ETB';
+  if (s.includes('tin'))  return 'Tin';
   if (s.includes('collection box') || s.includes('collection') || s.includes('box')) return 'Collection Box';
   return 'Other';
 }
@@ -2947,12 +3001,12 @@ function parseCSV(text) {
   const headers = splitCSVRow(lines[0]);
   const rows = [];
   for (let i = 1; i < lines.length; i++) {
-    const line = lines[i].trim();
-    if (!line) continue;
-    const vals = splitCSVRow(line);
-    const obj = {};
-    headers.forEach((h, j) => { obj[h.trim()] = vals[j]?.trim() || ''; });
-    rows.push(obj);
+  const line = lines[i].trim();
+  if (!line) continue;
+  const vals = splitCSVRow(line);
+  const obj = {};
+  headers.forEach((h, j) => { obj[h.trim()] = vals[j]?.trim() || ''; });
+  rows.push(obj);
   }
   return rows;
 }
@@ -2962,15 +3016,15 @@ function splitCSVRow(line) {
   const result = [];
   let cur = '', inQuote = false;
   for (let i = 0; i < line.length; i++) {
-    const ch = line[i];
-    if (ch === '"') {
-      if (inQuote && line[i+1] === '"') { cur += '"'; i++; }
-      else inQuote = !inQuote;
-    } else if (ch === ',' && !inQuote) {
-      result.push(cur); cur = '';
-    } else {
-      cur += ch;
-    }
+  const ch = line[i];
+  if (ch === '"') {
+  if (inQuote && line[i+1] === '"') { cur += '"'; i++; }
+  else inQuote = !inQuote;
+  } else if (ch === ',' && !inQuote) {
+  result.push(cur); cur = '';
+  } else {
+  cur += ch;
+  }
   }
   result.push(cur);
   return result;
@@ -2991,11 +3045,11 @@ function normalizeDate(str) {
   // M/D/YY or M/D/YYYY
   const parts = str.split('/');
   if (parts.length === 3) {
-    const [m, d, y] = parts;
-    // 2-digit year: treat 00-49 as 2000s, 50-99 as 1900s
-    let year = parseInt(y, 10);
-    if (year < 100) year += year < 50 ? 2000 : 1900;
-    return String(year) + '-' + m.padStart(2,'0') + '-' + d.padStart(2,'0') + 'T12:00:00Z';
+  const [m, d, y] = parts;
+  // 2-digit year: treat 00-49 as 2000s, 50-99 as 1900s
+  let year = parseInt(y, 10);
+  if (year < 100) year += year < 50 ? 2000 : 1900;
+  return String(year) + '-' + m.padStart(2,'0') + '-' + d.padStart(2,'0') + 'T12:00:00Z';
   }
   return new Date(str).toISOString() || new Date().toISOString();
 }
@@ -3017,13 +3071,13 @@ const PASTE_HINTS = {
 };
 
 let _pasteType = 'square';
-let _pasteRows  = [];   // parsed preview rows
+let _pasteRows  = [];  // parsed preview rows
 
 function openPasteModal() {
   _pasteType = 'square';
   _pasteRows  = [];
   document.querySelectorAll('.paste-type-btn').forEach(b =>
-    b.classList.toggle('active', b.dataset.type === 'square')
+  b.classList.toggle('active', b.dataset.type === 'square')
   );
   const hint = document.getElementById('paste-hint');
   if (hint) hint.innerHTML = PASTE_HINTS.square;
@@ -3046,7 +3100,7 @@ function closePasteModalIfOutside(e) {
 function setPasteType(type) {
   _pasteType = type;
   document.querySelectorAll('.paste-type-btn').forEach(b =>
-    b.classList.toggle('active', b.dataset.type === type)
+  b.classList.toggle('active', b.dataset.type === type)
   );
   const hint = document.getElementById('paste-hint');
   if (hint) hint.innerHTML = PASTE_HINTS[type] || '';
@@ -3068,28 +3122,28 @@ function parsePasteText(text) {
   // Detect delimiter: tabs = Excel paste, commas = CSV
   const delim = lines[0].includes('\t') ? '\t' : ',';
   const splitRow = (line) => {
-    if (delim === '\t') return line.split('\t').map(c => c.trim());
-    // Quoted CSV splitting
-    const r = []; let cur = '', inQ = false;
-    for (let i = 0; i < line.length; i++) {
-      const ch = line[i];
-      if (ch === '"' && !inQ) { inQ = true; continue; }
-      if (ch === '"' && inQ && line[i+1] === '"') { cur += '"'; i++; continue; }
-      if (ch === '"' && inQ) { inQ = false; continue; }
-      if (ch === ',' && !inQ) { r.push(cur.trim()); cur = ''; continue; }
-      cur += ch;
-    }
-    r.push(cur.trim());
-    return r;
+  if (delim === '\t') return line.split('\t').map(c => c.trim());
+  // Quoted CSV splitting
+  const r = []; let cur = '', inQ = false;
+  for (let i = 0; i < line.length; i++) {
+  const ch = line[i];
+  if (ch === '"' && !inQ) { inQ = true; continue; }
+  if (ch === '"' && inQ && line[i+1] === '"') { cur += '"'; i++; continue; }
+  if (ch === '"' && inQ) { inQ = false; continue; }
+  if (ch === ',' && !inQ) { r.push(cur.trim()); cur = ''; continue; }
+  cur += ch;
+  }
+  r.push(cur.trim());
+  return r;
   };
   const headers = splitRow(lines[0]).map(h => h.toLowerCase().replace(/[^a-z0-9]+/g,'_'));
   const rows = [];
   for (let i = 1; i < lines.length; i++) {
-    if (!lines[i].trim()) continue;
-    const vals = splitRow(lines[i]);
-    const obj = {};
-    headers.forEach((h, idx) => { obj[h] = vals[idx] !== undefined ? vals[idx] : ''; });
-    rows.push(obj);
+  if (!lines[i].trim()) continue;
+  const vals = splitRow(lines[i]);
+  const obj = {};
+  headers.forEach((h, idx) => { obj[h] = vals[idx] !== undefined ? vals[idx] : ''; });
+  rows.push(obj);
   }
   return rows;
 }
@@ -3097,18 +3151,18 @@ function parsePasteText(text) {
 // ── Column auto-detect helpers ──────────────────────────────
 function findCol(row, candidates) {
   for (const c of candidates) {
-    if (row[c] !== undefined && row[c] !== '') return c;
+  if (row[c] !== undefined && row[c] !== '') return c;
   }
   return null;
 }
 
 const DATE_COLS  = ['date','transaction_date','sale_date','day','created_at','time'];
 const GROSS_COLS = ['gross_sales','gross','total','amount','sale_amount','revenue','gross_revenue',
-                    'cost','costs','price','value','expense','expenses','subtotal','payment',
-                    'earnings','sales','income','gross_amount'];
-const FEE_COLS   = ['fees','fee','processing_fee','square_fees','processing_fees'];
-const NET_COLS   = ['net_sales','net','net_total','net_amount','net_revenue','post_tax','after_tax','net_earnings'];
-const CAT_COLS   = ['category','type','item_type','sale_type','payment_method','expense_type','expenses','place','location','venue','source'];
+  'cost','costs','price','value','expense','expenses','subtotal','payment',
+  'earnings','sales','income','gross_amount'];
+const FEE_COLS  = ['fees','fee','processing_fee','square_fees','processing_fees'];
+const NET_COLS  = ['net_sales','net','net_total','net_amount','net_revenue','post_tax','after_tax','net_earnings'];
+const CAT_COLS  = ['category','type','item_type','sale_type','payment_method','expense_type','expenses','place','location','venue','source'];
 const DESC_COLS  = ['description','note','notes','item','items','memo','details','name','product','label'];
 
 function previewPaste() {
@@ -3124,9 +3178,9 @@ function previewPaste() {
   // Build preview table
   const sampleKeys = Object.keys(rows[0]);
   let html = `<p style="color:var(--text2);font-size:12px;margin-bottom:8px">
-    Detected <strong style="color:var(--accent)">${rows.length}</strong> row(s) with
-    <strong style="color:var(--accent)">${sampleKeys.length}</strong> column(s):
-    <em>${sampleKeys.join(', ')}</em></p>`;
+  Detected <strong style="color:var(--accent)">${rows.length}</strong> row(s) with
+  <strong style="color:var(--accent)">${sampleKeys.length}</strong> column(s):
+  <em>${sampleKeys.join(', ')}</em></p>`;
 
   // Show what will be imported
   html += '<div style="overflow-x:auto;max-height:220px;overflow-y:auto;margin-bottom:10px"><table class="data-table" style="font-size:11px">';
@@ -3137,10 +3191,10 @@ function previewPaste() {
   if (sampleKeys.length > 6) html += `<th>+${sampleKeys.length - 6} more</th>`;
   html += '</tr></thead><tbody>';
   rows.slice(0, 8).forEach(r => {
-    html += '<tr>';
-    showKeys.forEach(k => { html += `<td>${esc(r[k] || '')}</td>`; });
-    if (sampleKeys.length > 6) html += '<td>…</td>';
-    html += '</tr>';
+  html += '<tr>';
+  showKeys.forEach(k => { html += `<td>${esc(r[k] || '')}</td>`; });
+  if (sampleKeys.length > 6) html += '<td>…</td>';
+  html += '</tr>';
   });
   if (rows.length > 8) html += `<tr><td colspan="${showKeys.length + (sampleKeys.length > 6 ? 1 : 0)}" style="color:var(--text3);text-align:center">… and ${rows.length - 8} more rows</td></tr>`;
   html += '</tbody></table></div>';
@@ -3148,21 +3202,21 @@ function previewPaste() {
   // Validation check
   const first = rows[0];
   const dateC  = findCol(first, DATE_COLS);
-  const amtC   = findCol(first, [...GROSS_COLS, ...NET_COLS]);
+  const amtC  = findCol(first, [...GROSS_COLS, ...NET_COLS]);
   if (!dateC || !amtC) {
-    const missing = [!dateC && 'Date', !amtC && 'Amount'].filter(Boolean).join(' and ');
-    const found = Object.keys(_pasteRows[0] || {}).join(', ');
-    html += `<div class="alert alert-error" style="font-size:12px">⚠ Could not detect a <strong>${missing}</strong> column.<br>
-    Your headers after normalization: <code>${esc(found)}</code><br>
-    Rename the column to one of: ${!dateC ? '<strong>date, sale_date, day</strong>' : ''} ${!amtC ? '<strong>cost, amount, total, price, expenses</strong>' : ''}</div>`;
-    document.getElementById('paste-preview-content').innerHTML = html;
-    document.getElementById('paste-preview').style.display = 'block';
-    document.getElementById('paste-confirm-btn').disabled = true;
-    return;
+  const missing = [!dateC && 'Date', !amtC && 'Amount'].filter(Boolean).join(' and ');
+  const found = Object.keys(_pasteRows[0] || {}).join(', ');
+  html += `<div class="alert alert-error" style="font-size:12px">Could not detect a <strong>${missing}</strong> column.<br>
+  Your headers after normalization: <code>${esc(found)}</code><br>
+  Rename the column to one of: ${!dateC ? '<strong>date, sale_date, day</strong>' : ''} ${!amtC ? '<strong>cost, amount, total, price, expenses</strong>' : ''}</div>`;
+  document.getElementById('paste-preview-content').innerHTML = html;
+  document.getElementById('paste-preview').style.display = 'block';
+  document.getElementById('paste-confirm-btn').disabled = true;
+  return;
   }
 
   html += `<div class="alert" style="background:rgba(0,230,118,0.1);border-color:var(--green);color:var(--green);font-size:12px">
-    ✅ Ready to import — detected Date column: <strong>${dateC}</strong>, Amount column: <strong>${amtC}</strong></div>`;
+  Ready to import — detected Date column: <strong>${dateC}</strong>, Amount column: <strong>${amtC}</strong></div>`;
 
   document.getElementById('paste-preview-content').innerHTML = html;
   document.getElementById('paste-preview').style.display = 'block';
@@ -3184,111 +3238,111 @@ function confirmPasteImport() {
 function _importPasteSquare(rows) {
   let added = 0, dupes = 0;
   rows.forEach(r => {
-    const dateC  = findCol(r, DATE_COLS);
-    const grossC = findCol(r, GROSS_COLS);
-    const netC   = findCol(r, NET_COLS);
-    const feeC   = findCol(r, FEE_COLS);
-    const catC   = findCol(r, CAT_COLS);
-    const descC  = findCol(r, DESC_COLS);
-    if (!dateC) return;
-    const rawAmt = grossC ? r[grossC] : (netC ? r[netC] : '');
-    const gross  = parseMoney(rawAmt);
-    if (!gross) return;
-    const fees   = feeC ? parseMoney(r[feeC]) : Math.round((gross * 0.026 + 0.15) * 100) / 100;
-    const net    = netC ? parseMoney(r[netC]) : gross - fees;
-    const date   = normalizeDate(r[dateC]);
-    // Dedupe key
-    const id = 'paste_sq_' + btoa(date.slice(0,10) + '_' + gross).replace(/[^a-zA-Z0-9]/g,'').slice(0,20) + '_' + S.squareSales.length;
-    const existing = S.squareSales.some(s =>
-      s.date && s.date.slice(0,10) === date.slice(0,10) && Math.abs(s.gross - gross) < 0.01
-    );
-    if (existing) { dupes++; return; }
-    S.squareSales.push({
-      id,
-      date,
-      gross,
-      fees,
-      net,
-      items: parseSqItemDesc(descC ? r[descC] : '', gross),
-      category: catC ? r[catC] : 'Sales',
-      source: 'paste'
-    });
-    added++;
+  const dateC  = findCol(r, DATE_COLS);
+  const grossC = findCol(r, GROSS_COLS);
+  const netC  = findCol(r, NET_COLS);
+  const feeC  = findCol(r, FEE_COLS);
+  const catC  = findCol(r, CAT_COLS);
+  const descC  = findCol(r, DESC_COLS);
+  if (!dateC) return;
+  const rawAmt = grossC ? r[grossC] : (netC ? r[netC] : '');
+  const gross  = parseMoney(rawAmt);
+  if (!gross) return;
+  const fees  = feeC ? parseMoney(r[feeC]) : Math.round((gross * 0.026 + 0.15) * 100) / 100;
+  const net  = netC ? parseMoney(r[netC]) : gross - fees;
+  const date  = normalizeDate(r[dateC]);
+  // Dedupe key
+  const id = 'paste_sq_' + btoa(date.slice(0,10) + '_' + gross).replace(/[^a-zA-Z0-9]/g,'').slice(0,20) + '_' + S.squareSales.length;
+  const existing = S.squareSales.some(s =>
+  s.date && s.date.slice(0,10) === date.slice(0,10) && Math.abs(s.gross - gross) < 0.01
+  );
+  if (existing) { dupes++; return; }
+  S.squareSales.push({
+  id,
+  date,
+  gross,
+  fees,
+  net,
+  items: parseSqItemDesc(descC ? r[descC] : '', gross),
+  category: catC ? r[catC] : 'Sales',
+  source: 'paste'
   });
-  alert(`✅ Square Sales: imported ${added} row(s).${dupes ? ` Skipped ${dupes} duplicate(s).` : ''}`);
+  added++;
+  });
+  alert(`Square Sales: imported ${added} row(s).${dupes ? ` Skipped ${dupes} duplicate(s).` : ''}`);
 }
 
 function _importPasteCash(rows) {
   let added = 0;
   rows.forEach(r => {
-    const keys  = Object.keys(r);
-    const dateC = findCol(r, DATE_COLS);
-    const amtC  = findCol(r, [...GROSS_COLS, ...NET_COLS]);
-    const catC  = findCol(r, CAT_COLS);
-    const descC = findCol(r, DESC_COLS);
-    if (!dateC || !amtC) return;
-    const amount = parseMoney(r[amtC]);
-    if (!amount) return;
+  const keys  = Object.keys(r);
+  const dateC = findCol(r, DATE_COLS);
+  const amtC  = findCol(r, [...GROSS_COLS, ...NET_COLS]);
+  const catC  = findCol(r, CAT_COLS);
+  const descC = findCol(r, DESC_COLS);
+  if (!dateC || !amtC) return;
+  const amount = parseMoney(r[amtC]);
+  if (!amount) return;
 
-    // Category: cat col → any leftover text col → fallback
-    const usedCols = new Set([dateC, amtC].filter(Boolean));
-    const labelC = (catC && r[catC]?.trim() ? catC : null)
-                || (descC && r[descC]?.trim() ? descC : null)
-                || keys.find(k => !usedCols.has(k) && r[k]?.trim());
-    const category = (labelC ? r[labelC]?.trim() : '') || 'Cash';
+  // Category: cat col → any leftover text col → fallback
+  const usedCols = new Set([dateC, amtC].filter(Boolean));
+  const labelC = (catC && r[catC]?.trim() ? catC : null)
+  || (descC && r[descC]?.trim() ? descC : null)
+  || keys.find(k => !usedCols.has(k) && r[k]?.trim());
+  const category = (labelC ? r[labelC]?.trim() : '') || 'Cash';
 
-    usedCols.add(labelC);
-    const noteC = keys.find(k => !usedCols.has(k) && r[k]?.trim());
-    const note  = noteC ? r[noteC]?.trim() : '';
+  usedCols.add(labelC);
+  const noteC = keys.find(k => !usedCols.has(k) && r[k]?.trim());
+  const note  = noteC ? r[noteC]?.trim() : '';
 
-    S.cashSales.push({
-      id: genId(),
-      date: normalizeDate(r[dateC]),
-      amount,
-      category,
-      note,
-      source: 'paste'
-    });
-    added++;
+  S.cashSales.push({
+  id: genId(),
+  date: normalizeDate(r[dateC]),
+  amount,
+  category,
+  note,
+  source: 'paste'
   });
-  alert(`✅ Cash Sales: imported ${added} row(s).`);
+  added++;
+  });
+  alert(`Cash Sales: imported ${added} row(s).`);
 }
 
 function _importPasteCosts(rows) {
   let added = 0;
   rows.forEach(r => {
-    const keys  = Object.keys(r);
-    const dateC = findCol(r, DATE_COLS);
-    const amtC  = findCol(r, [...GROSS_COLS, ...NET_COLS]);
-    const catC  = findCol(r, CAT_COLS);
-    const descC = findCol(r, DESC_COLS);
-    if (!dateC || !amtC) return;
-    const amount = parseMoney(r[amtC]);
-    if (!amount) return;
+  const keys  = Object.keys(r);
+  const dateC = findCol(r, DATE_COLS);
+  const amtC  = findCol(r, [...GROSS_COLS, ...NET_COLS]);
+  const catC  = findCol(r, CAT_COLS);
+  const descC = findCol(r, DESC_COLS);
+  if (!dateC || !amtC) return;
+  const amount = parseMoney(r[amtC]);
+  if (!amount) return;
 
-    // Find name: try desc → cat → any remaining column that isn't date/amount
-    const usedCols = new Set([dateC, amtC].filter(Boolean));
-    const nameC = (descC && r[descC]?.trim() ? descC : null)
-               || (catC  && r[catC]?.trim()  ? catC  : null)
-               || keys.find(k => !usedCols.has(k) && r[k]?.trim());
-    const name = (nameC ? r[nameC]?.trim() : '') || 'Expense';
+  // Find name: try desc → cat → any remaining column that isn't date/amount
+  const usedCols = new Set([dateC, amtC].filter(Boolean));
+  const nameC = (descC && r[descC]?.trim() ? descC : null)
+  || (catC  && r[catC]?.trim()  ? catC  : null)
+  || keys.find(k => !usedCols.has(k) && r[k]?.trim());
+  const name = (nameC ? r[nameC]?.trim() : '') || 'Expense';
 
-    // Notes: any remaining text column after name is chosen
-    usedCols.add(nameC);
-    const notesC = keys.find(k => !usedCols.has(k) && r[k]?.trim());
-    const notes  = notesC ? r[notesC]?.trim() : '';
+  // Notes: any remaining text column after name is chosen
+  usedCols.add(nameC);
+  const notesC = keys.find(k => !usedCols.has(k) && r[k]?.trim());
+  const notes  = notesC ? r[notesC]?.trim() : '';
 
-    S.costs.push({
-      id: genId(),
-      date: normalizeDate(r[dateC]),
-      amount,
-      name,
-      notes,
-      source: 'paste'
-    });
-    added++;
+  S.costs.push({
+  id: genId(),
+  date: normalizeDate(r[dateC]),
+  amount,
+  name,
+  notes,
+  source: 'paste'
   });
-  alert(`✅ Costs / Expenses: imported ${added} row(s).`);
+  added++;
+  });
+  alert(`Costs / Expenses: imported ${added} row(s).`);
 }
 
 // ============================================================
@@ -3333,18 +3387,18 @@ function getSelectedIds(tblId) {
 
 function deleteSelected(section) {
   const map = {
-    sq:    { tbl:'sq-tbl',    bar:'bulk-bar-sq',    cnt:'bulk-count-sq',    arr:'squareSales' },
-    cash:  { tbl:'cash-tbl',  bar:'bulk-bar-cash',  cnt:'bulk-count-cash',  arr:'cashSales'   },
-    costs: { tbl:'costs-tbl', bar:'bulk-bar-costs', cnt:'bulk-count-costs', arr:'costs'       }
+  sq:  { tbl:'sq-tbl',  bar:'bulk-bar-sq',  cnt:'bulk-count-sq',  arr:'squareSales' },
+  cash:  { tbl:'cash-tbl',  bar:'bulk-bar-cash',  cnt:'bulk-count-cash',  arr:'cashSales'  },
+  costs: { tbl:'costs-tbl', bar:'bulk-bar-costs', cnt:'bulk-count-costs', arr:'costs'  }
   };
   const m = map[section]; if (!m) return;
   const ids = getSelectedIds(m.tbl);
   if (!ids.length) return;
   appConfirm('Delete ' + ids.length + ' selected record(s)? This cannot be undone.', 'Delete All', () => {
-    const idSet = new Set(ids);
-    S[m.arr] = S[m.arr].filter(x => !idSet.has(x.id));
-    saveState();
-    refreshCurrentTab();
+  const idSet = new Set(ids);
+  S[m.arr] = S[m.arr].filter(x => !idSet.has(x.id));
+  saveState();
+  refreshCurrentTab();
   });
 }
 
@@ -3354,32 +3408,32 @@ function deleteSelected(section) {
 
 function buildSqSaleEditForm(s) {
   const dateVal  = s ? (s.date || '').slice(0,10) : todayISO();
-  const desc     = s ? (s.description || (s.items && s.items.length ? s.items.map(i => i.name + (i.qty > 1 ? ' ×'+i.qty : '')).join(', ') : '')) : '';
-  const gross    = s ? s.gross : '';
-  const fee      = s ? s.fee   : '';
-  const tax      = s ? s.tax   : 0;
-  const net      = s ? s.net   : '';
+  const desc  = s ? (s.description || (s.items && s.items.length ? s.items.map(i => i.name + (i.qty > 1 ? ' ×'+i.qty : '')).join(', ') : '')) : '';
+  const gross  = s ? s.gross : '';
+  const fee  = s ? s.fee  : '';
+  const tax  = s ? s.tax  : 0;
+  const net  = s ? s.net  : '';
   const pmMethod = s?.paymentMethod || 'Card';
   return `
 <div id="form-err" class="alert alert-error" style="display:none"></div>
 <div class="form-grid">
   <div class="form-row">
-    <label class="field-label">Date *</label>
-    <input type="date" id="sq-edit-date" value="${dateVal}" />
+  <label class="field-label">Date *</label>
+  <input type="date" id="sq-edit-date" value="${dateVal}" />
   </div>
   <div class="form-row">
-    <label class="field-label">Source</label>
-    <select id="sq-edit-src">
-      <option value="square" selected>⬛ Square</option>
-      <option value="cash">💵 Cash / Other</option>
-    </select>
+  <label class="field-label">Source</label>
+  <select id="sq-edit-src">
+  <option value="square" selected>Square</option>
+  <option value="cash">Cash / Other</option>
+  </select>
   </div>
 </div>
 <div class="form-row">
   <label class="field-label">Payment Method</label>
   <select id="sq-edit-pm">
-    <option value="Card"${pmMethod==='Card'?' selected':''}>💳 Card</option>
-    <option value="Cash"${pmMethod==='Cash'?' selected':''}>💵 Cash</option>
+  <option value="Card"${pmMethod==='Card'?' selected':''}>Card</option>
+  <option value="Cash"${pmMethod==='Cash'?' selected':''}>Cash</option>
   </select>
 </div>
 <div class="form-row">
@@ -3388,22 +3442,22 @@ function buildSqSaleEditForm(s) {
 </div>
 <div class="form-grid">
   <div class="form-row">
-    <label class="field-label">Gross Amount ($) *</label>
-    <input type="number" id="sq-edit-gross" value="${gross}" placeholder="0.00" step="0.01" min="0" oninput="sqEditRecalc()" />
+  <label class="field-label">Gross Amount ($) *</label>
+  <input type="number" id="sq-edit-gross" value="${gross}" placeholder="0.00" step="0.01" min="0" oninput="sqEditRecalc()" />
   </div>
   <div class="form-row">
-    <label class="field-label">Square Fee ($) <span style="color:var(--text3);font-size:11px">auto 2.6% + $0.15</span></label>
-    <input type="number" id="sq-edit-fee" value="${fee}" placeholder="0.00" step="0.01" min="0" oninput="sqEditRecalc()" />
+  <label class="field-label">Square Fee ($) <span style="color:var(--text3);font-size:11px">auto 2.6% + $0.15</span></label>
+  <input type="number" id="sq-edit-fee" value="${fee}" placeholder="0.00" step="0.01" min="0" oninput="sqEditRecalc()" />
   </div>
 </div>
 <div class="form-grid">
   <div class="form-row">
-    <label class="field-label">Tax ($)</label>
-    <input type="number" id="sq-edit-tax" value="${tax}" placeholder="0.00" step="0.01" min="0" oninput="sqEditRecalc()" />
+  <label class="field-label">Tax ($)</label>
+  <input type="number" id="sq-edit-tax" value="${tax}" placeholder="0.00" step="0.01" min="0" oninput="sqEditRecalc()" />
   </div>
   <div class="form-row">
-    <label class="field-label">Net (calculated)</label>
-    <input type="number" id="sq-edit-net" value="${net}" placeholder="0.00" step="0.01" readonly style="opacity:0.6;cursor:not-allowed" />
+  <label class="field-label">Net (calculated)</label>
+  <input type="number" id="sq-edit-net" value="${net}" placeholder="0.00" step="0.01" readonly style="opacity:0.6;cursor:not-allowed" />
   </div>
 </div>
 <p class="text-muted mt8" style="font-size:11px">Changing Source will move this record to the correct category. Fee is ignored for Cash sales.</p>`;
@@ -3411,8 +3465,8 @@ function buildSqSaleEditForm(s) {
 
 function sqEditRecalc() {
   const gross = parseFloat(document.getElementById('sq-edit-gross')?.value || 0) || 0;
-  const fee   = parseFloat(document.getElementById('sq-edit-fee')?.value   || 0) || 0;
-  const tax   = parseFloat(document.getElementById('sq-edit-tax')?.value   || 0) || 0;
+  const fee  = parseFloat(document.getElementById('sq-edit-fee')?.value  || 0) || 0;
+  const tax  = parseFloat(document.getElementById('sq-edit-tax')?.value  || 0) || 0;
   const netEl = document.getElementById('sq-edit-net');
   if (netEl) netEl.value = Math.max(0, gross - fee - tax).toFixed(2);
 }
@@ -3420,37 +3474,37 @@ function sqEditRecalc() {
 function saveSqSaleEdit(id) {
   const date  = document.getElementById('sq-edit-date')?.value;
   const desc  = document.getElementById('sq-edit-desc')?.value?.trim() || '';
-  const src   = document.getElementById('sq-edit-src')?.value || 'square';
-  const pm    = document.getElementById('sq-edit-pm')?.value || 'Card';
+  const src  = document.getElementById('sq-edit-src')?.value || 'square';
+  const pm  = document.getElementById('sq-edit-pm')?.value || 'Card';
   const gross = parseFloat(document.getElementById('sq-edit-gross')?.value || 0);
-  const fee   = parseFloat(document.getElementById('sq-edit-fee')?.value   || 0);
-  const tax   = parseFloat(document.getElementById('sq-edit-tax')?.value   || 0);
+  const fee  = parseFloat(document.getElementById('sq-edit-fee')?.value  || 0);
+  const tax  = parseFloat(document.getElementById('sq-edit-tax')?.value  || 0);
   if (!date)  { showFormErr('Date is required.'); return; }
   if (!gross) { showFormErr('Amount is required.'); return; }
-  const net   = parseFloat((gross - fee - tax).toFixed(2));
+  const net  = parseFloat((gross - fee - tax).toFixed(2));
   const dateISO = date + 'T12:00:00Z';
 
   if (src === 'cash') {
-    // Move/save as cash sale
-    if (id) S.squareSales = S.squareSales.filter(x => x.id !== id);
-    S.cashSales.push({ id: id || genId(), date: dateISO, category: desc || 'Sale', amount: gross, tax, notes: '', source: 'manual' });
+  // Move/save as cash sale
+  if (id) S.squareSales = S.squareSales.filter(x => x.id !== id);
+  S.cashSales.push({ id: id || genId(), date: dateISO, category: desc || 'Sale', amount: gross, tax, notes: '', source: 'manual' });
   } else {
-    // Save as square sale
-    const newRec = { id: id || genId(), date: dateISO, description: desc, gross, fee, tax, net, feeEstimated: false, items: desc ? [{ name: desc, qty: 1, price: gross }] : [], status: 'COMPLETED', source: 'manual', paymentMethod: pm };
-    if (id) {
-      const idx = S.squareSales.findIndex(x => x.id === id);
-      if (idx >= 0) S.squareSales[idx] = newRec; else S.squareSales.push(newRec);
-    } else {
-      S.squareSales.push(newRec);
-    }
+  // Save as square sale
+  const newRec = { id: id || genId(), date: dateISO, description: desc, gross, fee, tax, net, feeEstimated: false, items: desc ? [{ name: desc, qty: 1, price: gross }] : [], status: 'COMPLETED', source: 'manual', paymentMethod: pm };
+  if (id) {
+  const idx = S.squareSales.findIndex(x => x.id === id);
+  if (idx >= 0) S.squareSales[idx] = newRec; else S.squareSales.push(newRec);
+  } else {
+  S.squareSales.push(newRec);
+  }
   }
   saveState(); closeModal(); refreshCurrentTab();
 }
 
 function deleteSqSale(id) {
   appConfirm('Delete this Square transaction? This cannot be undone.', 'Delete', () => {
-    S.squareSales = S.squareSales.filter(x => x.id !== id);
-    saveState(); closeModal(); refreshCurrentTab();
+  S.squareSales = S.squareSales.filter(x => x.id !== id);
+  saveState(); closeModal(); refreshCurrentTab();
   });
 }
 
@@ -3460,7 +3514,7 @@ function deleteSqSale(id) {
 function setPeriod(p) {
   S.period = p;
   document.querySelectorAll('.dpbtn').forEach(btn =>
-    btn.classList.toggle('active', btn.dataset.p === p)
+  btn.classList.toggle('active', btn.dataset.p === p)
   );
   const ci = document.getElementById('custom-date-inputs');
   if (ci) ci.style.display = p === 'custom' ? 'flex' : 'none';
@@ -3471,7 +3525,7 @@ function applyCustomDates() {
   const s = document.getElementById('custom-start')?.value;
   const e = document.getElementById('custom-end')?.value;
   if (s) S.customStart = s;
-  if (e) S.customEnd   = e;
+  if (e) S.customEnd  = e;
   if (S.period === 'custom') refreshCurrentTab();
 }
 
@@ -3490,8 +3544,8 @@ function showApp() {
   updateSqStatusLabel();
   updateLowStockBadge();
   if (S.lastSync) {
-    const status = document.getElementById('sync-status');
-    if (status) status.textContent = 'Last sync: ' + fmtDateTime(S.lastSync);
+  const status = document.getElementById('sync-status');
+  if (status) status.textContent = 'Last sync: ' + fmtDateTime(S.lastSync);
   }
   renderTab(S.tab);
   requestAnimationFrame(() => { if (S.tab === 'overview') drawRevenueChart(); });
@@ -3507,23 +3561,23 @@ function genId() {
 // Custom confirm — replaces browser confirm() which can be blocked
 function appConfirm(msg, okLabel, onOk) {
   const overlay  = document.getElementById('confirm-overlay');
-  const msgEl    = document.getElementById('confirm-msg');
-  const okBtn    = document.getElementById('confirm-ok-btn');
+  const msgEl  = document.getElementById('confirm-msg');
+  const okBtn  = document.getElementById('confirm-ok-btn');
   const cancelBtn= document.getElementById('confirm-cancel-btn');
   if (!overlay) { if (window.confirm(msg)) onOk(); return; } // fallback
   msgEl.textContent = msg;
   okBtn.textContent = okLabel || 'Delete';
   overlay.style.display = 'flex';
   const cleanup = () => { overlay.style.display = 'none'; okBtn.onclick = null; cancelBtn.onclick = null; };
-  okBtn.onclick    = () => { cleanup(); onOk(); };
+  okBtn.onclick  = () => { cleanup(); onOk(); };
   cancelBtn.onclick= () => { cleanup(); };
 }
 
 function esc(s) {
   if (s == null) return '';
   return String(s)
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');
+  .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+  .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');
 }
 
 function escA(s) {
@@ -3532,8 +3586,8 @@ function escA(s) {
 }
 
 function emptyHTML(title, desc) {
-  return '<div class="empty-state"><div class="empty-icon">📋</div>' +
-    '<h3>' + esc(title) + '</h3><p>' + esc(desc) + '</p></div>';
+  return '<div class="empty-state"><div class="empty-icon"></div>' +
+  '<h3>' + esc(title) + '</h3><p>' + esc(desc) + '</p></div>';
 }
 
 function clearEl(id) {
@@ -3545,8 +3599,8 @@ function setInlineError(containerId, msg, withRetry) {
   const el = document.getElementById(containerId);
   if (!el) return;
   el.innerHTML = '<div class="alert alert-error" style="margin:12px 16px">' + esc(msg) +
-    (withRetry ? ' <button class="btn btn-sm btn-secondary" style="margin-left:8px" onclick="syncSquare()">Retry</button>' : '') +
-    '</div>';
+  (withRetry ? ' <button class="btn btn-sm btn-secondary" style="margin-left:8px" onclick="syncSquare()">Retry</button>' : '') +
+  '</div>';
 }
 
 // Close settings when clicking outside
@@ -3561,7 +3615,7 @@ let resizeTimer;
 window.addEventListener('resize', () => {
   clearTimeout(resizeTimer);
   resizeTimer = setTimeout(() => {
-    if (S.tab === 'overview') drawRevenueChart();
+  if (S.tab === 'overview') drawRevenueChart();
   }, 250);
 });
 
@@ -3571,9 +3625,9 @@ window.addEventListener('resize', () => {
 function init() {
   loadState();
   if (localStorage.getItem('app_launched')) {
-    showApp();
+  showApp();
   } else {
-    showSetup();
+  showSetup();
   }
 }
 
