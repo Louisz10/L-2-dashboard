@@ -633,6 +633,7 @@ input[type=checkbox].row-cb{width:16px;height:16px;accent-color:var(--accent);cu
         <button class="btn btn-secondary btn-sm" onclick="clearSalesFilters()">Clear</button>
       </div>
       <div id="all-sales-table"></div>
+      <div id="sales-total-bar" class="costs-total-bar" style="display:none"></div>
     </div>
   </div>
 
@@ -1536,6 +1537,8 @@ function renderAllSalesTable() {
       filterActive ? 'No sales match your filters' : 'No sales this period',
       filterActive ? 'Try clearing the search or source filter.' : 'Import a Square CSV or click "+ Add Sale" to record a cash transaction.'
     );
+    const totBar = document.getElementById('sales-total-bar');
+    if (totBar) totBar.style.display = 'none';
     return;
   }
 
@@ -1582,6 +1585,28 @@ function renderAllSalesTable() {
         '</tr>';
     }).join('') +
     '</tbody></table></div>';
+
+  // Totals bar — sums the currently filtered set
+  const totBar = document.getElementById('sales-total-bar');
+  if (totBar) {
+    const tot = all.reduce((a, s) => ({
+      gross: a.gross + (s.gross || 0),
+      fee:   a.fee   + (s.fee   || 0),
+      tax:   a.tax   + (s.tax   || 0),
+      net:   a.net   + (s.net   || 0)
+    }), { gross: 0, fee: 0, tax: 0, net: 0 });
+    const filterActive = q || srcFilter !== 'all';
+    const label = filterActive
+      ? 'Filtered Totals (' + all.length + ' of ' + allUnfiltered.length + ')'
+      : 'Totals (' + all.length + ')';
+    totBar.style.display = 'block';
+    totBar.innerHTML =
+      '<span class="text-muted fw600" style="margin-right:14px">' + label + ':</span>' +
+      '<span style="margin-right:14px"><span class="text-muted">Gross </span><span style="color:var(--green);font-weight:700">' + fmtMoney(tot.gross) + '</span></span>' +
+      '<span style="margin-right:14px"><span class="text-muted">Fees </span><span style="color:var(--red);font-weight:700">' + fmtMoney(tot.fee) + '</span></span>' +
+      '<span style="margin-right:14px"><span class="text-muted">Tax </span><span style="font-weight:700">' + fmtMoney(tot.tax) + '</span></span>' +
+      '<span><span class="text-muted">Net </span><span style="font-weight:700">' + fmtMoney(tot.net) + '</span></span>';
+  }
 }
 
 function clearSalesFilters() {
