@@ -622,6 +622,16 @@ input[type=checkbox].row-cb{width:16px;height:16px;accent-color:var(--accent);cu
           <button class="btn btn-primary btn-sm" onclick="openModal('add-cash')">+ Add Cash Sale</button>
         </div>
       </div>
+      <div class="filter-bar" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 18px;border-bottom:2px dashed var(--border)">
+        <input type="text" id="sales-search" placeholder="🔎 Search description or notes…" oninput="renderAllSalesTable()" style="flex:1;min-width:220px;padding:8px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" />
+        <select id="sales-source-filter" onchange="renderAllSalesTable()" style="padding:8px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px">
+          <option value="all">All sources</option>
+          <option value="square-card">Square · Card only</option>
+          <option value="square-cash">Square · Cash only</option>
+          <option value="cash">Cash only</option>
+        </select>
+        <button class="btn btn-secondary btn-sm" onclick="clearSalesFilters()">Clear</button>
+      </div>
       <div id="all-sales-table"></div>
     </div>
   </div>
@@ -677,6 +687,18 @@ input[type=checkbox].row-cb{width:16px;height:16px;accent-color:var(--accent);cu
       <div class="section-header">
         <span class="section-title">💸 Business Expenses</span>
         <button class="btn btn-primary btn-sm" onclick="openModal('add-cost')">+ Add Expense</button>
+      </div>
+      <div class="filter-bar" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 18px;border-bottom:2px dashed var(--border)">
+        <input type="text" id="costs-search" placeholder="🔎 Search expense name or notes…" oninput="renderCosts()" style="flex:1;min-width:220px;padding:8px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" />
+        <button class="btn btn-secondary btn-sm" onclick="clearCostsFilter()">Clear</button>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:8px 18px;border-bottom:2px dashed var(--border);font-size:12px">
+        <span class="text-muted" style="margin-right:4px">Quick filter:</span>
+        <button class="btn btn-secondary btn-sm" onclick="setCostsFilter('table')">Table fees</button>
+        <button class="btn btn-secondary btn-sm" onclick="setCostsFilter('gas')">Gas</button>
+        <button class="btn btn-secondary btn-sm" onclick="setCostsFilter('inventory')">Inventory</button>
+        <button class="btn btn-secondary btn-sm" onclick="setCostsFilter('supply')">Supplies</button>
+        <button class="btn btn-secondary btn-sm" onclick="setCostsFilter('shipping')">Shipping</button>
       </div>
       <div id="costs-table-wrap"></div>
       <div id="costs-total-bar" class="costs-total-bar" style="display:none"></div>
@@ -1484,13 +1506,36 @@ function renderAllSalesTable() {
     note:  s.notes || ''
   }));
 
-  const all = [...sqSales, ...cashSales].sort((a, b) => new Date(b.date) - new Date(a.date));
+  const allUnfiltered = [...sqSales, ...cashSales].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  // Apply UI filters: keyword search + source dropdown
+  const q = (document.getElementById('sales-search')?.value || '').toLowerCase().trim();
+  const srcFilter = document.getElementById('sales-source-filter')?.value || 'all';
+  const all = allUnfiltered.filter(s => {
+    if (q) {
+      const hay = ((s.desc || '') + ' ' + (s.note || '')).toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    if (srcFilter === 'square-card') return s._src === 'square' && s.paymentMethod !== 'Cash';
+    if (srcFilter === 'square-cash') return s._src === 'square' && s.paymentMethod === 'Cash';
+    if (srcFilter === 'cash')        return s._src === 'cash';
+    return true;
+  });
 
   const lbl = document.getElementById('all-sales-count');
-  if (lbl) lbl.textContent = all.length ? all.length + ' transactions' : '';
+  if (lbl) {
+    const filterActive = q || srcFilter !== 'all';
+    lbl.textContent = filterActive
+      ? all.length + ' of ' + allUnfiltered.length + ' transactions'
+      : (all.length ? all.length + ' transactions' : '');
+  }
 
   if (!all.length) {
-    el.innerHTML = emptyHTML('No sales this period', 'Import a Square CSV or click "+ Add Sale" to record a cash transaction.');
+    const filterActive = q || srcFilter !== 'all';
+    el.innerHTML = emptyHTML(
+      filterActive ? 'No sales match your filters' : 'No sales this period',
+      filterActive ? 'Try clearing the search or source filter.' : 'Import a Square CSV or click "+ Add Sale" to record a cash transaction.'
+    );
     return;
   }
 
@@ -1537,6 +1582,28 @@ function renderAllSalesTable() {
         '</tr>';
     }).join('') +
     '</tbody></table></div>';
+}
+
+function clearSalesFilters() {
+  const search = document.getElementById('sales-search');
+  const src    = document.getElementById('sales-source-filter');
+  if (search) search.value = '';
+  if (src)    src.value    = 'all';
+  renderAllSalesTable();
+}
+
+function clearCostsFilter() {
+  const search = document.getElementById('costs-search');
+  if (search) search.value = '';
+  renderCosts();
+}
+
+function setCostsFilter(keyword) {
+  const search = document.getElementById('costs-search');
+  if (!search) return;
+  // Toggle: clicking the same chip again clears it
+  search.value = (search.value.toLowerCase() === keyword.toLowerCase()) ? '' : keyword;
+  renderCosts();
 }
 
 function deleteSelectedAll() {
@@ -1735,10 +1802,19 @@ function renderCosts() {
   const totEl = document.getElementById('costs-total-bar');
   if (!el) return;
 
-  const costs = filteredCosts().slice().reverse();
+  const costsAll = filteredCosts().slice().reverse();
+
+  // Keyword filter: matches name + notes
+  const q = (document.getElementById('costs-search')?.value || '').toLowerCase().trim();
+  const costs = q
+    ? costsAll.filter(c => ((c.name || '') + ' ' + (c.notes || '')).toLowerCase().includes(q))
+    : costsAll;
 
   if (!costs.length) {
-    el.innerHTML = emptyHTML('No expenses logged', 'Click "+ Add Expense" to track business costs like table fees, gas, and supplies.');
+    el.innerHTML = emptyHTML(
+      q ? 'No expenses match "' + q + '"' : 'No expenses logged',
+      q ? 'Try clearing the search or pick a different keyword.' : 'Click "+ Add Expense" to track business costs like table fees, gas, and supplies.'
+    );
     if (totEl) totEl.style.display = 'none';
     return;
   }
@@ -1775,7 +1851,8 @@ function renderCosts() {
   const total = costs.reduce((s, c) => s + (c.amount || 0), 0);
   if (totEl) {
     totEl.style.display = 'block';
-    totEl.innerHTML = '<span class="text-muted fw600">Total Expenses: </span>' +
+    const label = q ? 'Filtered Total (' + costs.length + ' of ' + costsAll.length + '): ' : 'Total Expenses: ';
+    totEl.innerHTML = '<span class="text-muted fw600">' + label + '</span>' +
       '<span style="color:var(--red);font-size:16px;font-weight:700">' + fmtMoney(total) + '</span>';
   }
 }
