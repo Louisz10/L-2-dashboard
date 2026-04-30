@@ -474,6 +474,9 @@ input[type=checkbox].row-cb{width:16px;height:16px;accent-color:var(--accent);cu
   </div>
   </div>
   <div class="settings-item">
+  <button class="link" onclick="zeroOutCashTax()" style="color:var(--amber);font-size:12px;text-align:left">Zero out tax on cash sales</button>
+  </div>
+  <div class="settings-item">
   <button class="link" onclick="exportData()" style="color:var(--green)">⬇ Export Backup (.json)</button>
   </div>
   <div class="settings-item">
@@ -2214,6 +2217,10 @@ function closeModalIfOutside(e) {
 // ============================================================
 function buildCashForm(d) {
   const dateVal = d ? (d.date || '').slice(0,10) : todayISO();
+  // Default checkbox state: respect explicit taxCharged; for legacy records, infer from tax > 0
+  const taxChargedDefault = d
+  ? (d.taxCharged === true || (d.taxCharged === undefined && (d.tax || 0) > 0))
+  : false;
   return `
 <div id="form-err" class="alert alert-error" style="display:none"></div>
 <div class="form-grid">
@@ -2236,18 +2243,23 @@ function buildCashForm(d) {
 <div class="form-grid">
   <div class="form-row">
   <label class="field-label">Sale Amount ($) *</label>
-  <input type="number" id="cf-amt" value="${d?.amount||''}" placeholder="0.00" step="0.01" min="0" oninput="(function(){const g=parseFloat(document.getElementById('cf-amt').value)||0;const t=g*${S.taxRate}/(100+${S.taxRate});const el=document.getElementById('cf-net-display');if(el)el.value=g>0?'$'+(g-t).toFixed(2):'';})()" />
+  <input type="number" id="cf-amt" value="${d?.amount||''}" placeholder="0.00" step="0.01" min="0" oninput="updateCashNetDisplay()" />
   </div>
   <div class="form-row">
   <label class="field-label">Net (after tax)</label>
-  <input type="text" id="cf-net-display" readonly style="background:var(--bg3);color:var(--green);font-weight:700" placeholder="—" oninput="void(0)" />
+  <input type="text" id="cf-net-display" readonly style="background:var(--bg3);color:var(--green);font-weight:700" placeholder="—" />
   </div>
+</div>
+<div class="form-row" style="margin-top:6px;padding:10px 12px;background:rgba(224,32,32,0.08);border:1px solid rgba(224,32,32,0.3);border-radius:6px">
+  <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
+  <input type="checkbox" id="cf-tax-charged" ${taxChargedDefault ? 'checked' : ''} onchange="updateCashNetDisplay()" style="width:16px;height:16px;cursor:pointer" />
+  <span><strong>Sales tax charged on this sale</strong> — when checked, tax (${S.taxRate}%) is back-calculated from the sale amount. Leave unchecked for sales where you didn't collect tax.</span>
+  </label>
 </div>
 <div class="form-row">
   <label class="field-label">Notes</label>
   <input type="text" id="cf-notes" value="${escA(d?.notes||'')}" placeholder="e.g. Card show — Milwaukee" />
-</div>
-<p class="text-muted mt8" style="font-size:11px">Tax (${S.taxRate}%) is back-calculated from the sale amount and deducted from your net.</p>`;
+</div>`;
 }
 
 const SKU_TYPES = ['Collection Box', 'ETB', 'Booster Bundle', 'Booster Pack', 'Booster Box', 'Tin', 'Other'];
@@ -2356,15 +2368,27 @@ function showFormErr(msg) {
 function v(id) { return document.getElementById(id)?.value?.trim() || ''; }
 function vn(id) { const n = parseFloat(document.getElementById(id)?.value); return isNaN(n) ? null : n; }
 
+function updateCashNetDisplay() {
+  const g = parseFloat(document.getElementById('cf-amt')?.value) || 0;
+  const charged = document.getElementById('cf-tax-charged')?.checked;
+  const tax = charged ? g * S.taxRate / (100 + S.taxRate) : 0;
+  const el = document.getElementById('cf-net-display');
+  if (el) el.value = g > 0 ? '$' + (g - tax).toFixed(2) : '';
+}
+
 function saveCashSale(editId) {
   const date  = v('cf-date'), cat = v('cf-cat'), amtRaw = vn('cf-amt');
   const src  = document.getElementById('cf-src')?.value || 'cash';
+  const taxCharged = document.getElementById('cf-tax-charged')?.checked || false;
   if (!date)  { showFormErr('Date is required.'); return; }
   if (!cat)  { showFormErr('Description is required.'); return; }
   if (amtRaw === null || amtRaw <= 0) { showFormErr('Enter a valid sale amount.'); return; }
 
-  // Tax is back-calculated (inclusive) — it's already inside the sale amount
-  const tax = parseFloat((amtRaw * S.taxRate / (100 + S.taxRate)).toFixed(2));
+  // Tax is back-calculated (inclusive) only when user confirms tax was charged.
+  // Otherwise tax = 0 and the full amount counts as net revenue.
+  const tax = taxCharged
+  ? parseFloat((amtRaw * S.taxRate / (100 + S.taxRate)).toFixed(2))
+  : 0;
   const dateISO = date + 'T12:00:00Z';
 
   if (src === 'square') {
@@ -2375,15 +2399,35 @@ function saveCashSale(editId) {
   } else {
   if (editId) {
   const idx = S.cashSales.findIndex(x => x.id === editId);
-  if (idx >= 0) S.cashSales[idx] = { ...S.cashSales[idx], date: dateISO, category: cat, amount: amtRaw, tax, notes: v('cf-notes') };
+  if (idx >= 0) S.cashSales[idx] = { ...S.cashSales[idx], date: dateISO, category: cat, amount: amtRaw, tax, taxCharged, notes: v('cf-notes') };
   } else {
-  S.cashSales.push({ id: genId(), date: dateISO, category: cat, amount: amtRaw, tax, notes: v('cf-notes') });
+  S.cashSales.push({ id: genId(), date: dateISO, category: cat, amount: amtRaw, tax, taxCharged, notes: v('cf-notes') });
   const inv = S.inventory.find(i => i.name && i.name.toLowerCase().trim() === cat.toLowerCase().trim());
   if (inv) inv.qty = Math.max(0, (inv.qty || 0) - 1);
   }
   }
 
   saveState(); closeModal(); updateLowStockBadge(); refreshCurrentTab();
+}
+
+function zeroOutCashTax() {
+  const panel = document.getElementById('settings-panel');
+  if (panel) panel.classList.remove('open');
+  const withTax = S.cashSales.filter(s => (s.tax || 0) > 0).length;
+  if (!withTax) {
+  appConfirm('No manual cash sales have non-zero tax stored. Nothing to update.', 'OK', () => {});
+  return;
+  }
+  appConfirm(
+  'Zero out sales tax on ' + withTax + ' manual cash sale' + (withTax > 1 ? 's' : '') +
+  '? This is for cash sales where tax was not actually collected. Square card and Square cash sales are not touched.',
+  'Zero Out Tax',
+  () => {
+  S.cashSales.forEach(s => { s.tax = 0; s.taxCharged = false; });
+  saveState();
+  refreshCurrentTab();
+  }
+  );
 }
 
 function saveInvItem(editId) {
