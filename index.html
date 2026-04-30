@@ -2217,10 +2217,12 @@ function closeModalIfOutside(e) {
 // ============================================================
 function buildCashForm(d) {
   const dateVal = d ? (d.date || '').slice(0,10) : todayISO();
-  // Default checkbox state: respect explicit taxCharged; for legacy records, infer from tax > 0
-  const taxChargedDefault = d
-  ? (d.taxCharged === true || (d.taxCharged === undefined && (d.tax || 0) > 0))
-  : false;
+  // Checkbox now reads "tax already deducted" — inverse of the stored taxCharged flag.
+  // Default for new sales: CHECKED (matches the common case — tax handled outside this number).
+  // Edit form: CHECKED if no tax was previously applied; UNCHECKED if tax > 0 was stored.
+  const taxAlreadyDeducted = d
+  ? !(d.taxCharged === true || (d.taxCharged === undefined && (d.tax || 0) > 0))
+  : true;
   return `
 <div id="form-err" class="alert alert-error" style="display:none"></div>
 <div class="form-grid">
@@ -2252,8 +2254,8 @@ function buildCashForm(d) {
 </div>
 <div class="form-row" style="margin-top:6px;padding:10px 12px;background:rgba(224,32,32,0.08);border:1px solid rgba(224,32,32,0.3);border-radius:6px">
   <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
-  <input type="checkbox" id="cf-tax-charged" ${taxChargedDefault ? 'checked' : ''} onchange="updateCashNetDisplay()" style="width:16px;height:16px;cursor:pointer" />
-  <span><strong>Sales tax charged on this sale</strong> — when checked, tax (${S.taxRate}%) is back-calculated from the sale amount. Leave unchecked for sales where you didn't collect tax.</span>
+  <input type="checkbox" id="cf-tax-deducted" ${taxAlreadyDeducted ? 'checked' : ''} onchange="updateCashNetDisplay()" style="width:16px;height:16px;cursor:pointer" />
+  <span><strong>Tax already deducted from this amount</strong> — keep checked when the amount above is already net (you handled tax separately). Uncheck if the amount includes tax — the system will back-calculate ${S.taxRate}%.</span>
   </label>
 </div>
 <div class="form-row">
@@ -2370,8 +2372,10 @@ function vn(id) { const n = parseFloat(document.getElementById(id)?.value); retu
 
 function updateCashNetDisplay() {
   const g = parseFloat(document.getElementById('cf-amt')?.value) || 0;
-  const charged = document.getElementById('cf-tax-charged')?.checked;
-  const tax = charged ? g * S.taxRate / (100 + S.taxRate) : 0;
+  const alreadyDeducted = document.getElementById('cf-tax-deducted')?.checked;
+  // If tax already deducted: entered amount IS the net, no extraction.
+  // If not deducted: entered amount includes tax, back-calc inclusively.
+  const tax = alreadyDeducted ? 0 : g * S.taxRate / (100 + S.taxRate);
   const el = document.getElementById('cf-net-display');
   if (el) el.value = g > 0 ? '$' + (g - tax).toFixed(2) : '';
 }
@@ -2379,7 +2383,9 @@ function updateCashNetDisplay() {
 function saveCashSale(editId) {
   const date  = v('cf-date'), cat = v('cf-cat'), amtRaw = vn('cf-amt');
   const src  = document.getElementById('cf-src')?.value || 'cash';
-  const taxCharged = document.getElementById('cf-tax-charged')?.checked || false;
+  // UI says "tax already deducted" — internally we store taxCharged (the inverse).
+  const alreadyDeducted = document.getElementById('cf-tax-deducted')?.checked || false;
+  const taxCharged = !alreadyDeducted;
   if (!date)  { showFormErr('Date is required.'); return; }
   if (!cat)  { showFormErr('Description is required.'); return; }
   if (amtRaw === null || amtRaw <= 0) { showFormErr('Enter a valid sale amount.'); return; }
