@@ -1142,6 +1142,18 @@ function todayISO() {
   return new Date().toISOString().slice(0, 10);
 }
 
+// If a saved entry's date falls outside the current period filter, the table
+// will silently hide it. Offer to switch to "All Time" so the user sees it.
+function notifyIfOutsidePeriod(dateISO, entryWord) {
+  if (!dateISO || inRange(dateISO)) return;
+  const periodLbl = ({today:'Today',week:'This Week',month:'This Month',year:'This Year',custom:'Custom range'})[S.period] || S.period;
+  appConfirm(
+  'Saved! But this ' + (entryWord || 'entry') + ' is dated outside your current "' + periodLbl + '" view, so it won\'t show up in the table. Switch to "All Time" to see it?',
+  'Switch to All Time',
+  () => { setPeriod('all'); }
+  );
+}
+
 // ============================================================
 // FILTERED DATA
 // ============================================================
@@ -2410,6 +2422,7 @@ function saveCashSale(editId) {
   }
 
   saveState(); closeModal(); updateLowStockBadge(); refreshCurrentTab();
+  notifyIfOutsidePeriod(dateISO, 'sale');
 }
 
 function zeroOutCashTax() {
@@ -2501,6 +2514,7 @@ function saveCost(editId) {
   S.costs.push({ id: genId(), date, name, amount: amtRaw, notes: v('cost-notes') });
   }
   saveState(); closeModal(); renderCosts();
+  notifyIfOutsidePeriod(date, 'expense');
 }
 
 // ============================================================
