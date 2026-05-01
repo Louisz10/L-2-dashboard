@@ -496,9 +496,9 @@ input[type=checkbox].row-cb{width:16px;height:16px;accent-color:var(--accent);cu
   <span class="date-bar-label">Period:</span>
   <button class="dpbtn" data-p="today" onclick="setPeriod('today')">Today</button>
   <button class="dpbtn" data-p="week" onclick="setPeriod('week')">This Week</button>
-  <button class="dpbtn active" data-p="month" onclick="setPeriod('month')">This Month</button>
+  <button class="dpbtn" data-p="month" onclick="setPeriod('month')">This Month</button>
   <button class="dpbtn" data-p="year" onclick="setPeriod('year')">This Year</button>
-  <button class="dpbtn" data-p="all" onclick="setPeriod('all')">All Time</button>
+  <button class="dpbtn active" data-p="all" onclick="setPeriod('all')">All Time</button>
   <button class="dpbtn" data-p="custom" onclick="setPeriod('custom')">Custom ▾</button>
   <div class="custom-dates" id="custom-date-inputs">
   <input type="date" id="custom-start" style="width:140px" onchange="applyCustomDates()" />
@@ -806,7 +806,7 @@ const S = {
   singles: [],
   costs: [],
   processedSaleIds: new Set(), // IDs already auto-deducted
-  period: 'month',
+  period: 'all',
   customStart: '',
   customEnd: '',
   tab: 'overview',
