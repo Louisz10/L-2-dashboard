@@ -509,7 +509,7 @@ input[type=checkbox].row-cb{width:16px;height:16px;accent-color:var(--accent);cu
   <div class="metric-grid" id="overview-metrics"></div>
   <div class="chart-wrap">
   <div class="flex-between" style="margin-bottom:10px">
-  <div class="fw600 fs12" style="text-transform:uppercase;letter-spacing:0.5px;color:var(--text2)">Revenue Trend</div>
+  <div class="fw600 fs12" style="text-transform:uppercase;letter-spacing:0.5px;color:var(--text2)">Revenue vs Spending</div>
   <div id="revenue-legend" class="chart-legend"></div>
   </div>
   <canvas id="revenue-chart" style="width:100%;height:200px"></canvas>
@@ -1308,10 +1308,15 @@ function drawRevenueChart() {
   let { start, end } = getDateRange();
   const sqSales  = filteredSqSales();
   const cashSales = filteredCashSales();
+  const costs   = filteredCosts();
 
   // For "all time", derive range from actual data instead of 2000–2099
   if (S.period === 'all') {
-  const allDates = [...sqSales.map(s => s.date), ...cashSales.map(s => s.date)].filter(Boolean).map(d => new Date(d));
+  const allDates = [
+  ...sqSales.map(s => s.date),
+  ...cashSales.map(s => s.date),
+  ...costs.map(c => c.date)
+  ].filter(Boolean).map(d => new Date(d));
   if (!allDates.length) { canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height); return; }
   start = new Date(Math.min(...allDates));
   end  = new Date(Math.max(...allDates));
@@ -1332,12 +1337,13 @@ function drawRevenueChart() {
 
   if (!days.length) return;
 
-  const sqByDay = {};
-  const cashByDay = {};
-  sqSales.forEach(s => { const d = s.dateStr || s.date.slice(0,10); sqByDay[d] = (sqByDay[d]||0) + (s.gross||0); });
-  cashSales.forEach(s => { const d = s.date.slice(0,10); cashByDay[d] = (cashByDay[d]||0) + (s.amount||0); });
+  const revByDay = {};
+  const costByDay = {};
+  sqSales.forEach(s   => { const d = s.dateStr || s.date.slice(0,10); revByDay[d]  = (revByDay[d] ||0) + (s.gross  || 0); });
+  cashSales.forEach(s => { const d = s.date.slice(0,10);              revByDay[d]  = (revByDay[d] ||0) + (s.amount || 0); });
+  costs.forEach(c     => { const d = c.date.slice(0,10);              costByDay[d] = (costByDay[d]||0) + (c.amount || 0); });
 
-  let labels, sqVals, cashVals, totalVals;
+  let labels, revVals, spendVals;
 
   if (days.length > 90) {
   // Aggregate by week
@@ -1347,25 +1353,22 @@ function drawRevenueChart() {
   const wkStart = new Date(dt);
   wkStart.setDate(dt.getDate() - dt.getDay());
   const key = wkStart.toISOString().slice(0,10);
-  if (!weeks[key]) weeks[key] = { sq: 0, cash: 0 };
-  weeks[key].sq  += sqByDay[day]  || 0;
-  weeks[key].cash += cashByDay[day] || 0;
+  if (!weeks[key]) weeks[key] = { rev: 0, spend: 0 };
+  weeks[key].rev   += revByDay[day]  || 0;
+  weeks[key].spend += costByDay[day] || 0;
   });
   const wkKeys = Object.keys(weeks).sort();
-  labels = wkKeys.map(k => { const d = new Date(k+'T00:00:00'); return (d.getMonth()+1)+'/'+d.getDate(); });
-  sqVals  = wkKeys.map(k => weeks[k].sq);
-  cashVals  = wkKeys.map(k => weeks[k].cash);
-  totalVals = wkKeys.map((_,i) => sqVals[i] + cashVals[i]);
+  labels  = wkKeys.map(k => { const d = new Date(k+'T00:00:00'); return (d.getMonth()+1)+'/'+d.getDate(); });
+  revVals  = wkKeys.map(k => weeks[k].rev);
+  spendVals = wkKeys.map(k => weeks[k].spend);
   } else if (days.length > 30) {
-  labels = days.map(d => { const dt = new Date(d+'T00:00:00'); return (dt.getMonth()+1)+'/'+dt.getDate(); });
-  sqVals  = days.map(d => sqByDay[d]  || 0);
-  cashVals  = days.map(d => cashByDay[d] || 0);
-  totalVals = days.map((_,i) => sqVals[i] + cashVals[i]);
+  labels  = days.map(d => { const dt = new Date(d+'T00:00:00'); return (dt.getMonth()+1)+'/'+dt.getDate(); });
+  revVals  = days.map(d => revByDay[d]  || 0);
+  spendVals = days.map(d => costByDay[d] || 0);
   } else {
-  labels = days.map(d => { const dt = new Date(d+'T00:00:00'); return String(dt.getDate()); });
-  sqVals  = days.map(d => sqByDay[d]  || 0);
-  cashVals  = days.map(d => cashByDay[d] || 0);
-  totalVals = days.map((_,i) => sqVals[i] + cashVals[i]);
+  labels  = days.map(d => { const dt = new Date(d+'T00:00:00'); return String(dt.getDate()); });
+  revVals  = days.map(d => revByDay[d]  || 0);
+  spendVals = days.map(d => costByDay[d] || 0);
   }
 
   const w = canvas.parentElement ? canvas.parentElement.clientWidth - 32 : 600;
@@ -1373,21 +1376,21 @@ function drawRevenueChart() {
   canvas.height = 200;
 
   const ctx = canvas.getContext('2d');
-  renderBarChart(ctx, canvas.width, canvas.height, labels, [
-  { label: 'Square', data: sqVals,  color: '#1a7a40' },
-  { label: 'Cash',  data: cashVals, color: '#5ddb8a' }
+  renderLineChart(ctx, canvas.width, canvas.height, labels, [
+  { label: 'Revenue',  data: revVals,   color: '#4fbd7e' },
+  { label: 'Spending', data: spendVals, color: '#e02020' }
   ]);
 
   const legend = document.getElementById('revenue-legend');
   if (legend) {
   legend.innerHTML = [
-  { l: 'Square', c: '#1a7a40' },
-  { l: 'Cash',  c: '#5ddb8a' }
+  { l: 'Revenue',  c: '#4fbd7e' },
+  { l: 'Spending', c: '#e02020' }
   ].map(x => '<div class="legend-item"><div class="legend-dot" style="background:' + x.c + '"></div>' + x.l + '</div>').join('');
   }
 }
 
-function renderBarChart(ctx, w, h, labels, datasets) {
+function renderLineChart(ctx, w, h, labels, datasets) {
   const pad = { top: 20, right: 14, bottom: 52, left: 62 };
   const cw = w - pad.left - pad.right;
   const ch = h - pad.top - pad.bottom;
@@ -1395,9 +1398,9 @@ function renderBarChart(ctx, w, h, labels, datasets) {
 
   ctx.clearRect(0, 0, w, h);
 
-  // Stacked totals for max
-  const totals = labels.map((_, i) => datasets.reduce((s, ds) => s + (ds.data[i] || 0), 0));
-  const maxVal = niceNum(Math.max(...totals, 1));
+  // Max across all overlaid datasets (lines, not stacked)
+  const allVals = datasets.flatMap(ds => ds.data);
+  const maxVal = niceNum(Math.max(...allVals, 1));
   const ticks  = 5;
 
   // Grid + Y tick labels
@@ -1432,26 +1435,36 @@ function renderBarChart(ctx, w, h, labels, datasets) {
   ctx.font = 'bold 10px sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText('Revenue ($)', 0, 0);
+  ctx.fillText('Amount ($)', 0, 0);
   ctx.restore();
 
-  // Stacked bars
-  const barW  = Math.max(2, (cw / n) * 0.7);
-  const barGap = cw / n;
-  labels.forEach((_, i) => {
-  const x = pad.left + i * barGap + (barGap - barW) / 2;
-  let yBase = pad.top + ch;
+  // X position helpers
+  const xStep = n > 1 ? cw / (n - 1) : cw / 2;
+  const xAt = i => pad.left + (n > 1 ? i * xStep : cw / 2);
+  const yAt = v => pad.top + ch - ((v || 0) / maxVal) * ch;
+
+  // Draw lines + data points for each dataset
   datasets.forEach(ds => {
-  const val = ds.data[i] || 0;
-  if (val <= 0) return;
-  const barH = (val / maxVal) * ch;
-  yBase -= barH;
-  ctx.fillStyle = ds.color;
-  ctx.globalAlpha = 0.85;
+  if (!ds.data.length) return;
+  // Line
+  ctx.strokeStyle = ds.color;
+  ctx.fillStyle  = ds.color;
+  ctx.lineWidth  = 2.5;
+  ctx.lineJoin  = 'round';
+  ctx.lineCap   = 'round';
   ctx.beginPath();
-  ctx.roundRect ? ctx.roundRect(x, yBase, barW, barH, [3, 3, 0, 0]) : ctx.rect(x, yBase, barW, barH);
+  ds.data.forEach((v, i) => {
+  const x = xAt(i);
+  const y = yAt(v);
+  if (i === 0) ctx.moveTo(x, y);
+  else      ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+  // Dots
+  ds.data.forEach((v, i) => {
+  ctx.beginPath();
+  ctx.arc(xAt(i), yAt(v), 3, 0, Math.PI * 2);
   ctx.fill();
-  ctx.globalAlpha = 1;
   });
   });
 
@@ -1463,8 +1476,7 @@ function renderBarChart(ctx, w, h, labels, datasets) {
   ctx.textBaseline = 'top';
   labels.forEach((lbl, i) => {
   if (i % step !== 0 && i !== n - 1) return;
-  const x = pad.left + i * barGap + barGap / 2;
-  ctx.fillText(lbl, x, pad.top + ch + 6);
+  ctx.fillText(lbl, xAt(i), pad.top + ch + 6);
   });
 
   // X-axis title
@@ -2499,29 +2511,33 @@ function saveCost(editId) {
 // ============================================================
 function deleteCashSale(id) {
   appConfirm('Delete this cash sale? This cannot be undone.', 'Delete', () => {
+  closeModal();
   S.cashSales = S.cashSales.filter(s => s.id !== id);
-  saveState(); closeModal(); refreshCurrentTab();
+  saveState(); refreshCurrentTab();
   });
 }
 
 function deleteInvItem(id) {
   appConfirm('Delete this inventory item?', 'Delete', () => {
+  closeModal();
   S.inventory = S.inventory.filter(i => i.id !== id);
-  saveState(); closeModal(); updateLowStockBadge(); renderInventory();
+  saveState(); updateLowStockBadge(); renderInventory();
   });
 }
 
 function deleteSinglesSet(id) {
   appConfirm('Delete this singles set?', 'Delete', () => {
+  closeModal();
   S.singles = S.singles.filter(s => s.id !== id);
-  saveState(); closeModal(); renderInventory();
+  saveState(); renderInventory();
   });
 }
 
 function deleteCost(id) {
   appConfirm('Delete this expense?', 'Delete', () => {
+  closeModal();
   S.costs = S.costs.filter(c => c.id !== id);
-  saveState(); closeModal(); renderCosts();
+  saveState(); renderCosts();
   });
 }
 
@@ -3540,8 +3556,9 @@ function saveSqSaleEdit(id) {
 
 function deleteSqSale(id) {
   appConfirm('Delete this Square transaction? This cannot be undone.', 'Delete', () => {
+  closeModal();
   S.squareSales = S.squareSales.filter(x => x.id !== id);
-  saveState(); closeModal(); refreshCurrentTab();
+  saveState(); refreshCurrentTab();
   });
 }
 
