@@ -512,7 +512,7 @@ input[type=checkbox].row-cb{width:16px;height:16px;accent-color:var(--accent);cu
   <div class="fw600 fs12" style="text-transform:uppercase;letter-spacing:0.5px;color:var(--text2)">Revenue vs Spending</div>
   <div id="revenue-legend" class="chart-legend"></div>
   </div>
-  <canvas id="revenue-chart" style="width:100%;height:200px"></canvas>
+  <canvas id="revenue-chart" style="width:100%;height:380px"></canvas>
   </div>
   <div class="section">
   <div class="section-header"><span class="section-title">Recent Sales</span></div>
@@ -1373,7 +1373,7 @@ function drawRevenueChart() {
 
   const w = canvas.parentElement ? canvas.parentElement.clientWidth - 32 : 600;
   canvas.width  = Math.max(w, 200);
-  canvas.height = 200;
+  canvas.height = 380;
 
   const ctx = canvas.getContext('2d');
   renderLineChart(ctx, canvas.width, canvas.height, labels, [
@@ -1391,7 +1391,7 @@ function drawRevenueChart() {
 }
 
 function renderLineChart(ctx, w, h, labels, datasets) {
-  const pad = { top: 20, right: 14, bottom: 52, left: 62 };
+  const pad = { top: 24, right: 18, bottom: 56, left: 70 };
   const cw = w - pad.left - pad.right;
   const ch = h - pad.top - pad.bottom;
   const n  = labels.length;
@@ -1401,7 +1401,7 @@ function renderLineChart(ctx, w, h, labels, datasets) {
   // Max across all overlaid datasets (lines, not stacked)
   const allVals = datasets.flatMap(ds => ds.data);
   const maxVal = niceNum(Math.max(...allVals, 1));
-  const ticks  = 5;
+  const ticks  = 6;
 
   // Grid + Y tick labels
   for (let i = 0; i <= ticks; i++) {
@@ -1412,11 +1412,11 @@ function renderLineChart(ctx, w, h, labels, datasets) {
   ctx.moveTo(pad.left, y);
   ctx.lineTo(pad.left + cw, y);
   ctx.stroke();
-  ctx.fillStyle = '#9090a8';
-  ctx.font = '10px sans-serif';
+  ctx.fillStyle = '#c0c0d0';
+  ctx.font = '12px sans-serif';
   ctx.textAlign = 'right';
   ctx.textBaseline = 'middle';
-  ctx.fillText('$' + shortNum(maxVal * i / ticks), pad.left - 6, y);
+  ctx.fillText('$' + shortNum(maxVal * i / ticks), pad.left - 8, y);
   }
 
   // Y-axis line
@@ -1429,10 +1429,10 @@ function renderLineChart(ctx, w, h, labels, datasets) {
 
   // Y-axis title
   ctx.save();
-  ctx.translate(12, pad.top + ch / 2);
+  ctx.translate(14, pad.top + ch / 2);
   ctx.rotate(-Math.PI / 2);
-  ctx.fillStyle = '#9090a8';
-  ctx.font = 'bold 10px sans-serif';
+  ctx.fillStyle = '#c0c0d0';
+  ctx.font = 'bold 12px sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText('Amount ($)', 0, 0);
@@ -1449,7 +1449,7 @@ function renderLineChart(ctx, w, h, labels, datasets) {
   // Line
   ctx.strokeStyle = ds.color;
   ctx.fillStyle  = ds.color;
-  ctx.lineWidth  = 2.5;
+  ctx.lineWidth  = 4;
   ctx.lineJoin  = 'round';
   ctx.lineCap   = 'round';
   ctx.beginPath();
@@ -1460,28 +1460,34 @@ function renderLineChart(ctx, w, h, labels, datasets) {
   else      ctx.lineTo(x, y);
   });
   ctx.stroke();
-  // Dots
+  // Dots — outer ring (white-ish) + colored fill for visibility
   ds.data.forEach((v, i) => {
+  const x = xAt(i), y = yAt(v);
   ctx.beginPath();
-  ctx.arc(xAt(i), yAt(v), 3, 0, Math.PI * 2);
+  ctx.arc(x, y, 5, 0, Math.PI * 2);
   ctx.fill();
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = '#181818';
+  ctx.beginPath();
+  ctx.arc(x, y, 5, 0, Math.PI * 2);
+  ctx.stroke();
   });
   });
 
   // X tick labels
-  const step = Math.max(1, Math.ceil(n / 10));
-  ctx.fillStyle = '#9090a8';
-  ctx.font = '10px sans-serif';
+  const step = Math.max(1, Math.ceil(n / 12));
+  ctx.fillStyle = '#c0c0d0';
+  ctx.font = '12px sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
   labels.forEach((lbl, i) => {
   if (i % step !== 0 && i !== n - 1) return;
-  ctx.fillText(lbl, xAt(i), pad.top + ch + 6);
+  ctx.fillText(lbl, xAt(i), pad.top + ch + 8);
   });
 
   // X-axis title
-  ctx.fillStyle = '#9090a8';
-  ctx.font = 'bold 10px sans-serif';
+  ctx.fillStyle = '#c0c0d0';
+  ctx.font = 'bold 12px sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'bottom';
   ctx.fillText('Date', pad.left + cw / 2, h - 2);
