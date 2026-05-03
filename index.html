@@ -474,9 +474,6 @@ input[type=checkbox].row-cb{width:16px;height:16px;accent-color:var(--accent);cu
   </div>
   </div>
   <div class="settings-item">
-  <button class="link" onclick="zeroOutCashTax()" style="color:var(--amber);font-size:12px;text-align:left">Zero out tax on cash sales</button>
-  </div>
-  <div class="settings-item">
   <button class="link" onclick="exportData()" style="color:var(--green)">⬇ Export Backup (.json)</button>
   </div>
   <div class="settings-item">
@@ -2423,26 +2420,6 @@ function saveCashSale(editId) {
 
   saveState(); closeModal(); updateLowStockBadge(); refreshCurrentTab();
   notifyIfOutsidePeriod(dateISO, 'sale');
-}
-
-function zeroOutCashTax() {
-  const panel = document.getElementById('settings-panel');
-  if (panel) panel.classList.remove('open');
-  const withTax = S.cashSales.filter(s => (s.tax || 0) > 0).length;
-  if (!withTax) {
-  appConfirm('No manual cash sales have non-zero tax stored. Nothing to update.', 'OK', () => {});
-  return;
-  }
-  appConfirm(
-  'Zero out sales tax on ' + withTax + ' manual cash sale' + (withTax > 1 ? 's' : '') +
-  '? This is for cash sales where tax was not actually collected. Square card and Square cash sales are not touched.',
-  'Zero Out Tax',
-  () => {
-  S.cashSales.forEach(s => { s.tax = 0; s.taxCharged = false; });
-  saveState();
-  refreshCurrentTab();
-  }
-  );
 }
 
 function saveInvItem(editId) {
