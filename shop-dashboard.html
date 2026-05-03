@@ -2500,28 +2500,28 @@ function saveCost(editId) {
 function deleteCashSale(id) {
   appConfirm('Delete this cash sale? This cannot be undone.', 'Delete', () => {
   S.cashSales = S.cashSales.filter(s => s.id !== id);
-  saveState(); refreshCurrentTab();
+  saveState(); closeModal(); refreshCurrentTab();
   });
 }
 
 function deleteInvItem(id) {
   appConfirm('Delete this inventory item?', 'Delete', () => {
   S.inventory = S.inventory.filter(i => i.id !== id);
-  saveState(); updateLowStockBadge(); renderInventory();
+  saveState(); closeModal(); updateLowStockBadge(); renderInventory();
   });
 }
 
 function deleteSinglesSet(id) {
   appConfirm('Delete this singles set?', 'Delete', () => {
   S.singles = S.singles.filter(s => s.id !== id);
-  saveState(); renderInventory();
+  saveState(); closeModal(); renderInventory();
   });
 }
 
 function deleteCost(id) {
   appConfirm('Delete this expense?', 'Delete', () => {
   S.costs = S.costs.filter(c => c.id !== id);
-  saveState(); renderCosts();
+  saveState(); closeModal(); renderCosts();
   });
 }
 
