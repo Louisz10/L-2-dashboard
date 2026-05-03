@@ -1391,17 +1391,26 @@ function drawRevenueChart() {
 }
 
 function renderLineChart(ctx, w, h, labels, datasets) {
-  const pad = { top: 24, right: 18, bottom: 56, left: 70 };
+  const pad = { top: 24, right: 18, bottom: 56, left: 78 };
   const cw = w - pad.left - pad.right;
   const ch = h - pad.top - pad.bottom;
   const n  = labels.length;
 
   ctx.clearRect(0, 0, w, h);
 
-  // Max across all overlaid datasets (lines, not stacked)
+  // Y-axis max = the actual highest data point (no niceNum rounding-up).
+  // Top of chart literally equals the largest value so the peak line touches it.
   const allVals = datasets.flatMap(ds => ds.data);
-  const maxVal = niceNum(Math.max(...allVals, 1));
+  const maxVal = Math.max(...allVals, 1);
   const ticks  = 6;
+
+  // Format a tick value cleanly: integer dollars under 1k, comma-separated under 1M, then short
+  const fmtTick = v => {
+  const r = Math.round(v);
+  if (r >= 1000000) return '$' + (r/1000000).toFixed(1) + 'M';
+  if (r >= 1000)  return '$' + r.toLocaleString();
+  return '$' + r;
+  };
 
   // Grid + Y tick labels
   for (let i = 0; i <= ticks; i++) {
@@ -1416,7 +1425,7 @@ function renderLineChart(ctx, w, h, labels, datasets) {
   ctx.font = '12px sans-serif';
   ctx.textAlign = 'right';
   ctx.textBaseline = 'middle';
-  ctx.fillText('$' + shortNum(maxVal * i / ticks), pad.left - 8, y);
+  ctx.fillText(fmtTick(maxVal * i / ticks), pad.left - 8, y);
   }
 
   // Y-axis line
@@ -1474,14 +1483,15 @@ function renderLineChart(ctx, w, h, labels, datasets) {
   });
   });
 
-  // X tick labels
+  // X tick labels — always show first and last (endpoints) so the date range is clear.
   const step = Math.max(1, Math.ceil(n / 12));
   ctx.fillStyle = '#c0c0d0';
-  ctx.font = '12px sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
   labels.forEach((lbl, i) => {
-  if (i % step !== 0 && i !== n - 1) return;
+  const isEndpoint = (i === 0) || (i === n - 1);
+  if (!isEndpoint && i % step !== 0) return;
+  ctx.font = isEndpoint ? 'bold 12px sans-serif' : '12px sans-serif';
   ctx.fillText(lbl, xAt(i), pad.top + ch + 8);
   });
 
