@@ -1136,7 +1136,14 @@ function fmtPct(n) {
 }
 
 function todayISO() {
-  return new Date().toISOString().slice(0, 10);
+  // Use the user's LOCAL date, not UTC. toISOString() returns UTC, which
+  // rolls over to "tomorrow" during evening hours in US timezones and made
+  // form date fields pre-fill with the wrong day at night.
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return yyyy + '-' + mm + '-' + dd;
 }
 
 // If a saved entry's date falls outside the current period filter, the table
@@ -2664,7 +2671,7 @@ function exportData() {
   const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
   const url  = URL.createObjectURL(blob);
   const a  = document.createElement('a');
-  const date = new Date().toISOString().slice(0, 10);
+  const date = todayISO();
   a.href  = url;
   a.download = 'pokeshop-backup-' + date + '.json';
   document.body.appendChild(a);
