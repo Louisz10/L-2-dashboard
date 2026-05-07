@@ -2967,7 +2967,10 @@ function importSquareCSV(event) {
   };
 
   const dateCol  = col('date');
-  const grossCol = col('gross') || col('total collected') || col('amount');
+  // "Total Collected" = what the customer actually paid (item subtotal +
+  // service charges + tax). That's what we want stored as gross. "Gross
+  // Sales" is the pre-tax / pre-service-charge subtotal — wrong column.
+  const grossCol = col('total collected') || col('gross') || col('amount');
   const feeCol  = col('fee');
   const netCol  = col('net');
   const taxCol  = col('tax');
@@ -3005,15 +3008,13 @@ function importSquareCSV(event) {
   const cashAmt = cashCol ? parseMoney(row[cashCol]) : 0;
   const paymentMethod = cashAmt > 0 ? 'Cash' : 'Card';
 
-  // For cash transactions: tax is inclusive (backed out of gross), no fee
+  // Trust Square's CSV values directly — Tax, Fees, Net Total are reported
+  // exactly per row. Don't back-calculate tax from gross (that's wrong when
+  // the gross includes non-taxable service charges). For cash sales, Fees
+  // is already $0 in the CSV, and Tax still reflects what was rung up.
   let effectiveTax = parseFloat(tax.toFixed(2));
   let effectiveFee = parseFloat(fee.toFixed(2));
   let effectiveNet = parseFloat(net.toFixed(2));
-  if (paymentMethod === 'Cash') {
-  effectiveTax = parseFloat((grossRaw * S.taxRate / (100 + S.taxRate)).toFixed(2));
-  effectiveFee = 0;
-  effectiveNet = parseFloat((grossRaw - effectiveTax).toFixed(2));
-  }
 
   // Match by exact ID, or by old idx-suffixed ID, or by date+amount fuzzy match
   const existing = S.squareSales.find(s =>
@@ -3024,6 +3025,7 @@ function importSquareCSV(event) {
   if (existing) {
   existing.id = id; // upgrade to stable ID
   existing.paymentMethod = paymentMethod;
+  existing.gross = parseFloat(grossRaw.toFixed(2));
   existing.tax = effectiveTax;
   existing.fee = effectiveFee;
   existing.net = effectiveNet;
@@ -3366,11 +3368,12 @@ function findCol(row, candidates) {
 }
 
 const DATE_COLS  = ['date','transaction_date','sale_date','day','created_at','time'];
-const GROSS_COLS = ['gross_sales','gross','total','amount','sale_amount','revenue','gross_revenue',
+const GROSS_COLS = ['total_collected','gross_sales','gross','total','amount','sale_amount','revenue','gross_revenue',
   'cost','costs','price','value','expense','expenses','subtotal','payment',
   'earnings','sales','income','gross_amount'];
 const FEE_COLS  = ['fees','fee','processing_fee','square_fees','processing_fees'];
-const NET_COLS  = ['net_sales','net','net_total','net_amount','net_revenue','post_tax','after_tax','net_earnings'];
+const NET_COLS  = ['net_total','net_sales','net','net_amount','net_revenue','post_tax','after_tax','net_earnings'];
+const TAX_COLS  = ['tax','sales_tax','tax_collected'];
 const CAT_COLS  = ['category','type','item_type','sale_type','payment_method','expense_type','expenses','place','location','venue','source'];
 const DESC_COLS  = ['description','note','notes','item','items','memo','details','name','product','label'];
 
@@ -3451,14 +3454,16 @@ function _importPasteSquare(rows) {
   const grossC = findCol(r, GROSS_COLS);
   const netC  = findCol(r, NET_COLS);
   const feeC  = findCol(r, FEE_COLS);
+  const taxC  = findCol(r, TAX_COLS);
   const catC  = findCol(r, CAT_COLS);
   const descC  = findCol(r, DESC_COLS);
   if (!dateC) return;
   const rawAmt = grossC ? r[grossC] : (netC ? r[netC] : '');
   const gross  = parseMoney(rawAmt);
   if (!gross) return;
-  const fees  = feeC ? parseMoney(r[feeC]) : Math.round((gross * 0.026 + 0.15) * 100) / 100;
-  const net  = netC ? parseMoney(r[netC]) : gross - fees;
+  const fee  = feeC ? Math.abs(parseMoney(r[feeC])) : Math.round((gross * 0.026 + 0.15) * 100) / 100;
+  const tax  = taxC ? Math.abs(parseMoney(r[taxC])) : 0;
+  const net  = netC ? parseMoney(r[netC]) - tax : parseFloat((gross - fee - tax).toFixed(2));
   const date  = normalizeDate(r[dateC]);
   // Dedupe key
   const id = 'paste_sq_' + btoa(date.slice(0,10) + '_' + gross).replace(/[^a-zA-Z0-9]/g,'').slice(0,20) + '_' + S.squareSales.length;
@@ -3470,7 +3475,8 @@ function _importPasteSquare(rows) {
   id,
   date,
   gross,
-  fees,
+  fee,
+  tax,
   net,
   items: parseSqItemDesc(descC ? r[descC] : '', gross),
   category: catC ? r[catC] : 'Sales',
