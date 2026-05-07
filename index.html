@@ -531,9 +531,16 @@ input[type=checkbox].row-cb{width:16px;height:16px;accent-color:var(--accent);cu
   <div class="tab-content active" id="tab-overview">
   <div class="metric-grid" id="overview-metrics"></div>
   <div class="chart-wrap">
-  <div class="flex-between" style="margin-bottom:10px">
+  <div class="flex-between" style="margin-bottom:10px;flex-wrap:wrap;gap:10px">
   <div class="fw600 fs12" style="text-transform:uppercase;letter-spacing:0.5px;color:var(--text2)">Revenue vs Spending</div>
+  <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+  <select id="chart-source" onchange="setChartSource(this.value)" style="background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:12px">
+  <option value="all">All sales</option>
+  <option value="square">Square only</option>
+  <option value="cash">Cash only</option>
+  </select>
   <div id="revenue-legend" class="chart-legend"></div>
+  </div>
   </div>
   <canvas id="revenue-chart" style="width:100%;height:380px"></canvas>
   <div id="chart-tooltip"></div>
@@ -830,6 +837,7 @@ const S = {
   period: 'all',
   customStart: '',
   customEnd: '',
+  chartSource: 'all', // 'all' | 'square' | 'cash' — which sales feed the revenue chart
   tab: 'overview',
   syncing: false,
   lastSync: null,
@@ -858,6 +866,7 @@ function saveState() {
   localStorage.setItem('processed_ids', JSON.stringify([...S.processedSaleIds]));
   localStorage.setItem('tax_rate', String(S.taxRate));
   localStorage.setItem('biz_name', S.businessName);
+  localStorage.setItem('chart_source', S.chartSource);
   if (S.lastSync) localStorage.setItem('last_sync', S.lastSync);
   } catch(e) { console.warn('Storage write error:', e); }
 }
@@ -874,6 +883,8 @@ function loadState() {
   S.processedSaleIds = new Set(safeJSON('processed_ids', []));
   S.taxRate = parseFloat(localStorage.getItem('tax_rate') || '5') || 5;
   S.businessName = localStorage.getItem('biz_name') || 'Pokemon Card Shop';
+  const cs = localStorage.getItem('chart_source');
+  S.chartSource = (cs === 'square' || cs === 'cash') ? cs : 'all';
   S.lastSync = localStorage.getItem('last_sync') || null;
 }
 
@@ -1342,9 +1353,14 @@ function drawRevenueChart() {
   const canvas = document.getElementById('revenue-chart');
   if (!canvas) return;
 
+  // Make sure the dropdown reflects the current state (e.g. on tab switch)
+  const srcSel = document.getElementById('chart-source');
+  if (srcSel && srcSel.value !== S.chartSource) srcSel.value = S.chartSource;
+
   let { start, end } = getDateRange();
-  const sqSales  = filteredSqSales();
-  const cashSales = filteredCashSales();
+  // Honor the source filter — show all sales, Square only, or cash only.
+  const sqSales  = S.chartSource === 'cash'   ? [] : filteredSqSales();
+  const cashSales = S.chartSource === 'square' ? [] : filteredCashSales();
   const costs   = filteredCosts();
 
   // For "all time", derive range from actual data instead of 2000–2099
@@ -1415,9 +1431,13 @@ function drawRevenueChart() {
   canvas.width  = Math.max(w, 200);
   canvas.height = 380;
 
+  const revLabel = S.chartSource === 'square' ? 'Square Revenue'
+              : S.chartSource === 'cash'   ? 'Cash Revenue'
+              :                              'Revenue';
+
   const ctx = canvas.getContext('2d');
   renderLineChart(ctx, canvas.width, canvas.height, labels, [
-  { label: 'Revenue',  data: revVals,   color: '#4fbd7e' },
+  { label: revLabel,  data: revVals,   color: '#4fbd7e' },
   { label: 'Spending', data: spendVals, color: '#e02020' }
   ], fullLabels);
   attachChartHover(canvas);
@@ -1425,10 +1445,17 @@ function drawRevenueChart() {
   const legend = document.getElementById('revenue-legend');
   if (legend) {
   legend.innerHTML = [
-  { l: 'Revenue',  c: '#4fbd7e' },
+  { l: revLabel,  c: '#4fbd7e' },
   { l: 'Spending', c: '#e02020' }
   ].map(x => '<div class="legend-item"><div class="legend-dot" style="background:' + x.c + '"></div>' + x.l + '</div>').join('');
   }
+}
+
+function setChartSource(val) {
+  if (val !== 'all' && val !== 'square' && val !== 'cash') return;
+  S.chartSource = val;
+  saveState();
+  drawRevenueChart();
 }
 
 function renderLineChart(ctx, w, h, labels, datasets, fullLabels) {
