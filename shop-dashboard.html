@@ -1152,9 +1152,26 @@ function getDateRange() {
 
 function inRange(dateStr) {
   if (!dateStr) return false;
+  // Compare on YYYY-MM-DD (calendar-day) strings rather than Date objects.
+  // Why: bare ISO date strings like "2026-05-07" parse as MIDNIGHT UTC,
+  // which is the previous evening in US local time — so a sale dated
+  // today silently filtered as "yesterday" and every period (today/week/
+  // month/year/custom) ended up off-by-one for any record stored without
+  // a time component. String-comparing the day key dodges the trap.
+  const ymd = d => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return y + '-' + m + '-' + dd;
+  };
+  let dayKey = String(dateStr).slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dayKey)) {
+    const fallback = new Date(dateStr);
+    if (isNaN(fallback)) return false;
+    dayKey = ymd(fallback);
+  }
   const { start, end } = getDateRange();
-  const d = new Date(dateStr);
-  return d >= start && d <= end;
+  return dayKey >= ymd(start) && dayKey <= ymd(end);
 }
 
 function fmtDate(str) {
