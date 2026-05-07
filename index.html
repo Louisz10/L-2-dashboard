@@ -3066,26 +3066,22 @@ function importSquareCSV(event) {
   return h || null;
   };
 
+  // ── Square CSV column map (per Square's Transactions export) ──
+  // L = Total Collected → gross (what the customer actually paid)
+  // U = Fees            → fee   (whatever Square deducted; varies historically)
+  // I = Tax             → tax   (sales tax remitted)
+  // Net = L − U − I.  No estimating, no fallbacks — trust the CSV.
   const dateCol  = col('date');
-  // "Total Collected" = what the customer actually paid (item subtotal +
-  // service charges + tax). That's what we want stored as gross. "Gross
-  // Sales" is the pre-tax / pre-service-charge subtotal — wrong column.
-  const grossCol = col('total collected') || col('gross') || col('amount');
-  const feeCol  = col('fees') || col('fee');
-  // Square exports both "Net Sales" (pre-tax item subtotal) and
-  // "Net Total" (Total Collected − Fees, the deposit). We want the deposit,
-  // and "Net Sales" appears earlier so the substring match would pick the
-  // wrong column. Look for "Net Total" explicitly first.
-  const netCol  = col('net total') || col('net amount') || col('net');
+  const grossCol = col('total collected');
+  const feeCol  = col('fees');
   const taxCol  = col('tax');
   const descCol  = col('description') || col('detail') || col('item');
   const cashCol  = col('cash');
-  const cardCol  = col('card');
   const txIdCol  = col('transaction id') || col('payment id') || col('transaction_id') || col('payment_id');
 
   if (!dateCol || !grossCol) {
   setInlineError('sq-sync-error',
-  'Could not find required columns (Date, Gross Sales/Total Collected). ' +
+  'Could not find required columns (Date, Total Collected). ' +
   'Make sure you exported a <strong>Transactions CSV</strong> from Square Reports → Sales.', false);
   return;
   }
@@ -3103,49 +3099,41 @@ function importSquareCSV(event) {
   ? 'csv_' + sqTxId.replace(/\W/g,'')
   : 'csv_' + dateRaw.replace(/\W/g,'') + '_' + grossRaw.toFixed(2).replace('.','');
 
-  const fee = feeCol ? Math.abs(parseMoney(row[feeCol])) : parseFloat((grossRaw * 0.026 + 0.15).toFixed(2));
-  const tax = taxCol ? Math.abs(parseMoney(row[taxCol])) : 0;
-  // Square's "Net Total" column = Total Collected − Fees (the deposit).
-  // Tax is still inside that figure, so subtract it to get the merchant's
-  // actual net (what you keep after fee and after remitting sales tax).
-  const net = parseFloat(((netCol ? parseMoney(row[netCol]) : grossRaw - fee) - tax).toFixed(2));
+  // Read the three numbers verbatim from the CSV. Fees is exported with a
+  // negative sign in the Transactions CSV; Math.abs flips it positive.
+  const gross = parseFloat(grossRaw.toFixed(2));
+  const fee  = parseFloat((feeCol ? Math.abs(parseMoney(row[feeCol])) : 0).toFixed(2));
+  const tax  = parseFloat((taxCol ? Math.abs(parseMoney(row[taxCol])) : 0).toFixed(2));
+  const net  = parseFloat((gross - fee - tax).toFixed(2));
+
   const dateISO = normalizeDate(dateRaw);
   const rawDesc = descCol ? row[descCol]?.trim() : '';
-  const items  = parseSqItemDesc(rawDesc, grossRaw);
+  const items  = parseSqItemDesc(rawDesc, gross);
   const cashAmt = cashCol ? parseMoney(row[cashCol]) : 0;
   const paymentMethod = cashAmt > 0 ? 'Cash' : 'Card';
-
-  // Trust Square's CSV values directly — Tax, Fees, Net Total are reported
-  // exactly per row. Don't back-calculate tax from gross (that's wrong when
-  // the gross includes non-taxable service charges). For cash sales, Fees
-  // is already $0 in the CSV, and Tax still reflects what was rung up.
-  let effectiveTax = parseFloat(tax.toFixed(2));
-  let effectiveFee = parseFloat(fee.toFixed(2));
-  let effectiveNet = parseFloat(net.toFixed(2));
 
   // Match by exact ID, or by old idx-suffixed ID, or by date+amount fuzzy match
   const existing = S.squareSales.find(s =>
   s.id === id ||
   s.id.startsWith(id + '_') ||
-  (s.date?.slice(0,10) === dateISO.slice(0,10) && Math.abs((s.gross||0) - grossRaw) < 0.01 && s.source !== 'manual')
+  (s.date?.slice(0,10) === dateISO.slice(0,10) && Math.abs((s.gross||0) - gross) < 0.01 && s.source !== 'manual')
   );
   if (existing) {
-  existing.id = id; // upgrade to stable ID
+  existing.id = id;
   existing.paymentMethod = paymentMethod;
-  existing.gross = parseFloat(grossRaw.toFixed(2));
-  existing.tax = effectiveTax;
-  existing.fee = effectiveFee;
-  existing.net = effectiveNet;
+  existing.gross = gross;
+  existing.fee = fee;
+  existing.tax = tax;
+  existing.net = net;
+  existing.feeEstimated = false;
   updated++;
   return;
   }
 
   S.squareSales.push({
   id, date: dateISO, dateStr: dateISO.slice(0, 10),
-  gross: parseFloat(grossRaw.toFixed(2)),
-  fee:  effectiveFee, feeEstimated: paymentMethod === 'Cash' ? false : !feeCol,
-  tax:  effectiveTax,
-  net:  effectiveNet,
+  gross, fee, tax, net,
+  feeEstimated: false,
   items, status: 'COMPLETED', paymentMethod
   });
   imported++;
