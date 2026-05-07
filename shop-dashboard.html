@@ -534,12 +534,12 @@ input[type=checkbox].row-cb{width:16px;height:16px;accent-color:var(--accent);cu
   <div class="flex-between" style="margin-bottom:10px;flex-wrap:wrap;gap:10px">
   <div class="fw600 fs12" style="text-transform:uppercase;letter-spacing:0.5px;color:var(--text2)">Revenue vs Spending</div>
   <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+  <div id="revenue-legend" class="chart-legend"></div>
   <select id="chart-source" onchange="setChartSource(this.value)" style="background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:12px">
   <option value="all">All sales</option>
   <option value="square">Square only</option>
   <option value="cash">Cash only</option>
   </select>
-  <div id="revenue-legend" class="chart-legend"></div>
   </div>
   </div>
   <canvas id="revenue-chart" style="width:100%;height:380px"></canvas>
