@@ -398,7 +398,7 @@ hr.divider{border:none;border-top:2px dashed var(--border);margin:14px 0}
 @keyframes spin{to{transform:rotate(360deg)}}
 
 /* ── COSTS TOTAL ── */
-.costs-total-bar{padding:14px 18px;border-top:2px dashed var(--border);text-align:right}
+.costs-total-bar{padding:14px 18px;border-bottom:2px dashed var(--border);text-align:right;background:var(--bg2)}
 
 /* ── PASTE TYPE BUTTONS ── */
 .paste-type-btn.active{background:var(--accent);border-color:var(--accent2);color:#000;box-shadow:3px 3px 0 #880e0e}
@@ -663,8 +663,8 @@ input[type=checkbox].row-cb{width:16px;height:16px;accent-color:var(--accent);cu
   </div>
   <button class="btn btn-secondary btn-sm" onclick="clearSalesFilters()">Clear</button>
   </div>
-  <div id="all-sales-table"></div>
   <div id="sales-total-bar" class="costs-total-bar" style="display:none"></div>
+  <div id="all-sales-table"></div>
   </div>
   </div>
 
@@ -740,8 +740,8 @@ input[type=checkbox].row-cb{width:16px;height:16px;accent-color:var(--accent);cu
   <button class="btn btn-secondary btn-sm" onclick="setCostsFilter('gas')">Gas</button>
   <button class="btn btn-secondary btn-sm" onclick="setCostsFilter('shipping')">Shipping</button>
   </div>
-  <div id="costs-table-wrap"></div>
   <div id="costs-total-bar" class="costs-total-bar" style="display:none"></div>
+  <div id="costs-table-wrap"></div>
   </div>
   </div>
 
