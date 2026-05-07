@@ -3001,7 +3001,10 @@ function importSquareCSV(event) {
 
   const fee = feeCol ? Math.abs(parseMoney(row[feeCol])) : parseFloat((grossRaw * 0.026 + 0.15).toFixed(2));
   const tax = taxCol ? Math.abs(parseMoney(row[taxCol])) : 0;
-  const net = netCol ? parseMoney(row[netCol]) : parseFloat((grossRaw - fee - tax).toFixed(2));
+  // Square's "Net Total" column = Total Collected − Fees (the deposit).
+  // Tax is still inside that figure, so subtract it to get the merchant's
+  // actual net (what you keep after fee and after remitting sales tax).
+  const net = parseFloat(((netCol ? parseMoney(row[netCol]) : grossRaw - fee) - tax).toFixed(2));
   const dateISO = normalizeDate(dateRaw);
   const rawDesc = descCol ? row[descCol]?.trim() : '';
   const items  = parseSqItemDesc(rawDesc, grossRaw);
