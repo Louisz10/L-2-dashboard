@@ -1208,10 +1208,16 @@ function calcTotals() {
   const totalCosts = costs.reduce((s, x) => s + (x.amount || 0), 0);
   const netProfit  = totalGross - totalFees - totalTax - totalCosts;
 
+  // Net = what the merchant actually keeps. For Square sales: gross − fee − tax.
+  // For cash sales (no card fees): amount − tax. Total just sums them.
+  const sqNet  = parseFloat((sqGross - sqFees - sqTax).toFixed(2));
+  const cashNet = parseFloat((cashGross - cashTax).toFixed(2));
+  const totalNet = parseFloat((sqNet + cashNet).toFixed(2));
+
   return {
-  sqGross, sqFees, sqTax, sqCount: sq.length,
-  cashGross, cashTax, cashCount: cash.length,
-  totalGross, totalFees, totalTax, totalCosts, netProfit
+  sqGross, sqFees, sqTax, sqNet, sqCount: sq.length,
+  cashGross, cashTax, cashNet, cashCount: cash.length,
+  totalGross, totalFees, totalTax, totalNet, totalCosts, netProfit
   };
 }
 
@@ -1281,9 +1287,9 @@ function renderOverview() {
   const totalTx = t.sqCount + t.cashCount;
   const invRetail = S.inventory.reduce((sum, i) => sum + (i.sellPrice || 0) * (i.qty || 0), 0);
   const metrics = [
-  { icon: '', label: 'Total Revenue',  value: fmtMoney(t.totalGross), cls: 'green',  sub: totalTx + ' transactions' },
-  { icon: '', label: 'Square Sales',  value: fmtMoney(t.sqGross),  cls: 'green',  sub: t.sqCount + ' transactions' },
-  { icon: '', label: 'Cash / Other Sales',  value: fmtMoney(t.cashGross),  cls: 'green',  sub: t.cashCount + ' entries' },
+  { icon: '', label: 'Total Revenue',  value: fmtMoney(t.totalNet), cls: 'green',  sub: totalTx + ' transactions' },
+  { icon: '', label: 'Square Sales',  value: fmtMoney(t.sqNet),  cls: 'green',  sub: t.sqCount + ' transactions' },
+  { icon: '', label: 'Cash / Other Sales',  value: fmtMoney(t.cashNet),  cls: 'green',  sub: t.cashCount + ' entries' },
   { icon: '', label: 'Square Processing Fees',  value: fmtMoney(t.sqFees),  cls: 'red' },
   { icon: '',  label: 'WI Tax Collected',  value: fmtMoney(t.totalTax),  cls: 'red' },
   { icon: '', label: 'Business Expenses',  value: fmtMoney(t.totalCosts), cls: 'red' },
