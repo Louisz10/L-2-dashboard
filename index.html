@@ -2977,8 +2977,12 @@ function importSquareCSV(event) {
   // service charges + tax). That's what we want stored as gross. "Gross
   // Sales" is the pre-tax / pre-service-charge subtotal — wrong column.
   const grossCol = col('total collected') || col('gross') || col('amount');
-  const feeCol  = col('fee');
-  const netCol  = col('net');
+  const feeCol  = col('fees') || col('fee');
+  // Square exports both "Net Sales" (pre-tax item subtotal) and
+  // "Net Total" (Total Collected − Fees, the deposit). We want the deposit,
+  // and "Net Sales" appears earlier so the substring match would pick the
+  // wrong column. Look for "Net Total" explicitly first.
+  const netCol  = col('net total') || col('net amount') || col('net');
   const taxCol  = col('tax');
   const descCol  = col('description') || col('detail') || col('item');
   const cashCol  = col('cash');
