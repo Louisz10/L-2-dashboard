@@ -1361,11 +1361,11 @@ function renderOverview() {
 // ============================================================
 // CANVAS: REVENUE TREND LINE CHART
 // ============================================================
-// Series metadata used by the chart and its clickable legend.
-// 'combined' is mutually exclusive with 'square' + 'cash' — picking it merges
-// the two revenue sources into one line; picking either of those splits them.
+// Series metadata used by the chart and its clickable legend. All four toggle
+// independently, so each gets a distinct color (Combined was sharing green
+// with Square — when both are on the lines need to be tellable apart).
 const CHART_SERIES_META = {
-  combined: { label: 'Combined Revenue', color: '#4fbd7e' },
+  combined: { label: 'Combined Revenue', color: '#ffc840' },
   square:   { label: 'Square Revenue',   color: '#4fbd7e' },
   cash:     { label: 'Cash Revenue',     color: '#44aaff' },
   spending: { label: 'Spending',         color: '#e02020' }
@@ -1512,17 +1512,8 @@ function drawRevenueChart() {
 
 function toggleChartSeries(key) {
   if (!CHART_SERIES_META[key]) return;
-  let next = Array.isArray(S.chartSeries) ? [...S.chartSeries] : [];
-  if (next.includes(key)) {
-  next = next.filter(k => k !== key);
-  } else {
-  next.push(key);
-  // Mutual exclusion: combined ↔ square/cash (it's the merged form of those
-  // two, so showing both at once would just duplicate data on the chart).
-  if (key === 'combined') next = next.filter(k => k !== 'square' && k !== 'cash');
-  if (key === 'square' || key === 'cash') next = next.filter(k => k !== 'combined');
-  }
-  S.chartSeries = next;
+  if (isSeriesOn(key)) S.chartSeries = S.chartSeries.filter(k => k !== key);
+  else S.chartSeries = [...(S.chartSeries || []), key];
   saveState();
   drawRevenueChart();
 }
