@@ -1282,7 +1282,7 @@ function renderOverview() {
   const invRetail = S.inventory.reduce((sum, i) => sum + (i.sellPrice || 0) * (i.qty || 0), 0);
   const metrics = [
   { icon: '', label: 'Total Revenue',  value: fmtMoney(t.totalGross), cls: 'green',  sub: totalTx + ' transactions' },
-  { icon: '', label: 'Square Card Sales',  value: fmtMoney(t.sqGross),  cls: 'green',  sub: t.sqCount + ' transactions' },
+  { icon: '', label: 'Square Sales',  value: fmtMoney(t.sqGross),  cls: 'green',  sub: t.sqCount + ' transactions' },
   { icon: '', label: 'Cash / Other Sales',  value: fmtMoney(t.cashGross),  cls: 'green',  sub: t.cashCount + ' entries' },
   { icon: '', label: 'Square Processing Fees',  value: fmtMoney(t.sqFees),  cls: 'red' },
   { icon: '',  label: 'WI Tax Collected',  value: fmtMoney(t.totalTax),  cls: 'red' },
