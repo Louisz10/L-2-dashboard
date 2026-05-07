@@ -332,6 +332,14 @@ canvas{display:block}
 .chart-legend{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
 .legend-item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);font-weight:700}
 .legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;border:1px solid rgba(255,255,255,0.2)}
+.legend-toggle{cursor:pointer;background:transparent;border:1px solid var(--border);border-radius:14px;padding:4px 10px;color:var(--text2);transition:opacity 0.15s, border-color 0.15s}
+.legend-toggle:hover{border-color:rgba(255,255,255,0.4)}
+.legend-toggle.off{opacity:0.4}
+.legend-toggle.off .legend-dot{background:transparent !important}
+.src-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:14px;cursor:pointer;font-size:13px;color:var(--text2);user-select:none;transition:opacity 0.15s, border-color 0.15s}
+.src-pill input{accent-color:var(--accent);cursor:pointer}
+.src-pill:has(input:not(:checked)){opacity:0.5}
+.src-pill:hover{border-color:rgba(255,255,255,0.4)}
 
 /* ── SETTINGS DROPDOWN ── */
 .settings-wrap{position:relative}
@@ -533,14 +541,7 @@ input[type=checkbox].row-cb{width:16px;height:16px;accent-color:var(--accent);cu
   <div class="chart-wrap">
   <div class="flex-between" style="margin-bottom:10px;flex-wrap:wrap;gap:10px">
   <div class="fw600 fs12" style="text-transform:uppercase;letter-spacing:0.5px;color:var(--text2)">Revenue vs Spending</div>
-  <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-  <div id="revenue-legend" class="chart-legend"></div>
-  <select id="chart-source" onchange="setChartSource(this.value)" style="background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:12px">
-  <option value="all">All sales</option>
-  <option value="square">Square only</option>
-  <option value="cash">Cash only</option>
-  </select>
-  </div>
+  <div id="revenue-legend" class="chart-legend" title="Click any item to toggle its line"></div>
   </div>
   <canvas id="revenue-chart" style="width:100%;height:380px"></canvas>
   <div id="chart-tooltip"></div>
@@ -655,12 +656,11 @@ input[type=checkbox].row-cb{width:16px;height:16px;accent-color:var(--accent);cu
   </div>
   <div class="filter-bar" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 18px;border-bottom:2px dashed var(--border)">
   <input type="text" id="sales-search" placeholder="Search description or notes…" oninput="renderAllSalesTable()" style="flex:1;min-width:220px;padding:8px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" />
-  <select id="sales-source-filter" onchange="renderAllSalesTable()" style="padding:8px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px">
-  <option value="all">All sources</option>
-  <option value="square-card">Square · Card only</option>
-  <option value="square-cash">Square · Cash only</option>
-  <option value="cash">Cash only</option>
-  </select>
+  <div class="src-filter" style="display:flex;gap:6px;flex-wrap:wrap">
+  <label class="src-pill"><input type="checkbox" id="sf-sq-card" checked onchange="renderAllSalesTable()" /><span>Square · Card</span></label>
+  <label class="src-pill"><input type="checkbox" id="sf-sq-cash" checked onchange="renderAllSalesTable()" /><span>Square · Cash</span></label>
+  <label class="src-pill"><input type="checkbox" id="sf-cash"   checked onchange="renderAllSalesTable()" /><span>Cash</span></label>
+  </div>
   <button class="btn btn-secondary btn-sm" onclick="clearSalesFilters()">Clear</button>
   </div>
   <div id="all-sales-table"></div>
@@ -837,7 +837,7 @@ const S = {
   period: 'all',
   customStart: '',
   customEnd: '',
-  chartSource: 'all', // 'all' | 'square' | 'cash' — which sales feed the revenue chart
+  chartSeries: ['square', 'cash', 'spending'], // which lines to plot on the revenue chart (subset of these three)
   tab: 'overview',
   syncing: false,
   lastSync: null,
@@ -866,7 +866,8 @@ function saveState() {
   localStorage.setItem('processed_ids', JSON.stringify([...S.processedSaleIds]));
   localStorage.setItem('tax_rate', String(S.taxRate));
   localStorage.setItem('biz_name', S.businessName);
-  localStorage.setItem('chart_source', S.chartSource);
+  localStorage.setItem('chart_series', JSON.stringify(S.chartSeries));
+  localStorage.removeItem('chart_source'); // clean up legacy single-source key
   if (S.lastSync) localStorage.setItem('last_sync', S.lastSync);
   } catch(e) { console.warn('Storage write error:', e); }
 }
@@ -883,8 +884,19 @@ function loadState() {
   S.processedSaleIds = new Set(safeJSON('processed_ids', []));
   S.taxRate = parseFloat(localStorage.getItem('tax_rate') || '5') || 5;
   S.businessName = localStorage.getItem('biz_name') || 'Pokemon Card Shop';
-  const cs = localStorage.getItem('chart_source');
-  S.chartSource = (cs === 'square' || cs === 'cash') ? cs : 'all';
+  // Chart series — array of enabled keys. Migrate from legacy 'chart_source'
+  // (single-string: 'all'|'square'|'cash') if present, else use saved array.
+  const validKeys = ['square','cash','spending'];
+  const seriesRaw = localStorage.getItem('chart_series');
+  const legacy = localStorage.getItem('chart_source');
+  if (seriesRaw) {
+  try {
+  const arr = JSON.parse(seriesRaw);
+  S.chartSeries = Array.isArray(arr) ? arr.filter(k => validKeys.includes(k)) : ['square','cash','spending'];
+  } catch (e) { S.chartSeries = ['square','cash','spending']; }
+  } else if (legacy === 'square') S.chartSeries = ['square','spending'];
+  else if (legacy === 'cash')   S.chartSeries = ['cash','spending'];
+  else                S.chartSeries = ['square','cash','spending'];
   S.lastSync = localStorage.getItem('last_sync') || null;
 }
 
@@ -1349,28 +1361,55 @@ function renderOverview() {
 // ============================================================
 // CANVAS: REVENUE TREND LINE CHART
 // ============================================================
+// Series metadata used by the chart and its clickable legend.
+const CHART_SERIES_META = {
+  square:   { label: 'Square Revenue', color: '#4fbd7e' },
+  cash:     { label: 'Cash Revenue',   color: '#44aaff' },
+  spending: { label: 'Spending',       color: '#e02020' }
+};
+
+function isSeriesOn(key) { return Array.isArray(S.chartSeries) && S.chartSeries.includes(key); }
+
 function drawRevenueChart() {
   const canvas = document.getElementById('revenue-chart');
   if (!canvas) return;
 
-  // Make sure the dropdown reflects the current state (e.g. on tab switch)
-  const srcSel = document.getElementById('chart-source');
-  if (srcSel && srcSel.value !== S.chartSource) srcSel.value = S.chartSource;
+  // Always render the legend (even when nothing is plotted) so the user can
+  // click an item to bring it back.
+  const renderLegend = () => {
+  const legend = document.getElementById('revenue-legend');
+  if (!legend) return;
+  legend.innerHTML = ['square','cash','spending'].map(key => {
+  const m = CHART_SERIES_META[key];
+  const on = isSeriesOn(key);
+  return '<button type="button" class="legend-toggle legend-item' + (on ? '' : ' off') + '" onclick="toggleChartSeries(\'' + key + '\')">' +
+  '<span class="legend-dot" style="background:' + (on ? m.color : 'transparent') + ';border-color:' + m.color + '"></span>' +
+  '<span>' + m.label + '</span>' +
+  '</button>';
+  }).join('');
+  };
+
+  const showSq  = isSeriesOn('square');
+  const showCash = isSeriesOn('cash');
+  const showSpend = isSeriesOn('spending');
 
   let { start, end } = getDateRange();
-  // Honor the source filter — show all sales, Square only, or cash only.
-  const sqSales  = S.chartSource === 'cash'   ? [] : filteredSqSales();
-  const cashSales = S.chartSource === 'square' ? [] : filteredCashSales();
-  const costs   = filteredCosts();
+  const sqSales   = showSq   ? filteredSqSales()   : [];
+  const cashSales = showCash ? filteredCashSales() : [];
+  const costs    = showSpend ? filteredCosts()    : [];
 
-  // For "all time", derive range from actual data instead of 2000–2099
+  // For "all time", derive range from actual data (only the enabled series)
   if (S.period === 'all') {
   const allDates = [
   ...sqSales.map(s => s.date),
   ...cashSales.map(s => s.date),
   ...costs.map(c => c.date)
   ].filter(Boolean).map(d => new Date(d));
-  if (!allDates.length) { canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height); return; }
+  if (!allDates.length) {
+  canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height);
+  renderLegend();
+  return;
+  }
   start = new Date(Math.min(...allDates));
   end  = new Date(Math.max(...allDates));
   start.setHours(0,0,0,0);
@@ -1388,15 +1427,17 @@ function drawRevenueChart() {
   cursor.setDate(cursor.getDate() + 1);
   }
 
-  if (!days.length) return;
+  if (!days.length) { renderLegend(); return; }
 
-  const revByDay = {};
+  // Per-source daily totals so Square and Cash can be plotted as separate lines.
+  const sqByDay  = {};
+  const cashByDay = {};
   const costByDay = {};
-  sqSales.forEach(s   => { const d = s.dateStr || s.date.slice(0,10); revByDay[d]  = (revByDay[d] ||0) + (s.gross  || 0); });
-  cashSales.forEach(s => { const d = s.date.slice(0,10);              revByDay[d]  = (revByDay[d] ||0) + (s.amount || 0); });
+  sqSales.forEach(s   => { const d = s.dateStr || s.date.slice(0,10); sqByDay[d]  = (sqByDay[d]  ||0) + (s.gross  || 0); });
+  cashSales.forEach(s => { const d = s.date.slice(0,10);              cashByDay[d] = (cashByDay[d]||0) + (s.amount || 0); });
   costs.forEach(c     => { const d = c.date.slice(0,10);              costByDay[d] = (costByDay[d]||0) + (c.amount || 0); });
 
-  let labels, revVals, spendVals, fullLabels;
+  let labels, sqVals, cashVals, spendVals, fullLabels;
 
   if (days.length > 90) {
   // Aggregate by week
@@ -1406,24 +1447,28 @@ function drawRevenueChart() {
   const wkStart = new Date(dt);
   wkStart.setDate(dt.getDate() - dt.getDay());
   const key = wkStart.toISOString().slice(0,10);
-  if (!weeks[key]) weeks[key] = { rev: 0, spend: 0 };
-  weeks[key].rev   += revByDay[day]  || 0;
+  if (!weeks[key]) weeks[key] = { sq: 0, cash: 0, spend: 0 };
+  weeks[key].sq   += sqByDay[day]   || 0;
+  weeks[key].cash += cashByDay[day] || 0;
   weeks[key].spend += costByDay[day] || 0;
   });
   const wkKeys = Object.keys(weeks).sort();
   labels  = wkKeys.map(k => { const d = new Date(k+'T00:00:00'); return (d.getMonth()+1)+'/'+d.getDate(); });
   fullLabels = wkKeys.map(k => 'Week of ' + fmtDate(k + 'T12:00:00Z'));
-  revVals  = wkKeys.map(k => weeks[k].rev);
+  sqVals  = wkKeys.map(k => weeks[k].sq);
+  cashVals = wkKeys.map(k => weeks[k].cash);
   spendVals = wkKeys.map(k => weeks[k].spend);
   } else if (days.length > 30) {
   labels  = days.map(d => { const dt = new Date(d+'T00:00:00'); return (dt.getMonth()+1)+'/'+dt.getDate(); });
   fullLabels = days.map(d => fmtDate(d + 'T12:00:00Z'));
-  revVals  = days.map(d => revByDay[d]  || 0);
+  sqVals  = days.map(d => sqByDay[d]   || 0);
+  cashVals = days.map(d => cashByDay[d] || 0);
   spendVals = days.map(d => costByDay[d] || 0);
   } else {
   labels  = days.map(d => { const dt = new Date(d+'T00:00:00'); return String(dt.getDate()); });
   fullLabels = days.map(d => fmtDate(d + 'T12:00:00Z'));
-  revVals  = days.map(d => revByDay[d]  || 0);
+  sqVals  = days.map(d => sqByDay[d]   || 0);
+  cashVals = days.map(d => cashByDay[d] || 0);
   spendVals = days.map(d => costByDay[d] || 0);
   }
 
@@ -1431,29 +1476,33 @@ function drawRevenueChart() {
   canvas.width  = Math.max(w, 200);
   canvas.height = 380;
 
-  const revLabel = S.chartSource === 'square' ? 'Square Revenue'
-              : S.chartSource === 'cash'   ? 'Cash Revenue'
-              :                              'Revenue';
+  // Build the dataset list dynamically based on which series are enabled.
+  const datasets = [];
+  if (showSq)   datasets.push({ label: CHART_SERIES_META.square.label,   data: sqVals,   color: CHART_SERIES_META.square.color   });
+  if (showCash) datasets.push({ label: CHART_SERIES_META.cash.label,     data: cashVals, color: CHART_SERIES_META.cash.color     });
+  if (showSpend) datasets.push({ label: CHART_SERIES_META.spending.label, data: spendVals, color: CHART_SERIES_META.spending.color });
 
   const ctx = canvas.getContext('2d');
-  renderLineChart(ctx, canvas.width, canvas.height, labels, [
-  { label: revLabel,  data: revVals,   color: '#4fbd7e' },
-  { label: 'Spending', data: spendVals, color: '#e02020' }
-  ], fullLabels);
+  if (datasets.length) {
+  renderLineChart(ctx, canvas.width, canvas.height, labels, datasets, fullLabels);
   attachChartHover(canvas);
-
-  const legend = document.getElementById('revenue-legend');
-  if (legend) {
-  legend.innerHTML = [
-  { l: revLabel,  c: '#4fbd7e' },
-  { l: 'Spending', c: '#e02020' }
-  ].map(x => '<div class="legend-item"><div class="legend-dot" style="background:' + x.c + '"></div>' + x.l + '</div>').join('');
+  } else {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#777';
+  ctx.font = '13px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('Click a series above to plot it', canvas.width / 2, canvas.height / 2);
+  if (canvas._chart) canvas._chart = null;
   }
+
+  renderLegend();
 }
 
-function setChartSource(val) {
-  if (val !== 'all' && val !== 'square' && val !== 'cash') return;
-  S.chartSource = val;
+function toggleChartSeries(key) {
+  if (!CHART_SERIES_META[key]) return;
+  if (isSeriesOn(key)) S.chartSeries = S.chartSeries.filter(k => k !== key);
+  else S.chartSeries = [...(S.chartSeries || []), key];
   saveState();
   drawRevenueChart();
 }
@@ -1730,30 +1779,35 @@ function renderAllSalesTable() {
 
   const allUnfiltered = [...sqSales, ...cashSales].sort((a, b) => new Date(b.date) - new Date(a.date));
 
-  // Apply UI filters: keyword search + source dropdown
+  // Apply UI filters: keyword search + per-source checkboxes (multi-select).
+  // Default-true so the table still works if a checkbox isn't yet in the DOM
+  // (e.g. before the tab has been rendered once).
   const q = (document.getElementById('sales-search')?.value || '').toLowerCase().trim();
-  const srcFilter = document.getElementById('sales-source-filter')?.value || 'all';
+  const showSqCard = document.getElementById('sf-sq-card')?.checked ?? true;
+  const showSqCash = document.getElementById('sf-sq-cash')?.checked ?? true;
+  const showCash  = document.getElementById('sf-cash')?.checked   ?? true;
+  const srcFilterActive = !(showSqCard && showSqCash && showCash);
   const all = allUnfiltered.filter(s => {
   if (q) {
   const hay = ((s.desc || '') + ' ' + (s.note || '')).toLowerCase();
   if (!hay.includes(q)) return false;
   }
-  if (srcFilter === 'square-card') return s._src === 'square' && s.paymentMethod !== 'Cash';
-  if (srcFilter === 'square-cash') return s._src === 'square' && s.paymentMethod === 'Cash';
-  if (srcFilter === 'cash')  return s._src === 'cash';
+  if (s._src === 'square' && s.paymentMethod !== 'Cash') return showSqCard;
+  if (s._src === 'square' && s.paymentMethod === 'Cash') return showSqCash;
+  if (s._src === 'cash') return showCash;
   return true;
   });
 
   const lbl = document.getElementById('all-sales-count');
   if (lbl) {
-  const filterActive = q || srcFilter !== 'all';
+  const filterActive = q || srcFilterActive;
   lbl.textContent = filterActive
   ? all.length + ' of ' + allUnfiltered.length + ' transactions'
   : (all.length ? all.length + ' transactions' : '');
   }
 
   if (!all.length) {
-  const filterActive = q || srcFilter !== 'all';
+  const filterActive = q || srcFilterActive;
   el.innerHTML = emptyHTML(
   filterActive ? 'No sales match your filters' : 'No sales this period',
   filterActive ? 'Try clearing the search or source filter.' : 'Import a Square CSV or click "+ Add Sale" to record a cash transaction.'
@@ -1816,7 +1870,7 @@ function renderAllSalesTable() {
   tax:  a.tax  + (s.tax  || 0),
   net:  a.net  + (s.net  || 0)
   }), { gross: 0, fee: 0, tax: 0, net: 0 });
-  const filterActive = q || srcFilter !== 'all';
+  const filterActive = q || srcFilterActive;
   const label = filterActive
   ? 'Filtered Totals (' + all.length + ' of ' + allUnfiltered.length + ')'
   : 'Totals (' + all.length + ')';
@@ -1832,9 +1886,11 @@ function renderAllSalesTable() {
 
 function clearSalesFilters() {
   const search = document.getElementById('sales-search');
-  const src  = document.getElementById('sales-source-filter');
   if (search) search.value = '';
-  if (src)  src.value  = 'all';
+  ['sf-sq-card','sf-sq-cash','sf-cash'].forEach(id => {
+  const cb = document.getElementById(id);
+  if (cb) cb.checked = true;
+  });
   renderAllSalesTable();
 }
 
