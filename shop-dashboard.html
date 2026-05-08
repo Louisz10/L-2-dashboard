@@ -55,7 +55,6 @@ body{
   width:100%;
   box-shadow:6px 6px 0 #000000;
 }
-.setup-logo{font-size:36px;margin-bottom:8px}
 .setup-box h1{color:var(--accent);font-size:24px;margin-bottom:6px;font-weight:900;letter-spacing:-0.5px}
 .setup-box .subtitle{color:var(--text2);margin-bottom:28px;font-size:13px}
 .setup-step{display:flex;gap:12px;margin-bottom:14px;align-items:flex-start}
@@ -63,7 +62,6 @@ body{
 .setup-step p{color:var(--text2);font-size:13px}
 .setup-step a{color:var(--accent);font-weight:700}
 .setup-divider{border:none;border-top:2px dashed var(--border);margin:20px 0}
-.setup-sandbox-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:13px;color:var(--text2)}
 
 /* ── NAV ── */
 #main-app{display:none;flex-direction:column;flex:1}
@@ -162,7 +160,6 @@ nav{
   pointer-events:none;
 }
 .metric-card:hover{transform:translate(-2px,-3px);box-shadow:6px 7px 0 rgba(0,0,0,0.45)}
-.metric-icon{font-size:22px;margin-bottom:7px}
 .metric-label{color:var(--text3);font-size:10px;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:3px;font-weight:700}
 .metric-value{font-size:22px;font-weight:900;color:var(--text);letter-spacing:-0.5px}
 .metric-value.green{color:var(--green)}
@@ -375,7 +372,6 @@ canvas{display:block}
 .tag-amber{background:rgba(255,170,0,0.15);color:var(--amber);border-color:rgba(255,170,0,0.4)}
 .tag-green{background:rgba(0,230,118,0.15);color:var(--green);border-color:rgba(0,230,118,0.35)}
 .tag-blue{background:rgba(68,170,255,0.15);color:var(--blue);border-color:rgba(68,170,255,0.35)}
-.tag-red{background:rgba(255,59,59,0.15);color:var(--red);border-color:rgba(255,59,59,0.35)}
 
 /* ── LAYOUT HELPERS ── */
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:18px}
@@ -453,7 +449,6 @@ input[type=checkbox].row-cb{width:16px;height:16px;accent-color:var(--accent);cu
 <!-- ═══════════════════════════ SETUP ═══════════════════════════ -->
 <div id="setup-screen">
   <div class="setup-box">
-  <div class="setup-logo"></div>
   <h1>Pokemon Card Shop Dashboard</h1>
   <p class="subtitle">Track your card shop revenue, inventory, and costs. Import Square sales via CSV, log cash sales manually, and export PDF reports.</p>
   <div class="setup-step">
@@ -617,7 +612,6 @@ input[type=checkbox].row-cb{width:16px;height:16px;accent-color:var(--accent);cu
   <div class="section-header">
   <span class="section-title">Import Square Transactions (CSV)</span>
   <div class="flex-gap">
-  <span id="sq-count-label" class="text-muted fs12"></span>
   <label class="btn btn-primary btn-sm" style="cursor:pointer">
   Choose CSV File
   <input type="file" id="csv-file-input" accept=".csv" style="display:none" onchange="importSquareCSV(event)" />
@@ -824,9 +818,6 @@ input[type=checkbox].row-cb{width:16px;height:16px;accent-color:var(--accent);cu
 // STATE
 // ============================================================
 const S = {
-  apiKey: null,
-  sandbox: false,
-  locationId: null,
   taxRate: 5.0,
   squareSales: [],
   cashSales: [],
@@ -837,9 +828,8 @@ const S = {
   period: 'all',
   customStart: '',
   customEnd: '',
-  chartSeries: ['square', 'cash', 'spending'], // which lines to plot on the revenue chart (subset of these three)
+  chartSeries: ['square', 'cash', 'spending'], // which lines to plot on the revenue chart (subset of combined/square/cash/spending)
   tab: 'overview',
-  syncing: false,
   lastSync: null,
   businessName: 'Pokemon Card Shop',
   sortState: {}
@@ -850,14 +840,6 @@ const S = {
 // ============================================================
 function saveState() {
   try {
-  if (S.apiKey) {
-  localStorage.setItem('sq_key', S.apiKey);
-  } else {
-  localStorage.removeItem('sq_key');
-  }
-  localStorage.setItem('sq_sandbox', S.sandbox ? '1' : '0');
-  if (S.locationId) localStorage.setItem('sq_loc', S.locationId);
-  else localStorage.removeItem('sq_loc');
   localStorage.setItem('sq_sales', JSON.stringify(S.squareSales));
   localStorage.setItem('cash_sales', JSON.stringify(S.cashSales));
   localStorage.setItem('inventory', JSON.stringify(S.inventory));
@@ -868,14 +850,17 @@ function saveState() {
   localStorage.setItem('biz_name', S.businessName);
   localStorage.setItem('chart_series', JSON.stringify(S.chartSeries));
   localStorage.removeItem('chart_source'); // clean up legacy single-source key
+  localStorage.setItem('period', S.period || 'all');
+  localStorage.setItem('custom_start', S.customStart || '');
+  localStorage.setItem('custom_end',   S.customEnd   || '');
+  localStorage.setItem('tab', S.tab || 'overview');
   if (S.lastSync) localStorage.setItem('last_sync', S.lastSync);
   } catch(e) { console.warn('Storage write error:', e); }
 }
 
 function loadState() {
-  S.apiKey = localStorage.getItem('sq_key') || null;
-  S.sandbox = localStorage.getItem('sq_sandbox') === '1';
-  S.locationId = localStorage.getItem('sq_loc') || null;
+  // Clean up legacy Square API credentials from earlier versions of the app.
+  ['sq_key','sq_sandbox','sq_loc'].forEach(k => localStorage.removeItem(k));
   S.squareSales = safeJSON('sq_sales', []);
   S.cashSales = safeJSON('cash_sales', []);
   S.inventory = safeJSON('inventory', []);
@@ -897,210 +882,21 @@ function loadState() {
   } else if (legacy === 'square') S.chartSeries = ['square','spending'];
   else if (legacy === 'cash')   S.chartSeries = ['cash','spending'];
   else                S.chartSeries = ['square','cash','spending'];
+  // Restore period selection so the active filter survives a reload.
+  const savedPeriod = localStorage.getItem('period');
+  const validPeriods = ['today','week','month','year','all','custom'];
+  S.period = validPeriods.includes(savedPeriod) ? savedPeriod : 'all';
+  S.customStart = localStorage.getItem('custom_start') || '';
+  S.customEnd   = localStorage.getItem('custom_end')   || '';
+  const savedTab = localStorage.getItem('tab');
+  const validTabs = ['overview','sales','inventory','costs','reports'];
+  S.tab = validTabs.includes(savedTab) ? savedTab : 'overview';
   S.lastSync = localStorage.getItem('last_sync') || null;
 }
 
 function safeJSON(key, def) {
   try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : def; }
   catch(e) { return def; }
-}
-
-// ============================================================
-// SQUARE API
-// ============================================================
-function sqBase() {
-  return S.sandbox
-  ? 'https://connect.squareupsandbox.com'
-  : 'https://connect.squareup.com';
-}
-
-async function sqFetch(path, opts = {}) {
-  const res = await fetch(sqBase() + path, {
-  ...opts,
-  headers: {
-  'Authorization': 'Bearer ' + S.apiKey,
-  'Content-Type': 'application/json',
-  'Square-Version': '2024-01-18',
-  ...(opts.headers || {})
-  }
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) {
-  const msg = (data.errors && data.errors[0])
-  ? (data.errors[0].detail || data.errors[0].code || 'API error')
-  : ('HTTP ' + res.status);
-  throw new Error(msg);
-  }
-  return data;
-}
-
-async function validateApiKey(key, sandbox) {
-  const prev = { key: S.apiKey, sandbox: S.sandbox };
-  S.apiKey = key;
-  S.sandbox = sandbox;
-  try {
-  const data = await sqFetch('/v2/locations');
-  const locs = data.locations || [];
-  if (!locs.length) throw new Error('No locations found on this account.');
-  S.locationId = locs[0].id;
-  return locs[0];
-  } catch(e) {
-  S.apiKey = prev.key;
-  S.sandbox = prev.sandbox;
-  throw e;
-  }
-}
-
-function sqCents(obj) {
-  return obj ? ((obj.amount || 0) / 100) : 0;
-}
-
-async function fetchAllPayments(startISO, endISO) {
-  const all = [];
-  let cursor = null;
-  let pages = 0;
-  do {
-  const params = new URLSearchParams({
-  location_id: S.locationId,
-  begin_time: startISO,
-  end_time: endISO,
-  limit: '100'
-  });
-  if (cursor) params.set('cursor', cursor);
-  const data = await sqFetch('/v2/payments?' + params);
-  all.push(...(data.payments || []));
-  cursor = data.cursor || null;
-  pages++;
-  } while (cursor && pages < 30);
-  return all;
-}
-
-async function fetchOrdersBatch(orderIds) {
-  if (!orderIds.length) return [];
-  const all = [];
-  for (let i = 0; i < orderIds.length; i += 100) {
-  const batch = orderIds.slice(i, i + 100);
-  try {
-  const data = await sqFetch('/v2/orders/batch-retrieve', {
-  method: 'POST',
-  body: JSON.stringify({ order_ids: batch, location_id: S.locationId })
-  });
-  all.push(...(data.orders || []));
-  } catch(e) {
-  // Orders are optional — fees still tracked from payments
-  }
-  }
-  return all;
-}
-
-function buildSaleRecord(payment, order) {
-  const gross = sqCents(payment.total_money || payment.amount_money);
-  // Real fee from payment object
-  const realFee = (payment.processing_fee || []).reduce((s, f) => {
-  const a = sqCents(f.amount_money);
-  return s + (a < 0 ? -a : a); // handle refunded fees (negative amounts)
-  }, 0);
-  // Fallback: estimate 2.6% + $0.15
-  const estFee = parseFloat((gross * 0.026 + 0.15).toFixed(2));
-  const fee = realFee > 0 ? parseFloat(realFee.toFixed(2)) : estFee;
-  const feeEstimated = realFee === 0;
-
-  let tax = 0;
-  let items = [];
-  if (order) {
-  tax = sqCents(order.total_tax_money);
-  items = (order.line_items || []).map(li => ({
-  name: li.name || 'Unknown Item',
-  qty: parseInt(li.quantity) || 1,
-  price: sqCents(li.total_money)
-  }));
-  }
-
-  const net = parseFloat((gross - fee - tax).toFixed(2));
-
-  return {
-  id: payment.id,
-  date: payment.created_at,
-  dateStr: payment.created_at.slice(0, 10),
-  gross: parseFloat(gross.toFixed(2)),
-  fee,
-  feeEstimated,
-  tax: parseFloat(tax.toFixed(2)),
-  net,
-  items,
-  orderId: payment.order_id || null,
-  status: payment.status || 'COMPLETED'
-  };
-}
-
-async function syncSquare() {
-  if (!S.apiKey) {
-  setInlineError('sq-sync-error', 'Square is not connected. Go to Settings to add your API key.', true);
-  return;
-  }
-  if (S.syncing) return;
-  S.syncing = true;
-  setSyncBtnLoading(true);
-  clearEl('sq-sync-error');
-
-  try {
-  // Sync last 365 days
-  const end = new Date();
-  const start = new Date();
-  start.setDate(start.getDate() - 365);
-
-  const payments = await fetchAllPayments(start.toISOString(), end.toISOString());
-  const validPayments = payments.filter(p =>
-  p.status !== 'CANCELED' && p.status !== 'FAILED' && p.status !== 'DECLINED'
-  );
-
-  const orderIds = validPayments.filter(p => p.order_id).map(p => p.order_id);
-  const orders = await fetchOrdersBatch(orderIds);
-  const orderMap = {};
-  orders.forEach(o => { orderMap[o.id] = o; });
-
-  const newRecords = validPayments.map(p =>
-  buildSaleRecord(p, p.order_id ? orderMap[p.order_id] : null)
-  );
-
-  // Find truly new sales (not seen before) for inventory deduction
-  const prevIds = new Set(S.squareSales.map(s => s.id));
-  const brandNew = newRecords.filter(r => !prevIds.has(r.id));
-
-  // Replace Square sales (keep all)
-  S.squareSales = newRecords;
-
-  // Auto-deduct inventory for brand new sales only
-  autoDeductFromSquare(brandNew);
-
-  S.lastSync = new Date().toISOString();
-  saveState();
-
-  const status = document.getElementById('sync-status');
-  if (status) {
-  status.innerHTML = '<span style="color:var(--green)">✓ Synced ' + newRecords.length + ' txns</span>';
-  setTimeout(() => {
-  if (status) status.textContent = 'Last sync: ' + fmtDateTime(S.lastSync);
-  }, 4000);
-  }
-
-  refreshCurrentTab();
-  updateLowStockBadge();
-  } catch(e) {
-  setInlineError('sq-sync-error', 'Sync failed: ' + e.message, true);
-  const status = document.getElementById('sync-status');
-  if (status) status.innerHTML = '<span style="color:var(--red)">Sync failed</span>';
-  } finally {
-  S.syncing = false;
-  setSyncBtnLoading(false);
-  }
-}
-
-function setSyncBtnLoading(on) {
-  const btn = document.getElementById('sync-btn');
-  if (!btn) return;
-  btn.disabled = on;
-  btn.innerHTML = on ? '<span class="spinner"></span> Syncing...' : '⟳ Sync Square';
 }
 
 // ============================================================
@@ -1176,7 +972,14 @@ function inRange(dateStr) {
 
 function fmtDate(str) {
   if (!str) return '';
-  const d = new Date(str);
+  // Build a local-time Date so bare YYYY-MM-DD doesn't render as the
+  // previous calendar day (new Date("2026-05-07") = midnight UTC = May
+  // 6 evening in US). Same root cause as the inRange filter bug.
+  const head = String(str).slice(0, 10);
+  const m = head.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const d = m
+  ? new Date(parseInt(m[1],10), parseInt(m[2],10) - 1, parseInt(m[3],10))
+  : new Date(str);
   if (isNaN(d)) return str;
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
@@ -1285,19 +1088,12 @@ function getLowStockItems() {
   return S.inventory.filter(i => (i.qty || 0) <= (i.reorder || 0));
 }
 
-function updateLowStockBadge() {
-  const n = getLowStockItems().length;
-  const badge = document.getElementById('low-stock-badge');
-  if (!badge) return;
-  if (n > 0) { badge.textContent = n; badge.style.display = ''; }
-  else badge.style.display = 'none';
-}
-
 // ============================================================
 // NAVIGATION
 // ============================================================
 function showTab(name) {
   S.tab = name;
+  saveState();
   document.querySelectorAll('.nav-tab').forEach(btn =>
   btn.classList.toggle('active', btn.dataset.tab === name)
   );
@@ -1327,21 +1123,20 @@ function renderOverview() {
   const totalTx = t.sqCount + t.cashCount;
   const invRetail = S.inventory.reduce((sum, i) => sum + (i.sellPrice || 0) * (i.qty || 0), 0);
   const metrics = [
-  { icon: '', label: 'Total Revenue',  value: fmtMoney(t.totalNet), cls: 'green',  sub: totalTx + ' transactions' },
-  { icon: '', label: 'Square Sales',  value: fmtMoney(t.sqNet),  cls: 'green',  sub: t.sqCount + ' transactions' },
-  { icon: '', label: 'Cash / Other Sales',  value: fmtMoney(t.cashNet),  cls: 'green',  sub: t.cashCount + ' entries' },
-  { icon: '', label: 'Square Processing Fees',  value: fmtMoney(t.sqFees),  cls: 'red' },
-  { icon: '',  label: 'WI Tax Collected',  value: fmtMoney(t.totalTax),  cls: 'red' },
-  { icon: '', label: 'Business Expenses',  value: fmtMoney(t.totalCosts), cls: 'red' },
-  { icon: '', label: 'Net Profit',  value: fmtMoney(t.netProfit),  cls: t.netProfit >= 0 ? 'green' : 'red' },
-  { icon: '', label: 'Inventory Retail Value',  value: fmtMoney(invRetail),  cls: 'green',  sub: S.inventory.reduce((s,i) => s + (i.qty||0), 0) + ' units in stock' }
+  { label: 'Total Revenue',  value: fmtMoney(t.totalNet),   cls: 'green', sub: totalTx + ' transactions' },
+  { label: 'Square Sales',   value: fmtMoney(t.sqNet),      cls: 'green', sub: t.sqCount + ' transactions' },
+  { label: 'Cash / Other Sales', value: fmtMoney(t.cashNet), cls: 'green', sub: t.cashCount + ' entries' },
+  { label: 'Square Processing Fees', value: fmtMoney(t.sqFees),  cls: 'red' },
+  { label: 'WI Tax Collected', value: fmtMoney(t.totalTax),  cls: 'red' },
+  { label: 'Business Expenses', value: fmtMoney(t.totalCosts), cls: 'red' },
+  { label: 'Net Profit',     value: fmtMoney(t.netProfit),  cls: t.netProfit >= 0 ? 'green' : 'red' },
+  { label: 'Inventory Retail Value', value: fmtMoney(invRetail), cls: 'green', sub: S.inventory.reduce((s,i) => s + (i.qty||0), 0) + ' units in stock' }
   ];
 
   const grid = document.getElementById('overview-metrics');
   if (grid) {
   grid.innerHTML = metrics.map(m => `
   <div class="metric-card">
-  ${m.icon ? '<div class="metric-icon">' + m.icon + '</div>' : ''}
   <div class="metric-label">${esc(m.label)}</div>
   <div class="metric-value ${m.cls || ''}">${m.value}</div>
   ${m.sub ? '<div class="metric-sub">' + esc(m.sub) + '</div>' : ''}
@@ -1503,7 +1298,7 @@ function drawRevenueChart() {
   canvas.height = 380;
 
   // Build the dataset list dynamically based on which series are enabled.
-  // Combined is mutually exclusive with Square/Cash, so only one branch fires.
+  // Combined / Square / Cash / Spending are independent — any subset can plot.
   const datasets = [];
   if (showCombined) datasets.push({ label: CHART_SERIES_META.combined.label, data: combinedVals, color: CHART_SERIES_META.combined.color });
   if (showSq)    datasets.push({ label: CHART_SERIES_META.square.label,   data: sqVals,    color: CHART_SERIES_META.square.color   });
@@ -1753,20 +1548,6 @@ function attachChartHover(canvas) {
   canvas.addEventListener('mouseleave', hide);
 }
 
-function niceNum(v) {
-  if (v <= 0) return 100;
-  const mag = Math.pow(10, Math.floor(Math.log10(v)));
-  const r  = v / mag;
-  const n  = r <= 1 ? 1 : r <= 2 ? 2 : r <= 5 ? 5 : 10;
-  return n * mag;
-}
-
-function shortNum(n) {
-  if (n >= 1000000) return (n/1000000).toFixed(1) + 'M';
-  if (n >= 1000)  return (n/1000).toFixed(1) + 'k';
-  return n.toFixed(0);
-}
-
 // ============================================================
 // RENDER: SALES
 // ============================================================
@@ -1785,11 +1566,11 @@ function renderAllSalesTable() {
   desc: normalizeSqDesc(s.description || (s.items && s.items.length
   ? s.items.map(i => normalizeSqDesc(i.name) + (i.qty > 1 ? ' ×'+i.qty : '')).join(', ')
   : '—')),
-  gross: s.gross,
-  fee:  s.fee,
-  feeEst: s.feeEstimated,
-  tax:  s.tax,
-  net:  s.net,
+  gross: s.gross || 0,
+  fee:  s.fee || 0,
+  feeEst: !!s.feeEstimated,
+  tax:  s.tax || 0,
+  net:  s.net || 0,
   note:  '',
   paymentMethod: s.paymentMethod || 'Card'
   }));
@@ -1797,11 +1578,11 @@ function renderAllSalesTable() {
   _src: 'cash', _id: s.id,
   date: s.date,
   desc: s.category || '—',
-  gross: s.amount,
+  gross: s.amount || 0,
   fee:  0,
   feeEst: false,
   tax:  s.tax || 0,
-  net:  s.amount - (s.tax || 0),
+  net:  (s.amount || 0) - (s.tax || 0),
   note:  s.notes || ''
   }));
 
@@ -1854,7 +1635,7 @@ function renderAllSalesTable() {
   '<div class="table-wrap"><table id="all-tbl">' +
   '<thead><tr>' +
   '<th class="cb-col"><input type="checkbox" class="select-all-cb" onchange="toggleSelectAll(\'all-tbl\',this,\'bulk-bar-all\',\'bulk-count-all\')" title="Select all"></th>' +
-  '<th onclick="sortTable(\'all-tbl\',1)">Date</th>' +
+  '<th onclick="sortTable(\'all-tbl\',1,\'date\')">Date</th>' +
   '<th onclick="sortTable(\'all-tbl\',2)">Description</th>' +
   '<th onclick="sortTable(\'all-tbl\',3,true)">Gross</th>' +
   '<th onclick="sortTable(\'all-tbl\',4,true)">Fee</th>' +
@@ -1955,7 +1736,6 @@ function deleteSelectedAll() {
 // ============================================================
 function renderInventory() {
   renderSealedTable();
-  updateLowStockBadge();
 }
 
 function renderSealedTable() {
@@ -2202,7 +1982,7 @@ function renderCosts() {
   '<div class="table-wrap"><table id="costs-tbl">' +
   '<thead><tr>' +
   '<th class="cb-col"><input type="checkbox" class="select-all-cb" onchange="toggleSelectAll(\'costs-tbl\',this,\'bulk-bar-costs\',\'bulk-count-costs\')" title="Select all"></th>' +
-  '<th onclick="sortTable(\'costs-tbl\',1)">Date</th>' +
+  '<th onclick="sortTable(\'costs-tbl\',1,\'date\')">Date</th>' +
   '<th onclick="sortTable(\'costs-tbl\',2)">Name</th>' +
   '<th onclick="sortTable(\'costs-tbl\',3,true)">Amount</th>' +
   '<th onclick="sortTable(\'costs-tbl\',4)">Notes</th>' +
@@ -2436,21 +2216,6 @@ function openModal(type, id) {
   break;
   }
 
-  case 'add-singles':
-  title.textContent = 'Add Singles Set';
-  body.innerHTML = buildSinglesForm();
-  footer.innerHTML = '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveSinglesSet()">Save Set</button>';
-  break;
-
-  case 'edit-singles': {
-  const s = S.singles.find(x => x.id === id);
-  if (!s) { closeModal(); return; }
-  title.textContent = 'Edit Singles Set';
-  body.innerHTML = buildSinglesForm(s);
-  footer.innerHTML = '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveSinglesSet(\'' + escA(id) + '\')">Update Set</button>';
-  break;
-  }
-
   case 'add-cost':
   title.textContent = 'Add Business Expense';
   body.innerHTML = buildCostForm();
@@ -2602,30 +2367,6 @@ function buildInvForm(d) {
 </div>`;
 }
 
-function buildSinglesForm(d) {
-  return `
-<div id="form-err" class="alert alert-error" style="display:none"></div>
-<div class="form-row">
-  <label class="field-label">Set Name *</label>
-  <input type="text" id="sf-set" value="${escA(d?.set||'')}" placeholder="e.g. Base Set, Paldea Evolved" />
-</div>
-<div class="form-grid">
-  <div class="form-row">
-  <label class="field-label">Cards In Stock *</label>
-  <input type="number" id="sf-count" value="${d?.count??''}" placeholder="0" min="0" step="1" />
-  </div>
-  <div class="form-row">
-  <label class="field-label">Avg Cost Per Card ($)</label>
-  <input type="number" id="sf-cost" value="${d?.avgCost??''}" placeholder="0.00" step="0.01" min="0" />
-  </div>
-</div>
-<div class="form-row">
-  <label class="field-label">Avg Sell Price Per Card ($)</label>
-  <input type="number" id="sf-sell" value="${d?.avgSell??''}" placeholder="0.00" step="0.01" min="0" />
-</div>
-<p class="text-muted mt8" style="font-size:11px">Singles are tracked as category totals — quantities are updated manually.</p>`;
-}
-
 function buildCostForm(d) {
   const dateVal = d ? (d.date || '').slice(0,10) : todayISO();
   return `
@@ -2703,7 +2444,7 @@ function saveCashSale(editId) {
   }
   }
 
-  saveState(); closeModal(); updateLowStockBadge(); refreshCurrentTab();
+  saveState(); closeModal(); refreshCurrentTab();
   notifyIfOutsidePeriod(dateISO, 'sale');
 }
 
@@ -2733,29 +2474,6 @@ function saveInvItem(editId) {
   if (idx >= 0) S.inventory[idx] = item; else S.inventory.push(item);
   } else {
   S.inventory.push(item);
-  }
-
-  saveState(); closeModal(); updateLowStockBadge(); renderInventory();
-}
-
-function saveSinglesSet(editId) {
-  const set = v('sf-set'), cntRaw = vn('sf-count');
-  if (!set)  { showFormErr('Set name is required.'); return; }
-  if (cntRaw === null) { showFormErr('Card count is required.'); return; }
-
-  const s = {
-  id: editId || genId(),
-  set,
-  count: Math.max(0, Math.round(cntRaw)),
-  avgCost: vn('sf-cost') || 0,
-  avgSell: vn('sf-sell') || 0
-  };
-
-  if (editId) {
-  const idx = S.singles.findIndex(x => x.id === editId);
-  if (idx >= 0) S.singles[idx] = s; else S.singles.push(s);
-  } else {
-  S.singles.push(s);
   }
 
   saveState(); closeModal(); renderInventory();
@@ -2794,14 +2512,6 @@ function deleteInvItem(id) {
   appConfirm('Delete this inventory item?', 'Delete', () => {
   closeModal();
   S.inventory = S.inventory.filter(i => i.id !== id);
-  saveState(); updateLowStockBadge(); renderInventory();
-  });
-}
-
-function deleteSinglesSet(id) {
-  appConfirm('Delete this singles set?', 'Delete', () => {
-  closeModal();
-  S.singles = S.singles.filter(s => s.id !== id);
   saveState(); renderInventory();
   });
 }
@@ -2817,7 +2527,7 @@ function deleteCost(id) {
 // ============================================================
 // TABLE SORT
 // ============================================================
-function sortTable(tableId, col, isNum) {
+function sortTable(tableId, col, mode) {
   const table = document.getElementById(tableId);
   if (!table) return;
   const key = tableId + '_' + col;
@@ -2828,6 +2538,10 @@ function sortTable(tableId, col, isNum) {
   if (!tbody) return;
   const rows = Array.from(tbody.rows);
 
+  // mode: true / 'num' = numeric, 'date' = chronological, falsy = lexical
+  const isNum  = mode === true || mode === 'num';
+  const isDate = mode === 'date';
+
   rows.sort((a, b) => {
   const av = (a.cells[col] ? a.cells[col].textContent.trim() : '');
   const bv = (b.cells[col] ? b.cells[col].textContent.trim() : '');
@@ -2835,6 +2549,14 @@ function sortTable(tableId, col, isNum) {
   const an = parseFloat(av.replace(/[$,%()k]/g, '')) || 0;
   const bn = parseFloat(bv.replace(/[$,%()k]/g, '')) || 0;
   return asc ? an - bn : bn - an;
+  }
+  if (isDate) {
+  // Cells render as "May 7, 2026" via fmtDate. Parse back to a
+  // timestamp so sort is chronological instead of alphabetic on
+  // the month abbreviation (Apr < Aug < Dec).
+  const at = Date.parse(av) || 0;
+  const bt = Date.parse(bv) || 0;
+  return asc ? at - bt : bt - at;
   }
   return asc ? av.localeCompare(bv) : bv.localeCompare(av);
   });
@@ -2857,39 +2579,11 @@ function toggleSettings(e) {
   panel.classList.toggle('open');
   const taxEl = document.getElementById('global-tax-rate');
   if (taxEl) taxEl.value = S.taxRate;
-  updateSqStatusLabel();
-}
-
-function updateSqStatusLabel() {
-  const lbl = document.getElementById('sq-status-label');
-  if (!lbl) return;
-  if (S.apiKey) {
-  lbl.className = 'tag tag-green';
-  lbl.textContent = S.sandbox ? 'Sandbox' : 'Live';
-  } else {
-  lbl.className = 'tag tag-red';
-  lbl.textContent = 'Not Connected';
-  }
-  const syncBtn = document.getElementById('sync-btn');
-  if (syncBtn) syncBtn.style.opacity = S.apiKey ? '1' : '0.45';
 }
 
 function updateTaxRate(val) {
   const r = parseFloat(val);
   if (!isNaN(r) && r >= 0 && r <= 30) { S.taxRate = r; saveState(); }
-}
-
-function disconnectSquare() {
-  const panel = document.getElementById('settings-panel');
-  if (panel) panel.classList.remove('open');
-  appConfirm('Disconnect Square? Your cash sales, inventory, and cost data will be kept.', 'Disconnect', () => {
-  S.apiKey = null;
-  S.locationId = null;
-  S.squareSales = [];
-  saveState();
-  updateSqStatusLabel();
-  refreshCurrentTab();
-  });
 }
 
 function clearAllData() {
@@ -2961,8 +2655,6 @@ function importData(event) {
   S.costs  = backup.costs  || [];
   S.processedSaleIds = new Set(backup.processedSaleIds || []);
   saveState();
-  updateLowStockBadge();
-  updateSqStatusLabel();
   refreshCurrentTab();
   const status = document.getElementById('sync-status');
   if (status) {
@@ -2975,47 +2667,6 @@ function importData(event) {
   }
   };
   reader.readAsText(file);
-}
-
-function openChangeKeyModal() {
-  const panel = document.getElementById('settings-panel');
-  if (panel) panel.classList.remove('open');
-
-  const overlay = document.getElementById('modal-overlay');
-  const title  = document.getElementById('modal-title');
-  const body  = document.getElementById('modal-body');
-  const footer  = document.getElementById('modal-footer');
-  if (!overlay) return;
-  overlay.classList.add('open');
-  title.textContent = 'Change Square API Key';
-  body.innerHTML = `
-  <div id="form-err" class="alert alert-error" style="display:none"></div>
-  <div class="form-row">
-  <label class="field-label">New Access Token</label>
-  <input type="password" id="new-key" placeholder="EAAAl..." />
-  </div>
-  <div class="form-row" style="display:flex;align-items:center;gap:8px">
-  <input type="checkbox" id="new-sandbox" ${S.sandbox?'checked':''} />
-  <label for="new-sandbox" style="color:var(--text2);font-size:13px;margin:0">Use Sandbox mode</label>
-  </div>`;
-  footer.innerHTML = '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="applyNewKey()">Update Key</button>';
-}
-
-async function applyNewKey() {
-  const key  = document.getElementById('new-key')?.value?.trim();
-  const sandbox = document.getElementById('new-sandbox')?.checked || false;
-  if (!key) { showFormErr('Please enter a new API key.'); return; }
-  try {
-  await validateApiKey(key, sandbox);
-  saveState();
-  closeModal();
-  updateSqStatusLabel();
-  const status = document.getElementById('sync-status');
-  if (status) status.innerHTML = '<span style="color:var(--green)">✓ API key updated</span>';
-  setTimeout(() => { if (status) status.textContent = ''; }, 3000);
-  } catch(e) {
-  showFormErr('Connection failed: ' + e.message);
-  }
 }
 
 // ============================================================
@@ -3050,7 +2701,7 @@ function parseSqItemDesc(rawDesc, totalPrice) {
   // Match leading quantity: "2 x Name", "2x Name", "2 × Name"
   const m = rawDesc.match(/^(\d+)\s*[x×]\s*(.+)/i);
   if (m) {
-  const qty  = parseInt(m[1], 10);
+  const qty  = Math.max(1, parseInt(m[1], 10) || 1); // guard against "0 x Foo" → Infinity
   const name = normalizeSqDesc(m[2].trim());
   const unitPrice = parseFloat((totalPrice / qty).toFixed(2));
   return [{ name, qty, price: unitPrice }];
@@ -3072,7 +2723,7 @@ function importSquareCSV(event) {
   const records = parseCSV(text);
 
   if (!records.length) {
-  setInlineError('sq-sync-error', 'No rows found in this CSV. Make sure you exported a Transactions CSV from Square.', false);
+  setInlineError('sq-sync-error', 'No rows found in this CSV. Make sure you exported a Transactions CSV from Square.');
   return;
   }
 
@@ -3160,7 +2811,6 @@ function importSquareCSV(event) {
   autoDeductFromSquare(S.squareSales.filter(s => s.id.startsWith('csv_') && !S.processedSaleIds.has(s.id)));
 
   saveState();
-  updateLowStockBadge();
   renderSales();
   refreshCurrentTab();
 
@@ -3171,7 +2821,7 @@ function importSquareCSV(event) {
   }
 
   } catch(err) {
-  setInlineError('sq-sync-error', 'Failed to parse CSV: ' + err.message, false);
+  setInlineError('sq-sync-error', 'Failed to parse CSV: ' + err.message);
   }
 
   // Reset file input so same file can be re-selected
@@ -3284,7 +2934,6 @@ function importSquareInventory(event) {
   const deleted = deletedNames.length;
 
   saveState();
-  updateLowStockBadge();
   renderInventory();
 
   if (statusEl) {
@@ -3573,9 +3222,14 @@ function _importPasteSquare(rows) {
   const rawAmt = grossC ? r[grossC] : (netC ? r[netC] : '');
   const gross  = parseMoney(rawAmt);
   if (!gross) return;
+  const feeEstimated = !feeC;
   const fee  = feeC ? Math.abs(parseMoney(r[feeC])) : Math.round((gross * 0.026 + 0.15) * 100) / 100;
   const tax  = taxC ? Math.abs(parseMoney(r[taxC])) : 0;
-  const net  = netC ? parseMoney(r[netC]) - tax : parseFloat((gross - fee - tax).toFixed(2));
+  // Always derive net the same way the live CSV importer does
+  // (gross − fee − tax). The previous netC branch did `parseMoney(netC) − tax`,
+  // which double-counted tax when the pasted column was Square's "Net Sales"
+  // (item subtotal, already pre-tax) instead of "Net Total" (post-fee deposit).
+  const net  = parseFloat((gross - fee - tax).toFixed(2));
   const date  = normalizeDate(r[dateC]);
   // Dedupe key
   const id = 'paste_sq_' + btoa(date.slice(0,10) + '_' + gross).replace(/[^a-zA-Z0-9]/g,'').slice(0,20) + '_' + S.squareSales.length;
@@ -3588,11 +3242,13 @@ function _importPasteSquare(rows) {
   date,
   gross,
   fee,
+  feeEstimated,
   tax,
   net,
   items: parseSqItemDesc(descC ? r[descC] : '', gross),
   category: catC ? r[catC] : 'Sales',
-  source: 'paste'
+  source: 'paste',
+  status: 'COMPLETED'
   });
   added++;
   });
@@ -3620,14 +3276,14 @@ function _importPasteCash(rows) {
 
   usedCols.add(labelC);
   const noteC = keys.find(k => !usedCols.has(k) && r[k]?.trim());
-  const note  = noteC ? r[noteC]?.trim() : '';
+  const notes = noteC ? r[noteC]?.trim() : '';
 
   S.cashSales.push({
   id: genId(),
   date: normalizeDate(r[dateC]),
   amount,
   category,
-  note,
+  notes,
   source: 'paste'
   });
   added++;
@@ -3713,10 +3369,10 @@ function getSelectedIds(tblId) {
 }
 
 function deleteSelected(section) {
+  // Only the unified Sales table and the Costs table use this; the legacy
+  // separate Square / Cash sub-tables (sq-tbl, cash-tbl) are gone.
   const map = {
-  sq:  { tbl:'sq-tbl',  bar:'bulk-bar-sq',  cnt:'bulk-count-sq',  arr:'squareSales' },
-  cash:  { tbl:'cash-tbl',  bar:'bulk-bar-cash',  cnt:'bulk-count-cash',  arr:'cashSales'  },
-  costs: { tbl:'costs-tbl', bar:'bulk-bar-costs', cnt:'bulk-count-costs', arr:'costs'  }
+  costs: { tbl:'costs-tbl', bar:'bulk-bar-costs', cnt:'bulk-count-costs', arr:'costs' }
   };
   const m = map[section]; if (!m) return;
   const ids = getSelectedIds(m.tbl);
@@ -3826,6 +3482,7 @@ function saveSqSaleEdit(id) {
   }
   }
   saveState(); closeModal(); refreshCurrentTab();
+  notifyIfOutsidePeriod(dateISO, 'sale');
 }
 
 function deleteSqSale(id) {
@@ -3846,6 +3503,7 @@ function setPeriod(p) {
   );
   const ci = document.getElementById('custom-date-inputs');
   if (ci) ci.style.display = p === 'custom' ? 'flex' : 'none';
+  saveState();
   if (p !== 'custom') refreshCurrentTab();
 }
 
@@ -3854,6 +3512,7 @@ function applyCustomDates() {
   const e = document.getElementById('custom-end')?.value;
   if (s) S.customStart = s;
   if (e) S.customEnd  = e;
+  saveState();
   if (S.period === 'custom') refreshCurrentTab();
 }
 
@@ -3869,12 +3528,26 @@ function showApp() {
   document.getElementById('setup-screen').style.display = 'none';
   document.getElementById('main-app').style.display = 'flex';
   localStorage.setItem('app_launched', '1');
-  updateSqStatusLabel();
-  updateLowStockBadge();
   if (S.lastSync) {
   const status = document.getElementById('sync-status');
   if (status) status.textContent = 'Last sync: ' + fmtDateTime(S.lastSync);
   }
+  // Sync UI to the persisted period + tab so reloads land where the user left off
+  document.querySelectorAll('.dpbtn').forEach(btn =>
+  btn.classList.toggle('active', btn.dataset.p === S.period)
+  );
+  const ci = document.getElementById('custom-date-inputs');
+  if (ci) ci.style.display = S.period === 'custom' ? 'flex' : 'none';
+  const cs = document.getElementById('custom-start');
+  const ce = document.getElementById('custom-end');
+  if (cs && S.customStart) cs.value = S.customStart;
+  if (ce && S.customEnd)   ce.value = S.customEnd;
+  document.querySelectorAll('.nav-tab').forEach(btn =>
+  btn.classList.toggle('active', btn.dataset.tab === S.tab)
+  );
+  document.querySelectorAll('.tab-content').forEach(el =>
+  el.classList.toggle('active', el.id === 'tab-' + S.tab)
+  );
   renderTab(S.tab);
   requestAnimationFrame(() => { if (S.tab === 'overview') drawRevenueChart(); });
 }
@@ -3923,12 +3596,10 @@ function clearEl(id) {
   if (el) el.innerHTML = '';
 }
 
-function setInlineError(containerId, msg, withRetry) {
+function setInlineError(containerId, msg) {
   const el = document.getElementById(containerId);
   if (!el) return;
-  el.innerHTML = '<div class="alert alert-error" style="margin:12px 16px">' + esc(msg) +
-  (withRetry ? ' <button class="btn btn-sm btn-secondary" style="margin-left:8px" onclick="syncSquare()">Retry</button>' : '') +
-  '</div>';
+  el.innerHTML = '<div class="alert alert-error" style="margin:12px 16px">' + esc(msg) + '</div>';
 }
 
 // Close settings when clicking outside
