@@ -160,12 +160,15 @@ nav{
   pointer-events:none;
 }
 .metric-card:hover{transform:translate(-2px,-3px);box-shadow:6px 7px 0 rgba(0,0,0,0.45)}
+.metric-card-muted{opacity:0.72}
+.metric-card-muted .metric-value{font-size:18px}
 .metric-label{color:var(--text3);font-size:10px;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:3px;font-weight:700}
 .metric-value{font-size:22px;font-weight:900;color:var(--text);letter-spacing:-0.5px}
 .metric-value.green{color:var(--green)}
 .metric-value.red{color:var(--red)}
 .metric-value.amber{color:var(--amber)}
 .metric-value.accent{color:var(--accent)}
+.metric-value.muted{color:var(--text3)}
 .metric-sub{font-size:11px;color:var(--text3);margin-top:3px;font-weight:600}
 
 /* ── SECTIONS ── */
@@ -499,6 +502,13 @@ input[type=checkbox].row-cb{width:16px;height:16px;accent-color:var(--accent);cu
   <span class="text-muted">%</span>
   </div>
   </div>
+  <div class="settings-item" style="gap:8px" title="Federal income tax bracket used by the Estimated Income Tax tile. SE tax (15.3%) is calculated automatically.">
+  <span>Federal Tax Bracket</span>
+  <div class="flex-gap" style="gap:4px">
+  <input type="number" id="global-fed-tax-rate" style="width:55px;text-align:right;-webkit-appearance:textfield;-moz-appearance:textfield;appearance:textfield" step="any" min="0" max="50" onchange="updateFedTaxRate(this.value)" />
+  <span class="text-muted">%</span>
+  </div>
+  </div>
   <div class="settings-item">
   <button class="link" onclick="exportData()" style="color:var(--green)">⬇ Export Backup (.json)</button>
   </div>
@@ -819,6 +829,7 @@ input[type=checkbox].row-cb{width:16px;height:16px;accent-color:var(--accent);cu
 // ============================================================
 const S = {
   taxRate: 5.0,
+  fedTaxRate: 12.0, // federal income-tax bracket used in the tax-estimate tile
   squareSales: [],
   cashSales: [],
   inventory: [],
@@ -847,6 +858,7 @@ function saveState() {
   localStorage.setItem('costs', JSON.stringify(S.costs));
   localStorage.setItem('processed_ids', JSON.stringify([...S.processedSaleIds]));
   localStorage.setItem('tax_rate', String(S.taxRate));
+  localStorage.setItem('fed_tax_rate', String(S.fedTaxRate));
   localStorage.setItem('biz_name', S.businessName);
   localStorage.setItem('chart_series', JSON.stringify(S.chartSeries));
   localStorage.removeItem('chart_source'); // clean up legacy single-source key
@@ -868,6 +880,7 @@ function loadState() {
   S.costs = safeJSON('costs', []);
   S.processedSaleIds = new Set(safeJSON('processed_ids', []));
   S.taxRate = parseFloat(localStorage.getItem('tax_rate') || '5') || 5;
+  S.fedTaxRate = parseFloat(localStorage.getItem('fed_tax_rate') || '12') || 12;
   S.businessName = localStorage.getItem('biz_name') || 'Pokemon Card Shop';
   // Chart series — array of enabled keys. Migrate from legacy 'chart_source'
   // (single-string: 'all'|'square'|'cash') if present, else use saved array.
@@ -1035,32 +1048,65 @@ function filteredCosts() { return S.costs.filter(c => inRange(c.date)); }
 // ============================================================
 // CALCULATIONS
 // ============================================================
+// A sale counts as "reported for taxes" unless explicitly flagged false.
+// Records imported before this flag existed (reported === undefined)
+// should be treated as reported by default — that's the conservative
+// choice and matches what most users would expect after the upgrade.
+function isReported(sale) { return sale && sale.reported !== false; }
+
+// IRS Schedule SE simplification used by the Overview tax tile:
+//   Net SE earnings = (reported net revenue − business expenses)
+//   SE tax          = max(0, Net SE × 0.9235 × 0.153)
+//   Federal income  = max(0, (Net SE − ½ SE tax) × S.fedTaxRate)
+// This is a back-of-the-envelope ballpark, not a filing-grade calc —
+// it ignores SS wage caps, QBI deduction, state income tax, and the
+// real progressive bracket. Good enough for "how much should I set
+// aside?" planning. State tax + brackets can come later if needed.
 function calcTotals() {
-  const sq = filteredSqSales();
+  const sq   = filteredSqSales();
   const cash = filteredCashSales();
   const costs = filteredCosts();
 
   const sqGross  = sq.reduce((s, x) => s + (x.gross || 0), 0);
-  const sqFees  = sq.reduce((s, x) => s + (x.fee  || 0), 0);
-  const sqTax  = sq.reduce((s, x) => s + (x.tax  || 0), 0);
+  const sqFees   = sq.reduce((s, x) => s + (x.fee   || 0), 0);
+  const sqTax    = sq.reduce((s, x) => s + (x.tax   || 0), 0);
   const cashGross = cash.reduce((s, x) => s + (x.amount || 0), 0);
-  const cashTax  = cash.reduce((s, x) => s + (x.tax  || 0), 0);
+  const cashTax   = cash.reduce((s, x) => s + (x.tax    || 0), 0);
   const totalGross = sqGross + cashGross;
   const totalFees  = sqFees;
-  const totalTax  = sqTax + cashTax;
+  const totalTax   = sqTax + cashTax;
   const totalCosts = costs.reduce((s, x) => s + (x.amount || 0), 0);
   const netProfit  = totalGross - totalFees - totalTax - totalCosts;
 
   // Net = what the merchant actually keeps. For Square sales: gross − fee − tax.
   // For cash sales (no card fees): amount − tax. Total just sums them.
-  const sqNet  = parseFloat((sqGross - sqFees - sqTax).toFixed(2));
+  const sqNet   = parseFloat((sqGross - sqFees - sqTax).toFixed(2));
   const cashNet = parseFloat((cashGross - cashTax).toFixed(2));
   const totalNet = parseFloat((sqNet + cashNet).toFixed(2));
+
+  // Reported vs unreported split, computed on net (what actually counts
+  // as taxable income — tax pass-through and processor fees stripped out).
+  const sumSqNet   = arr => arr.reduce((s, x) => s + ((x.gross || 0) - (x.fee || 0) - (x.tax || 0)), 0);
+  const sumCashNet = arr => arr.reduce((s, x) => s + ((x.amount || 0) - (x.tax || 0)), 0);
+  const reportedNet = parseFloat(
+    (sumSqNet(sq.filter(isReported)) + sumCashNet(cash.filter(isReported))).toFixed(2)
+  );
+  const unreportedNet = parseFloat((totalNet - reportedNet).toFixed(2));
+
+  // Estimated tax — only on what you report, minus expenses.
+  const taxable    = Math.max(0, reportedNet - totalCosts);
+  const seTax      = parseFloat((taxable * 0.9235 * 0.153).toFixed(2));
+  const fedTaxable = Math.max(0, taxable - seTax / 2);
+  const fedRate    = (S.fedTaxRate || 0) / 100;
+  const fedTax     = parseFloat((fedTaxable * fedRate).toFixed(2));
+  const estTax     = parseFloat((seTax + fedTax).toFixed(2));
 
   return {
   sqGross, sqFees, sqTax, sqNet, sqCount: sq.length,
   cashGross, cashTax, cashNet, cashCount: cash.length,
-  totalGross, totalFees, totalTax, totalNet, totalCosts, netProfit
+  totalGross, totalFees, totalTax, totalNet, totalCosts, netProfit,
+  reportedNet, unreportedNet,
+  taxable, seTax, fedTax, estTax
   };
 }
 
@@ -1122,13 +1168,19 @@ function renderOverview() {
 
   const totalTx = t.sqCount + t.cashCount;
   const invRetail = S.inventory.reduce((sum, i) => sum + (i.sellPrice || 0) * (i.qty || 0), 0);
+  const taxSub = 'SE ' + fmtMoney(t.seTax) + ' · Fed ' + fmtMoney(t.fedTax)
+  + ' @ ' + (S.fedTaxRate || 0).toFixed(0) + '%';
   const metrics = [
   { label: 'Total Revenue',  value: fmtMoney(t.totalNet),   cls: 'green', sub: totalTx + ' transactions' },
   { label: 'Square Sales',   value: fmtMoney(t.sqNet),      cls: 'green', sub: t.sqCount + ' transactions' },
   { label: 'Cash / Other Sales', value: fmtMoney(t.cashNet), cls: 'green', sub: t.cashCount + ' entries' },
+  { label: 'Reported Revenue', value: fmtMoney(t.reportedNet), cls: 'green', sub: 'after fees & sales tax' },
+  { label: 'Unreported Revenue', value: fmtMoney(t.unreportedNet), cls: 'muted', muted: true,
+    sub: t.unreportedNet > 0 ? 'excluded from tax estimate' : 'none flagged off' },
   { label: 'Square Processing Fees', value: fmtMoney(t.sqFees),  cls: 'red' },
   { label: 'WI Tax Collected', value: fmtMoney(t.totalTax),  cls: 'red' },
   { label: 'Business Expenses', value: fmtMoney(t.totalCosts), cls: 'red' },
+  { label: 'Est. Income Tax', value: fmtMoney(t.estTax), cls: 'red', sub: taxSub },
   { label: 'Net Profit',     value: fmtMoney(t.netProfit),  cls: t.netProfit >= 0 ? 'green' : 'red' },
   { label: 'Inventory Retail Value', value: fmtMoney(invRetail), cls: 'green', sub: S.inventory.reduce((s,i) => s + (i.qty||0), 0) + ' units in stock' }
   ];
@@ -1136,7 +1188,7 @@ function renderOverview() {
   const grid = document.getElementById('overview-metrics');
   if (grid) {
   grid.innerHTML = metrics.map(m => `
-  <div class="metric-card">
+  <div class="metric-card${m.muted ? ' metric-card-muted' : ''}">
   <div class="metric-label">${esc(m.label)}</div>
   <div class="metric-value ${m.cls || ''}">${m.value}</div>
   ${m.sub ? '<div class="metric-sub">' + esc(m.sub) + '</div>' : ''}
@@ -1572,7 +1624,8 @@ function renderAllSalesTable() {
   tax:  s.tax || 0,
   net:  s.net || 0,
   note:  '',
-  paymentMethod: s.paymentMethod || 'Card'
+  paymentMethod: s.paymentMethod || 'Card',
+  reported: isReported(s)
   }));
   const cashSales = filteredCashSales().map(s => ({
   _src: 'cash', _id: s.id,
@@ -1583,7 +1636,8 @@ function renderAllSalesTable() {
   feeEst: false,
   tax:  s.tax || 0,
   net:  (s.amount || 0) - (s.tax || 0),
-  note:  s.notes || ''
+  note:  s.notes || '',
+  reported: isReported(s)
   }));
 
   const allUnfiltered = [...sqSales, ...cashSales].sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -1650,6 +1704,8 @@ function renderAllSalesTable() {
   ? '<span class="tag tag-amber">Square · Cash</span>'
   : '<span class="tag tag-blue">Square · Card</span>')
   : '<span class="tag tag-green">Cash</span>';
+  const unreportedTag = s.reported ? '' :
+  ' <span class="tag" title="Excluded from Reported Revenue and the tax estimate" style="font-size:9px;padding:1px 6px;background:transparent;color:var(--text3);border:1px dashed var(--border)">unreported</span>';
   const feeCell = s._src === 'square'
   ? fmtMoney(s.fee) + (s.feeEst ? '<span title="Estimated" style="color:var(--text3);font-size:10px;margin-left:3px">est</span>' : '')
   : '<span style="color:var(--text3)">—</span>';
@@ -1664,7 +1720,7 @@ function renderAllSalesTable() {
   '<td class="right red">' + feeCell + '</td>' +
   '<td class="right">' + fmtMoney(s.tax) + '</td>' +
   '<td class="right">' + fmtMoney(s.net) + '</td>' +
-  '<td>' + srcTag + '</td>' +
+  '<td>' + srcTag + unreportedTag + '</td>' +
   '<td>' + editBtn + '</td>' +
   '</tr>';
   }).join('') +
@@ -2279,6 +2335,9 @@ function buildCashForm(d) {
   // "Apply tax" is on by default. CHECKED = back-calculate tax from amount.
   // Edit form: CHECKED unless taxCharged was explicitly set to false.
   const applyTax = d ? d.taxCharged !== false : true;
+  // "Reported for taxes" defaults on; only off if the user explicitly
+  // unchecked it on a prior edit (d.reported === false).
+  const reported = d ? d.reported !== false : true;
   return `
 <div id="form-err" class="alert alert-error" style="display:none"></div>
 <div class="form-grid">
@@ -2312,6 +2371,13 @@ function buildCashForm(d) {
   <label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
   <input type="checkbox" id="cf-apply-tax" ${applyTax ? 'checked' : ''} onchange="updateCashNetDisplay()" style="width:16px;height:16px;cursor:pointer" />
   <span>Apply ${S.taxRate}% sales tax</span>
+  </label>
+</div>
+<div class="form-row" style="margin-top:4px">
+  <label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
+  <input type="checkbox" id="cf-reported" ${reported ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer" />
+  <span>Reported for taxes</span>
+  <span class="text-muted" style="font-size:11px">(off = excluded from the Reported Revenue / income tax tiles)</span>
   </label>
 </div>
 <div class="form-row">
@@ -2417,6 +2483,9 @@ function saveCashSale(editId) {
   // Default true: if checkbox doesn't exist (shouldn't happen), tax is applied.
   const applyTaxEl = document.getElementById('cf-apply-tax');
   const taxCharged = applyTaxEl ? applyTaxEl.checked : true;
+  // Reported-for-taxes: default true if the checkbox is missing.
+  const reportedEl = document.getElementById('cf-reported');
+  const reported = reportedEl ? reportedEl.checked : true;
   if (!date)  { showFormErr('Date is required.'); return; }
   if (!cat)  { showFormErr('Description is required.'); return; }
   if (amtRaw === null || amtRaw <= 0) { showFormErr('Enter a valid sale amount.'); return; }
@@ -2432,13 +2501,13 @@ function saveCashSale(editId) {
   // Move/save as Square sale
   if (editId) S.cashSales = S.cashSales.filter(x => x.id !== editId);
   const fee = parseFloat((amtRaw * 0.026 + 0.15).toFixed(2));
-  S.squareSales.push({ id: editId || genId(), date: dateISO, description: cat, gross: amtRaw, fee, tax, net: parseFloat((amtRaw - fee - tax).toFixed(2)), feeEstimated: true, items: [{ name: cat, qty: 1, price: amtRaw }], status: 'COMPLETED', source: 'manual' });
+  S.squareSales.push({ id: editId || genId(), date: dateISO, description: cat, gross: amtRaw, fee, tax, net: parseFloat((amtRaw - fee - tax).toFixed(2)), feeEstimated: true, items: [{ name: cat, qty: 1, price: amtRaw }], status: 'COMPLETED', source: 'manual', reported });
   } else {
   if (editId) {
   const idx = S.cashSales.findIndex(x => x.id === editId);
-  if (idx >= 0) S.cashSales[idx] = { ...S.cashSales[idx], date: dateISO, category: cat, amount: amtRaw, tax, taxCharged, notes: v('cf-notes') };
+  if (idx >= 0) S.cashSales[idx] = { ...S.cashSales[idx], date: dateISO, category: cat, amount: amtRaw, tax, taxCharged, notes: v('cf-notes'), reported };
   } else {
-  S.cashSales.push({ id: genId(), date: dateISO, category: cat, amount: amtRaw, tax, taxCharged, notes: v('cf-notes') });
+  S.cashSales.push({ id: genId(), date: dateISO, category: cat, amount: amtRaw, tax, taxCharged, notes: v('cf-notes'), reported });
   const inv = S.inventory.find(i => i.name && i.name.toLowerCase().trim() === cat.toLowerCase().trim());
   if (inv) inv.qty = Math.max(0, (inv.qty || 0) - 1);
   }
@@ -2579,11 +2648,22 @@ function toggleSettings(e) {
   panel.classList.toggle('open');
   const taxEl = document.getElementById('global-tax-rate');
   if (taxEl) taxEl.value = S.taxRate;
+  const fedEl = document.getElementById('global-fed-tax-rate');
+  if (fedEl) fedEl.value = S.fedTaxRate;
 }
 
 function updateTaxRate(val) {
   const r = parseFloat(val);
   if (!isNaN(r) && r >= 0 && r <= 30) { S.taxRate = r; saveState(); }
+}
+
+function updateFedTaxRate(val) {
+  const r = parseFloat(val);
+  if (!isNaN(r) && r >= 0 && r <= 50) {
+  S.fedTaxRate = r;
+  saveState();
+  if (S.tab === 'overview') renderOverview();
+  }
 }
 
 function clearAllData() {
@@ -2802,7 +2882,8 @@ function importSquareCSV(event) {
   id, date: dateISO, dateStr: dateISO.slice(0, 10),
   gross, fee, tax, net,
   feeEstimated: false,
-  items, status: 'COMPLETED', paymentMethod
+  items, status: 'COMPLETED', paymentMethod,
+  reported: true // Square sales are always reported by default
   });
   imported++;
   });
@@ -3248,7 +3329,8 @@ function _importPasteSquare(rows) {
   items: parseSqItemDesc(descC ? r[descC] : '', gross),
   category: catC ? r[catC] : 'Sales',
   source: 'paste',
-  status: 'COMPLETED'
+  status: 'COMPLETED',
+  reported: true
   });
   added++;
   });
@@ -3284,7 +3366,8 @@ function _importPasteCash(rows) {
   amount,
   category,
   notes,
-  source: 'paste'
+  source: 'paste',
+  reported: true
   });
   added++;
   });
@@ -3397,6 +3480,7 @@ function buildSqSaleEditForm(s) {
   const tax  = s ? s.tax  : 0;
   const net  = s ? s.net  : '';
   const pmMethod = s?.paymentMethod || 'Card';
+  const reported = s ? s.reported !== false : true; // default ON (Square sales always report)
   return `
 <div id="form-err" class="alert alert-error" style="display:none"></div>
 <div class="form-grid">
@@ -3443,6 +3527,13 @@ function buildSqSaleEditForm(s) {
   <input type="number" id="sq-edit-net" value="${net}" placeholder="0.00" step="0.01" readonly style="opacity:0.6;cursor:not-allowed" />
   </div>
 </div>
+<div class="form-row" style="margin-top:6px">
+  <label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
+  <input type="checkbox" id="sq-edit-reported" ${reported ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer" />
+  <span>Reported for taxes</span>
+  <span class="text-muted" style="font-size:11px">(off = excluded from the Reported Revenue / income tax tiles)</span>
+  </label>
+</div>
 <p class="text-muted mt8" style="font-size:11px">Changing Source will move this record to the correct category. Fee is ignored for Cash sales.</p>`;
 }
 
@@ -3462,6 +3553,8 @@ function saveSqSaleEdit(id) {
   const gross = parseFloat(document.getElementById('sq-edit-gross')?.value || 0);
   const fee  = parseFloat(document.getElementById('sq-edit-fee')?.value  || 0);
   const tax  = parseFloat(document.getElementById('sq-edit-tax')?.value  || 0);
+  const reportedEl = document.getElementById('sq-edit-reported');
+  const reported = reportedEl ? reportedEl.checked : true;
   if (!date)  { showFormErr('Date is required.'); return; }
   if (!gross) { showFormErr('Amount is required.'); return; }
   const net  = parseFloat((gross - fee - tax).toFixed(2));
@@ -3470,10 +3563,10 @@ function saveSqSaleEdit(id) {
   if (src === 'cash') {
   // Move/save as cash sale
   if (id) S.squareSales = S.squareSales.filter(x => x.id !== id);
-  S.cashSales.push({ id: id || genId(), date: dateISO, category: desc || 'Sale', amount: gross, tax, notes: '', source: 'manual' });
+  S.cashSales.push({ id: id || genId(), date: dateISO, category: desc || 'Sale', amount: gross, tax, notes: '', source: 'manual', reported });
   } else {
   // Save as square sale
-  const newRec = { id: id || genId(), date: dateISO, description: desc, gross, fee, tax, net, feeEstimated: false, items: desc ? [{ name: desc, qty: 1, price: gross }] : [], status: 'COMPLETED', source: 'manual', paymentMethod: pm };
+  const newRec = { id: id || genId(), date: dateISO, description: desc, gross, fee, tax, net, feeEstimated: false, items: desc ? [{ name: desc, qty: 1, price: gross }] : [], status: 'COMPLETED', source: 'manual', paymentMethod: pm, reported };
   if (id) {
   const idx = S.squareSales.findIndex(x => x.id === id);
   if (idx >= 0) S.squareSales[idx] = newRec; else S.squareSales.push(newRec);
