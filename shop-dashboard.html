@@ -1175,6 +1175,12 @@ function renderOverview() {
 
   const totalTx = t.sqCount + t.cashCount;
   const invRetail = S.inventory.reduce((sum, i) => sum + (i.sellPrice || 0) * (i.qty || 0), 0);
+  // Profit-incl-inventory: how the business looks if you mark unsold
+  // stock at retail. Adds the retail value of inventory still on hand
+  // to the net profit baseline so what you've already paid for but
+  // haven't sold doesn't drag the number down to "loss" territory.
+  // Formula: Total Revenue + Inventory Retail Value − Business Expenses.
+  const profitWithInv = parseFloat((t.totalNet + invRetail - t.totalCosts).toFixed(2));
   const taxSub = 'SE ' + fmtMoney(t.seTax) + ' · Fed ' + fmtMoney(t.fedTax)
   + ' @ ' + (S.fedTaxRate || 0).toFixed(0) + '%';
   const metrics = [
@@ -1189,6 +1195,8 @@ function renderOverview() {
   { label: 'Business Expenses', value: fmtMoney(t.totalCosts), cls: 'red' },
   { label: 'Est. Income Tax', value: fmtMoney(t.estTax), cls: 'red', sub: taxSub },
   { label: 'Net Profit',     value: fmtMoney(t.netProfit),  cls: t.netProfit >= 0 ? 'green' : 'red' },
+  { label: 'Profit + Inventory', value: fmtMoney(profitWithInv), cls: profitWithInv >= 0 ? 'green' : 'red',
+    sub: 'revenue + stock retail − expenses' },
   { label: 'Inventory Retail Value', value: fmtMoney(invRetail), cls: 'green', sub: S.inventory.reduce((s,i) => s + (i.qty||0), 0) + ' units in stock' }
   ];
 
