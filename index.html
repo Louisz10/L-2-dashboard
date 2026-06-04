@@ -454,6 +454,7 @@ input[type=checkbox].row-cb{width:16px;height:16px;accent-color:var(--accent);cu
   <div class="setup-box">
   <h1>Pokemon Card Shop Dashboard</h1>
   <p class="subtitle">Track your card shop revenue, inventory, and costs. Import Square sales via CSV, log cash sales manually, and export PDF reports.</p>
+  <div id="setup-first-run">
   <div class="setup-step">
   <div class="setup-num">1</div>
   <p>Enter your business name below — used on PDF reports.</p>
@@ -467,12 +468,18 @@ input[type=checkbox].row-cb{width:16px;height:16px;accent-color:var(--accent);cu
   <p>Log cash sales manually in the <strong>Sales</strong> tab. All data is saved in your browser.</p>
   </div>
   <hr class="divider">
+  </div>
   <div class="form-row">
   <label class="field-label">Business Name</label>
-  <input type="text" id="setup-biz-name" placeholder="Pokemon Card Shop" style="margin-bottom:10px" />
-  <div class="flex-gap" style="margin-top:12px">
-  <button class="btn btn-primary" onclick="finishSetup()">Get Started</button>
+  <input type="text" id="setup-biz-name" placeholder="Pokemon Card Shop" style="margin-bottom:10px" onkeydown="if(event.key==='Enter') finishSetup()" />
   </div>
+  <div class="form-row">
+  <label class="field-label">Password</label>
+  <input type="password" id="setup-password" placeholder="Enter password to continue" style="margin-bottom:6px" onkeydown="if(event.key==='Enter') finishSetup()" />
+  <div id="setup-error" class="alert alert-error" style="display:none;margin-top:6px"></div>
+  </div>
+  <div class="flex-gap" style="margin-top:12px">
+  <button class="btn btn-primary" onclick="finishSetup()">Continue</button>
   </div>
   </div>
 </div>
@@ -2752,9 +2759,24 @@ function importData(event) {
 // ============================================================
 // SETUP SCREEN HANDLERS
 // ============================================================
+// Client-side gate password. This is NOT real security — anyone with the
+// page source can read it. It's a "keep casual visitors out" lock, not
+// a vault. If real auth is ever needed, do it server-side.
+const APP_PASSWORD = 'louisisthegoat';
+
 function finishSetup() {
+  const passEl = document.getElementById('setup-password');
+  const errEl  = document.getElementById('setup-error');
+  const pass   = passEl?.value || '';
+  if (pass !== APP_PASSWORD) {
+  if (errEl) { errEl.textContent = 'Wrong password.'; errEl.style.display = 'flex'; }
+  if (passEl) { passEl.value = ''; passEl.focus(); }
+  return;
+  }
+  if (errEl) errEl.style.display = 'none';
   const name = document.getElementById('setup-biz-name')?.value?.trim();
   if (name) { S.businessName = name; saveState(); }
+  localStorage.setItem('app_launched', '1');
   showApp();
 }
 
@@ -3716,11 +3738,19 @@ window.addEventListener('resize', () => {
 // ============================================================
 function init() {
   loadState();
-  if (localStorage.getItem('app_launched')) {
-  showApp();
-  } else {
+  // The welcome screen is also the password gate — show it every load.
+  // First-run instructions hide once a business name has been saved, so
+  // returning users just see the password field.
   showSetup();
+  const firstRunBlock = document.getElementById('setup-first-run');
+  const bizInput      = document.getElementById('setup-biz-name');
+  const returning     = localStorage.getItem('app_launched') === '1' && S.businessName;
+  if (returning) {
+  if (firstRunBlock) firstRunBlock.style.display = 'none';
+  if (bizInput) bizInput.value = S.businessName;
   }
+  // Focus the password field so the user can just type immediately.
+  setTimeout(() => { document.getElementById('setup-password')?.focus(); }, 0);
 }
 
 init();
