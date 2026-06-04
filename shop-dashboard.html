@@ -2772,6 +2772,17 @@ function importData(event) {
 // a vault. If real auth is ever needed, do it server-side.
 const APP_PASSWORD = '101805';
 
+// After a successful login the password is mirrored into localStorage
+// under 'auth_token'. On future loads we compare the stored value to
+// the current APP_PASSWORD — if they match, the gate is skipped. If
+// you change APP_PASSWORD in the source the stored token no longer
+// matches and the user is forced to re-enter. Clearing site data /
+// cookies also wipes the token, so this behaves exactly like a
+// "remember me" cookie would.
+function isAuthenticated() {
+  return localStorage.getItem('auth_token') === APP_PASSWORD;
+}
+
 function finishSetup() {
   const passEl = document.getElementById('setup-password');
   const errEl  = document.getElementById('setup-error');
@@ -2785,6 +2796,7 @@ function finishSetup() {
   const name = document.getElementById('setup-biz-name')?.value?.trim();
   if (name) { S.businessName = name; saveState(); }
   localStorage.setItem('app_launched', '1');
+  localStorage.setItem('auth_token', APP_PASSWORD);
   showApp();
 }
 
@@ -3746,9 +3758,16 @@ window.addEventListener('resize', () => {
 // ============================================================
 function init() {
   loadState();
-  // The welcome screen is also the password gate — show it every load.
-  // First-run instructions hide once a business name has been saved, so
-  // returning users just see the password field.
+  // Skip the gate entirely if the stored auth token matches the current
+  // password — this is the "remember me" path. A password change in
+  // source (or clearing site data) invalidates the token automatically.
+  if (localStorage.getItem('app_launched') === '1' && isAuthenticated()) {
+  showApp();
+  return;
+  }
+  // Otherwise show the welcome / password gate. First-run instructions
+  // hide once a business name has been saved, so returning users
+  // (or users who hit a password change) just see the password field.
   showSetup();
   const firstRunBlock = document.getElementById('setup-first-run');
   const bizInput      = document.getElementById('setup-biz-name');
