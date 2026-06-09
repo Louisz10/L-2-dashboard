@@ -1286,10 +1286,14 @@ function calcTotals() {
   // matches receipts; both reduce taxable income in the estimate below.
   const totalMiles = mileage.reduce((s, m) => s + (m.miles || 0), 0);
   const mileageDeduction = parseFloat(mileage.reduce((s, m) => s + mileageDeductionOf(m), 0).toFixed(2));
-  // Cash-flow net profit: everything that left the bank including inventory
-  // purchases. Different from taxable income (computed below) which uses
-  // COGS instead of inventory purchases.
-  const netProfit  = totalGross - totalFees - totalTax - totalCosts - mileageDeduction;
+  // Net Profit — TAX BASIS. Unsold inventory purchases don't reduce this;
+  // only the cost of items actually sold (COGS) does. This is what
+  // Schedule C considers your net business income.
+  const netProfit = parseFloat((totalNet - expenseCosts - cogs - mileageDeduction).toFixed(2));
+  // Net Cash Flow — every dollar that left the bank during the period,
+  // including stock you bought but haven't sold yet. Useful for "did I
+  // come out ahead this period" sanity-checking, NOT for tax filing.
+  const netCash   = parseFloat((totalNet - totalCosts - mileageDeduction).toFixed(2));
 
   // Net = what the merchant actually keeps. For Square sales: gross − fee − tax.
   // For cash sales (no card fees): amount − tax. Total just sums them.
@@ -1319,7 +1323,7 @@ function calcTotals() {
   return {
   sqGross, sqFees, sqTax, sqNet, sqCount: sq.length,
   cashGross, cashTax, cashNet, cashCount: cash.length,
-  totalGross, totalFees, totalTax, totalNet, totalCosts, netProfit,
+  totalGross, totalFees, totalTax, totalNet, totalCosts, netProfit, netCash,
   expenseCosts, inventoryCosts,
   cogs, cogsBeg: cogsInfo.beg, cogsPurchases: cogsInfo.purchases,
   cogsPurchasesRaw: cogsInfo.purchasesRaw, cogsRatio: cogsInfo.ratio,
@@ -1390,9 +1394,10 @@ function renderOverview() {
   const totalTx = t.sqCount + t.cashCount;
   const invRetail   = parseFloat(S.inventory.reduce((s, i) => s + (i.sellPrice || 0) * (i.qty || 0), 0).toFixed(2));
   const invUnits    = S.inventory.reduce((s, i) => s + (i.qty || 0), 0);
-  // Profit + Inventory: business value if unsold stock is marked at retail.
-  // Formula: net revenue + retail value of remaining stock − all cash outflows.
-  const profitWithInv = parseFloat((t.totalNet + invRetail - t.totalCosts).toFixed(2));
+  // Profit + Inventory: tax-basis profit plus the retail value of remaining
+  // stock. Treats unsold inventory as a forward-looking asset rather than
+  // a sunk cost — useful for "what's the business worth right now?"
+  const profitWithInv = parseFloat((t.netProfit + invRetail).toFixed(2));
   const taxSub = 'SE ' + fmtMoney(t.seTax) + ' · Fed ' + fmtMoney(t.fedTax) + ' @ ' + (S.fedTaxRate || 0).toFixed(0) + '%';
 
   // Tiles are grouped top-to-bottom in a clear narrative:
@@ -1408,7 +1413,7 @@ function renderOverview() {
   metrics.push({ label: 'Total Revenue',   value: fmtMoney(t.totalNet),    cls: 'green',
     sub: totalTx + ' transaction' + (totalTx === 1 ? '' : 's') });
   metrics.push({ label: 'Net Profit',      value: fmtMoney(t.netProfit),   cls: t.netProfit >= 0 ? 'green' : 'red',
-    sub: 'cash-flow basis' });
+    sub: 'tax basis — unsold stock not counted' });
   metrics.push({ label: 'Est. Income Tax', value: fmtMoney(t.estTax),      cls: 'red', sub: taxSub });
 
   // 2 — Revenue breakdown (fees folded into Square Sales sub — no need for a separate tile)
@@ -1444,7 +1449,9 @@ function renderOverview() {
   metrics.push({ label: 'Inventory Retail Value', value: fmtMoney(invRetail), cls: 'green',
     sub: invUnits + ' unit' + (invUnits === 1 ? '' : 's') + ' in stock' });
   metrics.push({ label: 'Profit + Inventory',     value: fmtMoney(profitWithInv), cls: profitWithInv >= 0 ? 'green' : 'red',
-    sub: 'incl. ' + fmtMoney(invRetail) + ' stock at retail' });
+    sub: 'Net Profit + ' + fmtMoney(invRetail) + ' stock at retail' });
+  metrics.push({ label: 'Net Cash Flow',          value: fmtMoney(t.netCash),     cls: t.netCash >= 0 ? 'green' : 'red',
+    sub: 'every $ out incl. inventory buys' });
 
   // 6 — Pass-throughs
   metrics.push({ label: 'WI Tax Collected', value: fmtMoney(t.totalTax), cls: 'red',
@@ -2500,8 +2507,10 @@ function generateReport() {
   ${pRow('↳ Square Sales (' + t.sqCount + ' transactions)', fmtMoney(t.sqGross))}
   ${pRow('↳ Cash Sales (' + t.cashCount + ' entries)', fmtMoney(t.cashGross))}
   ${pRow('Less: Square Processing Fees', '(' + fmtMoney(t.sqFees) + ')', false, true)}
-  ${pRow('NET PROFIT', fmtMoney(t.netProfit), true, t.netProfit < 0)}
+  ${pRow('Net Profit (tax basis)', fmtMoney(t.netProfit), true, t.netProfit < 0)}
+  ${pRow('Net Cash Flow (incl. inventory buys)', fmtMoney(t.netCash), false, t.netCash < 0)}
 </table>
+<p style="font-size:9pt;color:#888;margin-top:6px">Net Profit excludes unsold inventory purchases per Schedule C; only items actually sold are deducted via COGS. Cash Flow is informational — what hit the bank.</p>
 
 <h2 style="font-size:13pt;border-bottom:1px solid #ccc;padding-bottom:5px;margin:24px 0 10px">2 — Wisconsin Tax Summary</h2>
 <table style="width:100%;border-collapse:collapse;font-size:10.5pt">
