@@ -398,6 +398,7 @@ hr.divider{border:none;border-top:2px dashed var(--border);margin:14px 0}
 
 /* ── COSTS TOTAL ── */
 .costs-total-bar{padding:14px 18px;border-bottom:2px dashed var(--border);text-align:right;background:var(--bg2)}
+.cv-btn.active-view{background:var(--accent);color:#1a0e3c;border-color:var(--accent);font-weight:700}
 
 /* ── PASTE TYPE BUTTONS ── */
 .paste-type-btn.active{background:var(--accent);border-color:var(--accent2);color:#000;box-shadow:3px 3px 0 #880e0e}
@@ -752,11 +753,20 @@ input[type=checkbox].row-cb{width:16px;height:16px;accent-color:var(--accent);cu
   <div class="tab-content" id="tab-costs">
   <div class="section">
   <div class="section-header">
-  <span class="section-title">Business Expenses</span>
-  <button class="btn btn-primary btn-sm" onclick="openModal('add-cost')">+ Add Expense</button>
+  <span class="section-title">Costs</span>
+  <div style="display:flex;gap:6px;flex-wrap:wrap">
+  <button class="btn btn-secondary btn-sm" onclick="openModal('add-cost','expense')">+ Expense</button>
+  <button class="btn btn-primary btn-sm" onclick="openModal('add-cost','inventory')">+ Inventory Purchase</button>
+  </div>
+  </div>
+  <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:10px 18px;border-bottom:2px dashed var(--border);font-size:12px">
+  <span class="text-muted" style="margin-right:4px">View:</span>
+  <button class="btn btn-secondary btn-sm cv-btn" data-view="all" onclick="setCostsView('all')">All</button>
+  <button class="btn btn-secondary btn-sm cv-btn" data-view="expense" onclick="setCostsView('expense')">Business Expenses</button>
+  <button class="btn btn-secondary btn-sm cv-btn" data-view="inventory" onclick="setCostsView('inventory')">Inventory Purchases</button>
   </div>
   <div class="filter-bar" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 18px;border-bottom:2px dashed var(--border)">
-  <input type="text" id="costs-search" placeholder="Search expense name or notes…" oninput="renderCosts()" style="flex:1;min-width:220px;padding:8px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" />
+  <input type="text" id="costs-search" placeholder="Search name or notes…" oninput="renderCosts()" style="flex:1;min-width:220px;padding:8px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" />
   <button class="btn btn-secondary btn-sm" onclick="clearCostsFilter()">Clear</button>
   </div>
   <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:8px 18px;border-bottom:2px dashed var(--border);font-size:12px">
@@ -965,6 +975,10 @@ function loadState() {
   S.inventory = safeJSON('inventory', []);
   S.singles = safeJSON('singles', []);
   S.costs = safeJSON('costs', []);
+  // Migration: type field added when we split inventory purchases out from
+  // regular deductible business expenses. Anything missing the field gets
+  // 'expense' (the historical default — what the bucket used to mean).
+  S.costs.forEach(c => { if (!c.type) c.type = 'expense'; });
   S.mileage = safeJSON('mileage', []);
   S.tripMilesByLocation = safeJSON('trip_miles_by_loc', {}) || {};
   S.homeAddress = localStorage.getItem('home_address') || '';
@@ -1145,6 +1159,48 @@ function notifyIfOutsidePeriod(dateISO, entryWord) {
 function filteredSqSales() { return S.squareSales.filter(s => inRange(s.date)); }
 function filteredCashSales() { return S.cashSales.filter(s => inRange(s.date)); }
 function filteredCosts() { return S.costs.filter(c => inRange(c.date)); }
+function filteredExpenseCosts()   { return filteredCosts().filter(c => c.type !== 'inventory'); }
+function filteredInventoryCosts() { return filteredCosts().filter(c => c.type === 'inventory'); }
+
+// Estimate Cost of Goods Sold for the active period by matching each sale's
+// item description against the inventory list and pulling the per-unit cost.
+// This is the deductible side of inventory accounting — purchases aren't
+// deductible until the items actually sell. Limitations (surfaced in the
+// Overview tile tooltip):
+//   • Only counts items whose name matches an inventory record exactly
+//     (case- and whitespace-insensitive).
+//   • Uses the inventory item's CURRENT cost, not the historical cost at
+//     time of sale, so replenishing at a different price will shift past
+//     COGS numbers. Good enough for a small-shop ballpark.
+function calcCogsForPeriod() {
+  const sq   = filteredSqSales();
+  const cash = filteredCashSales();
+  let cogs = 0, matched = 0, totalItems = 0;
+  const invByName = {};
+  for (const inv of S.inventory) {
+  if (inv && inv.name) invByName[inv.name.toLowerCase().trim()] = inv;
+  }
+  for (const sale of sq) {
+  for (const item of (sale.items || [])) {
+  const qty = item.qty || 1;
+  totalItems += qty;
+  const inv = invByName[(item.name || '').toLowerCase().trim()];
+  if (inv && typeof inv.cost === 'number' && inv.cost > 0) {
+  cogs += inv.cost * qty;
+  matched += qty;
+  }
+  }
+  }
+  for (const sale of cash) {
+  totalItems += 1;
+  const inv = invByName[(sale.category || '').toLowerCase().trim()];
+  if (inv && typeof inv.cost === 'number' && inv.cost > 0) {
+  cogs += inv.cost;
+  matched += 1;
+  }
+  }
+  return { cogs: parseFloat(cogs.toFixed(2)), matched, totalItems };
+}
 function filteredMileage() { return S.mileage.filter(m => inRange(m.date)); }
 // Per-entry rate falls back to current global rate for legacy rows missing `rate`.
 function mileageDeductionOf(m) {
@@ -1183,12 +1239,24 @@ function calcTotals() {
   const totalGross = sqGross + cashGross;
   const totalFees  = sqFees;
   const totalTax   = sqTax + cashTax;
-  const totalCosts = costs.reduce((s, x) => s + (x.amount || 0), 0);
+  // Split costs: deductible business expenses vs inventory purchases. Only
+  // expenses reduce taxable income directly; inventory purchases reduce
+  // taxable income via COGS when the items actually sell (Schedule C Part III).
+  const expenseCostsArr   = costs.filter(c => c.type !== 'inventory');
+  const inventoryCostsArr = costs.filter(c => c.type === 'inventory');
+  const expenseCosts   = parseFloat(expenseCostsArr.reduce((s, x) => s + (x.amount || 0), 0).toFixed(2));
+  const inventoryCosts = parseFloat(inventoryCostsArr.reduce((s, x) => s + (x.amount || 0), 0).toFixed(2));
+  const totalCosts = parseFloat((expenseCosts + inventoryCosts).toFixed(2)); // cash-flow view
+  const cogsInfo = calcCogsForPeriod();
+  const cogs = cogsInfo.cogs;
   // Mileage deduction is a separate IRS write-off (std. business mileage rate ×
-  // business miles). Kept distinct from `totalCosts` so the Costs tab still
+  // business miles). Kept distinct from costs so the Costs tab still
   // matches receipts; both reduce taxable income in the estimate below.
   const totalMiles = mileage.reduce((s, m) => s + (m.miles || 0), 0);
   const mileageDeduction = parseFloat(mileage.reduce((s, m) => s + mileageDeductionOf(m), 0).toFixed(2));
+  // Cash-flow net profit: everything that left the bank including inventory
+  // purchases. Different from taxable income (computed below) which uses
+  // COGS instead of inventory purchases.
   const netProfit  = totalGross - totalFees - totalTax - totalCosts - mileageDeduction;
 
   // Net = what the merchant actually keeps. For Square sales: gross − fee − tax.
@@ -1206,8 +1274,10 @@ function calcTotals() {
   );
   const unreportedNet = parseFloat((totalNet - reportedNet).toFixed(2));
 
-  // Estimated tax — only on what you report, minus expenses AND mileage deduction.
-  const taxable    = Math.max(0, reportedNet - totalCosts - mileageDeduction);
+  // Estimated tax — reported revenue minus deductible expenses, COGS, and mileage.
+  // Inventory PURCHASES don't reduce taxable income; only the cost of items
+  // actually sold (COGS) does. This matches Schedule C Part III treatment.
+  const taxable    = Math.max(0, reportedNet - expenseCosts - cogs - mileageDeduction);
   const seTax      = parseFloat((taxable * 0.9235 * 0.153).toFixed(2));
   const fedTaxable = Math.max(0, taxable - seTax / 2);
   const fedRate    = (S.fedTaxRate || 0) / 100;
@@ -1218,6 +1288,8 @@ function calcTotals() {
   sqGross, sqFees, sqTax, sqNet, sqCount: sq.length,
   cashGross, cashTax, cashNet, cashCount: cash.length,
   totalGross, totalFees, totalTax, totalNet, totalCosts, netProfit,
+  expenseCosts, inventoryCosts,
+  cogs, cogsMatched: cogsInfo.matched, cogsTotalItems: cogsInfo.totalItems,
   reportedNet, unreportedNet,
   totalMiles, mileageDeduction, mileageCount: mileage.length,
   taxable, seTax, fedTax, estTax
@@ -1300,7 +1372,14 @@ function renderOverview() {
     sub: t.unreportedNet > 0 ? 'excluded from tax estimate' : 'none flagged off' },
   { label: 'Square Processing Fees', value: fmtMoney(t.sqFees),  cls: 'red' },
   { label: 'WI Tax Collected', value: fmtMoney(t.totalTax),  cls: 'red' },
-  { label: 'Business Expenses', value: fmtMoney(t.totalCosts), cls: 'red' },
+  { label: 'Business Expenses', value: fmtMoney(t.expenseCosts), cls: 'red',
+    sub: 'deductible — table fees, gas, supplies, etc.' },
+  { label: 'Inventory Purchases', value: fmtMoney(t.inventoryCosts), cls: 'muted', muted: true,
+    sub: t.inventoryCosts > 0 ? 'not deductible until sold (see COGS)' : 'none logged' },
+  { label: 'Est. Cost of Goods Sold', value: fmtMoney(t.cogs), cls: 'red',
+    sub: t.cogsTotalItems > 0
+    ? t.cogsMatched + '/' + t.cogsTotalItems + ' items matched to inventory'
+    : 'no sales matched to inventory' },
   { label: 'Mileage Deduction', value: fmtMoney(t.mileageDeduction), cls: 'red',
     sub: t.totalMiles ? t.totalMiles.toFixed(1) + ' mi · ' + t.mileageCount + ' trip' + (t.mileageCount === 1 ? '' : 's') : 'no trips logged' },
   { label: 'Est. Income Tax', value: fmtMoney(t.estTax), cls: 'red', sub: taxSub },
@@ -1898,6 +1977,15 @@ function setCostsFilter(keyword) {
   renderCosts();
 }
 
+// View mode for the Costs tab: 'all' | 'expense' | 'inventory'. Held in
+// memory only — defaults to 'all' on each fresh load so users always
+// see everything by default.
+let _costsView = 'all';
+function setCostsView(view) {
+  _costsView = (view === 'expense' || view === 'inventory') ? view : 'all';
+  renderCosts();
+}
+
 function deleteSelectedAll() {
   const tbl = document.getElementById('all-tbl');
   if (!tbl) return;
@@ -2137,22 +2225,41 @@ function renderCosts() {
   const totEl = document.getElementById('costs-total-bar');
   if (!el) return;
 
-  const costsAll = filteredCosts().slice().reverse();
+  // Highlight the active view button
+  document.querySelectorAll('.cv-btn').forEach(b => {
+  b.classList.toggle('active-view', b.dataset.view === _costsView);
+  });
 
-  // Keyword filter: matches name + notes
+  // Pull costs through the view filter first, then the keyword filter
+  const inRangeAll = filteredCosts();
+  const viewed = _costsView === 'all'
+  ? inRangeAll
+  : inRangeAll.filter(c => (_costsView === 'inventory') ? c.type === 'inventory' : c.type !== 'inventory');
+  const costsAll = viewed.slice().reverse();
+
   const q = (document.getElementById('costs-search')?.value || '').toLowerCase().trim();
   const costs = q
   ? costsAll.filter(c => ((c.name || '') + ' ' + (c.notes || '')).toLowerCase().includes(q))
   : costsAll;
 
   if (!costs.length) {
+  const viewLabel = _costsView === 'inventory' ? 'inventory purchases'
+  : _costsView === 'expense' ? 'business expenses'
+  : 'costs';
   el.innerHTML = emptyHTML(
-  q ? 'No expenses match "' + q + '"' : 'No expenses logged',
-  q ? 'Try clearing the search or pick a different keyword.' : 'Click "+ Add Expense" to track business costs like table fees, gas, and supplies.'
+  q ? 'No ' + viewLabel + ' match "' + q + '"' : 'No ' + viewLabel + ' logged',
+  q ? 'Try clearing the search or pick a different keyword.'
+  : (_costsView === 'inventory'
+  ? 'Click "+ Inventory Purchase" to log a buy. Inventory cost flows to taxable income via Cost of Goods Sold when items sell — not when bought.'
+  : 'Click "+ Expense" to track deductibles like table fees, gas, shipping, and supplies.')
   );
   if (totEl) totEl.style.display = 'none';
   return;
   }
+
+  const typeBadge = (c) => c.type === 'inventory'
+  ? '<span class="tag tag-amber" style="font-size:9px;padding:1px 6px">INVENTORY</span>'
+  : '<span class="tag tag-blue" style="font-size:9px;padding:1px 6px">EXPENSE</span>';
 
   el.innerHTML =
   '<div class="bulk-bar" id="bulk-bar-costs">' +
@@ -2164,15 +2271,17 @@ function renderCosts() {
   '<thead><tr>' +
   '<th class="cb-col"><input type="checkbox" class="select-all-cb" onchange="toggleSelectAll(\'costs-tbl\',this,\'bulk-bar-costs\',\'bulk-count-costs\')" title="Select all"></th>' +
   '<th onclick="sortTable(\'costs-tbl\',1,\'date\')">Date</th>' +
-  '<th onclick="sortTable(\'costs-tbl\',2)">Name</th>' +
-  '<th onclick="sortTable(\'costs-tbl\',3,true)">Amount</th>' +
-  '<th onclick="sortTable(\'costs-tbl\',4)">Notes</th>' +
+  '<th onclick="sortTable(\'costs-tbl\',2)">Type</th>' +
+  '<th onclick="sortTable(\'costs-tbl\',3)">Name</th>' +
+  '<th onclick="sortTable(\'costs-tbl\',4,true)">Amount</th>' +
+  '<th onclick="sortTable(\'costs-tbl\',5)">Notes</th>' +
   '<th>Actions</th>' +
   '</tr></thead><tbody>' +
   costs.map(c =>
   '<tr>' +
   '<td class="cb-col"><input type="checkbox" class="row-cb" data-id="' + escA(c.id) + '" onchange="onRowCbChange(\'bulk-bar-costs\',\'bulk-count-costs\',\'costs-tbl\')"></td>' +
   '<td>' + fmtDate(c.date) + '</td>' +
+  '<td>' + typeBadge(c) + '</td>' +
   '<td>' + esc(c.name) + '</td>' +
   '<td class="right red">' + fmtMoney(c.amount) + '</td>' +
   '<td class="muted">' + esc(c.notes || '—') + '</td>' +
@@ -2183,12 +2292,21 @@ function renderCosts() {
   '</tr>'
   ).join('') + '</tbody></table></div>';
 
+  // Totals bar: when in mixed view, show a breakdown so the user can see
+  // both expense and inventory subtotals at a glance.
   const total = costs.reduce((s, c) => s + (c.amount || 0), 0);
+  const expSum = costs.filter(c => c.type !== 'inventory').reduce((s, c) => s + (c.amount || 0), 0);
+  const invSum = costs.filter(c => c.type === 'inventory').reduce((s, c) => s + (c.amount || 0), 0);
   if (totEl) {
   totEl.style.display = 'block';
-  const label = q ? 'Filtered Total (' + costs.length + ' of ' + costsAll.length + '): ' : 'Total Expenses: ';
-  totEl.innerHTML = '<span class="text-muted fw600">' + label + '</span>' +
+  const filterLbl = q ? 'Filtered (' + costs.length + ' of ' + viewed.length + ')' : 'Total';
+  let inner = '<span class="text-muted fw600">' + filterLbl + ': </span>' +
   '<span style="color:var(--red);font-size:16px;font-weight:700">' + fmtMoney(total) + '</span>';
+  if (_costsView === 'all' && (expSum > 0 && invSum > 0)) {
+  inner += ' <span class="text-muted" style="font-size:12px;margin-left:10px">' +
+  '(Expenses ' + fmtMoney(expSum) + ' · Inventory ' + fmtMoney(invSum) + ')</span>';
+  }
+  totEl.innerHTML = inner;
   }
 }
 
@@ -2398,9 +2516,11 @@ ${costs.length ? `
   </tr></thead>
   <tbody>
   ${costs.map((c,i) => `<tr${i%2?' style="background:#f9f9f9"':''}><td style="padding:5px 8px;border:1px solid #ddd">${fmtDate(c.date)}</td><td style="padding:5px 8px;border:1px solid #ddd">${esc(c.name)}</td><td style="padding:5px 8px;border:1px solid #ddd;text-align:right">${fmtMoney(c.amount)}</td><td style="padding:5px 8px;border:1px solid #ddd">${esc(c.notes||'—')}</td></tr>`).join('')}
-  <tr style="background:#f0f0f0;font-weight:bold"><td colspan="2" style="padding:6px 8px;border:1px solid #ddd">TOTAL EXPENSES</td><td style="padding:6px 8px;border:1px solid #ddd;text-align:right">${fmtMoney(t.totalCosts)}</td><td style="border:1px solid #ddd"></td></tr>
+  <tr style="background:#f0f0f0;font-weight:bold"><td colspan="2" style="padding:6px 8px;border:1px solid #ddd">TOTAL — DEDUCTIBLE EXPENSES</td><td style="padding:6px 8px;border:1px solid #ddd;text-align:right">${fmtMoney(t.expenseCosts)}</td><td style="border:1px solid #ddd"></td></tr>
+  <tr style="background:#f0f0f0;font-weight:bold"><td colspan="2" style="padding:6px 8px;border:1px solid #ddd">TOTAL — INVENTORY PURCHASES</td><td style="padding:6px 8px;border:1px solid #ddd;text-align:right">${fmtMoney(t.inventoryCosts)}</td><td style="border:1px solid #ddd"></td></tr>
   </tbody>
-</table>` : '<p style="color:#777;font-size:10pt">No expenses for this period.</p>'}
+</table>
+<p style="font-size:9pt;color:#888;margin-top:6px">Inventory purchases are not deductible until sold — see Cost of Goods Sold below.</p>` : '<p style="color:#777;font-size:10pt">No expenses for this period.</p>'}
 
 <h2 style="font-size:13pt;border-bottom:1px solid #ccc;padding-bottom:5px;margin:24px 0 10px">5b — Business Mileage</h2>
 ${mileage.length ? `
@@ -2431,15 +2551,20 @@ ${mileage.length ? `
 <p style="font-size:9pt;color:#888;margin-top:6px">Computed at IRS standard mileage rate. Per-entry rates are locked in at the time of logging.</p>
 ` : '<p style="color:#777;font-size:10pt">No business trips logged for this period.</p>'}
 
-<h2 style="font-size:13pt;border-bottom:1px solid #ccc;padding-bottom:5px;margin:24px 0 10px">6 — Net Profit Summary (P&amp;L)</h2>
-<table style="width:360px;border-collapse:collapse;font-size:11pt">
+<h2 style="font-size:13pt;border-bottom:1px solid #ccc;padding-bottom:5px;margin:24px 0 10px">6 — Tax-Basis P&amp;L (Estimated)</h2>
+<table style="width:420px;border-collapse:collapse;font-size:11pt">
   ${pRow('Gross Revenue',  fmtMoney(t.totalGross))}
   ${pRow('Less: Square Processing Fees', '(' + fmtMoney(t.sqFees)  + ')', false, true)}
   ${pRow('Less: Tax Collected (WI)',  '(' + fmtMoney(t.totalTax)  + ')', false, true)}
-  ${pRow('Less: Business Expenses',  '(' + fmtMoney(t.totalCosts) + ')', false, true)}
+  ${pRow('Less: Business Expenses',  '(' + fmtMoney(t.expenseCosts) + ')', false, true)}
+  ${pRow('Less: Cost of Goods Sold (est.)', '(' + fmtMoney(t.cogs) + ')', false, true)}
   ${pRow('Less: Mileage Deduction',  '(' + fmtMoney(t.mileageDeduction) + ')', false, true)}
-  ${pRow('NET PROFIT', fmtMoney(t.netProfit), true, t.netProfit < 0)}
+  ${pRow('ESTIMATED TAXABLE INCOME', fmtMoney(t.taxable), true, t.taxable < 0)}
 </table>
+<p style="font-size:9pt;color:#888;margin-top:6px">
+Inventory purchases this period: <strong>${fmtMoney(t.inventoryCosts)}</strong> (not deducted here — only sold inventory hits the P&amp;L via COGS).
+COGS is estimated from inventory item costs; matched ${t.cogsMatched}/${t.cogsTotalItems} sold items to inventory records.
+</p>
 
 <p style="color:#aaa;font-size:8.5pt;margin-top:36px;border-top:1px solid #eee;padding-top:8px">
   Generated by Pokemon Card Shop Dashboard on ${new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}.
@@ -2505,11 +2630,15 @@ function openModal(type, id) {
   break;
   }
 
-  case 'add-cost':
-  title.textContent = 'Add Business Expense';
-  body.innerHTML = buildCostForm();
-  footer.innerHTML = '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveCost()">Save Expense</button>';
+  case 'add-cost': {
+  // openModal('add-cost', 'inventory') pre-selects inventory type; default
+  // is expense. `id` carries the type for this code path only.
+  const presetType = (id === 'inventory') ? 'inventory' : 'expense';
+  title.textContent = presetType === 'inventory' ? 'Add Inventory Purchase' : 'Add Business Expense';
+  body.innerHTML = buildCostForm(null, presetType);
+  footer.innerHTML = '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveCost()">Save</button>';
   break;
+  }
 
   case 'add-sq-sale':
   title.textContent = '+ Add Square Transaction';
@@ -2681,10 +2810,31 @@ function buildInvForm(d) {
 </div>`;
 }
 
-function buildCostForm(d) {
+function buildCostForm(d, presetType) {
   const dateVal = d ? (d.date || '').slice(0,10) : todayISO();
+  const type = d ? (d.type === 'inventory' ? 'inventory' : 'expense')
+  : (presetType === 'inventory' ? 'inventory' : 'expense');
   return `
 <div id="form-err" class="alert alert-error" style="display:none"></div>
+<div class="form-row">
+  <label class="field-label">Type *</label>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+  <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:8px 12px;background:var(--bg2);border:2px solid var(--border);border-radius:8px;flex:1;min-width:160px">
+  <input type="radio" name="cost-type" value="expense" ${type === 'expense' ? 'checked' : ''} />
+  <div>
+  <div style="font-weight:700;font-size:13px">Business Expense</div>
+  <div class="text-muted" style="font-size:11px">Deductible now — table fees, gas, supplies</div>
+  </div>
+  </label>
+  <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:8px 12px;background:var(--bg2);border:2px solid var(--border);border-radius:8px;flex:1;min-width:160px">
+  <input type="radio" name="cost-type" value="inventory" ${type === 'inventory' ? 'checked' : ''} />
+  <div>
+  <div style="font-weight:700;font-size:13px">Inventory Purchase</div>
+  <div class="text-muted" style="font-size:11px">Deductible only when sold (via COGS)</div>
+  </div>
+  </label>
+  </div>
+</div>
 <div class="form-grid">
   <div class="form-row">
   <label class="field-label">Date *</label>
@@ -2696,12 +2846,12 @@ function buildCostForm(d) {
   </div>
 </div>
 <div class="form-row">
-  <label class="field-label">Expense Name * (e.g. Table fee — Chicago show)</label>
-  <input type="text" id="cost-name" value="${escA(d?.name||'')}" placeholder="e.g. Table fee at Wisconsin Dells show" />
+  <label class="field-label">Name * (e.g. Table fee — Chicago show, or "Sealed box buy — Surging Sparks")</label>
+  <input type="text" id="cost-name" value="${escA(d?.name||'')}" placeholder="Short description of the cost" />
 </div>
 <div class="form-row">
   <label class="field-label">Notes</label>
-  <input type="text" id="cost-notes" value="${escA(d?.notes||'')}" placeholder="Optional details" />
+  <input type="text" id="cost-notes" value="${escA(d?.notes||'')}" placeholder="Optional details — vendor, receipt #, etc." />
 </div>`;
 }
 
@@ -2799,19 +2949,21 @@ function saveInvItem(editId) {
 function saveCost(editId) {
   const dateRaw = v('cost-date'), name = v('cost-name'), amtRaw = vn('cost-amt');
   if (!dateRaw) { showFormErr('Date is required.'); return; }
-  if (!name) { showFormErr('Expense name is required.'); return; }
+  if (!name) { showFormErr('Name is required.'); return; }
   if (amtRaw === null || amtRaw <= 0) { showFormErr('Enter a valid amount.'); return; }
 
   const date = dateRaw + 'T12:00:00Z';
+  const typeRadio = document.querySelector('input[name="cost-type"]:checked');
+  const type = typeRadio && typeRadio.value === 'inventory' ? 'inventory' : 'expense';
 
   if (editId) {
   const idx = S.costs.findIndex(x => x.id === editId);
-  if (idx >= 0) S.costs[idx] = { ...S.costs[idx], date, name, amount: amtRaw, notes: v('cost-notes') };
+  if (idx >= 0) S.costs[idx] = { ...S.costs[idx], date, name, amount: amtRaw, notes: v('cost-notes'), type };
   } else {
-  S.costs.push({ id: genId(), date, name, amount: amtRaw, notes: v('cost-notes') });
+  S.costs.push({ id: genId(), date, name, amount: amtRaw, notes: v('cost-notes'), type });
   }
   saveState(); closeModal(); renderCosts();
-  notifyIfOutsidePeriod(date, 'expense');
+  notifyIfOutsidePeriod(date, type === 'inventory' ? 'inventory purchase' : 'expense');
 }
 
 // ============================================================
@@ -4417,6 +4569,7 @@ function _importPasteCosts(rows) {
   amount,
   name,
   notes,
+  type: 'expense', // paste import defaults to expense — user can re-tag in the Costs tab
   source: 'paste'
   });
   added++;
