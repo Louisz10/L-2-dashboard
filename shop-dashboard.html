@@ -849,33 +849,27 @@ input[type=checkbox].row-cb{width:16px;height:16px;accent-color:var(--accent);cu
   </div>
 </div>
 
-<!-- ICS (CALENDAR) IMPORT MODAL -->
+<!-- CALENDAR EVENT PASTE MODAL -->
 <div class="modal-overlay" id="ics-modal-overlay" onclick="closeIcsModalIfOutside(event)">
   <div class="modal" style="max-width:820px">
   <div class="modal-header">
-  <h3>Import Trips from Apple Calendar (.ics)</h3>
+  <h3>Paste Calendar Event</h3>
   <button class="btn btn-secondary btn-sm btn-icon" onclick="closeIcsModal()">✕</button>
   </div>
   <div class="modal-body">
 
   <div class="alert alert-info" style="margin-bottom:14px;font-size:12px;line-height:1.7">
-  <strong>How to grab an .ics file:</strong><br>
-  • <strong>Single event:</strong> drag it from Apple Calendar onto your Desktop — that creates a <code>.ics</code> file<br>
-  • <strong>Whole calendar:</strong> Calendar → File → Export → Export…<br>
-  • Then upload below, or paste the file contents
+  In Apple Calendar, click an event and press <strong>⌘C</strong>, then paste below. The format looks like:<br>
+  <code style="display:block;background:var(--bg);padding:8px;border-radius:6px;margin-top:6px;font-size:11px;line-height:1.5;color:var(--text2)">Break Time Card Show<br>Scheduled: May 23, 2026 at 9:00 AM to 4:00 PM, CDT<br>Location: Mccook Athletic Exposition Center<br>4750 S Vernon Ave, McCook, IL 60525, United States</code>
+  Round-trip mileage from your <strong>Home Address</strong> (Settings) is auto-calculated.
   </div>
 
   <div class="form-row">
-  <label class="field-label">Upload .ics file</label>
-  <input type="file" id="ics-file" accept=".ics,text/calendar" onchange="onIcsFileChosen(event)" />
+  <label class="field-label">Paste calendar event here</label>
+  <textarea id="ics-textarea" rows="7" placeholder="Paste the copied event (⌘V) here…" style="font-family:inherit;font-size:13px;resize:vertical"></textarea>
   </div>
 
-  <div class="form-row">
-  <label class="field-label">…or paste .ics text directly</label>
-  <textarea id="ics-textarea" rows="6" placeholder="BEGIN:VCALENDAR&#10;BEGIN:VEVENT&#10;…" style="font-family:monospace;font-size:12px;resize:vertical"></textarea>
-  </div>
-
-  <button class="btn btn-primary" onclick="previewIcsImport()" style="margin-bottom:16px">Preview Events</button>
+  <button class="btn btn-primary" onclick="previewIcsImport()" style="margin-bottom:16px">Preview & Calculate Mileage</button>
 
   <div id="ics-preview" style="display:none">
   <hr class="divider">
@@ -2970,15 +2964,119 @@ function closeIcsModalIfOutside(e) {
   if (e.target === document.getElementById('ics-modal-overlay')) closeIcsModal();
 }
 
-function onIcsFileChosen(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = (ev) => {
-  const ta = document.getElementById('ics-textarea');
-  if (ta) ta.value = ev.target.result;
+// Parses the human-readable text you get when you copy an event in Apple
+// Calendar (⌘C). Example block:
+//   Break Time Card Show
+//   Scheduled: May 23, 2026 at 9:00 AM to 4:00 PM, CDT
+//   Location: Mccook Athletic Exposition Center
+//   4750 S Vernon Ave, McCook, IL 60525, United States
+//
+// Strategy: first non-prefixed line = title; "Scheduled:" line yields the
+// date; "Location:" plus any non-blank lines that follow build the address.
+// Falls back to the .ics parser if the text looks like raw iCalendar data.
+function parseCalendarText(text) {
+  if (!text) return [];
+  if (/BEGIN:VEVENT/i.test(text)) return parseIcs(text); // legacy / paste-from-.ics path
+  return parsePastedAppleEvents(text);
+}
+
+function parsePastedAppleEvents(text) {
+  // Split on blank lines into one block per event. Apple Calendar single-event
+  // copy = one block; if anyone manually concatenates several events with a
+  // blank line between, each becomes its own row.
+  const blocks = text.replace(/\r\n/g, '\n').split(/\n\s*\n/).map(b => b.trim()).filter(Boolean);
+  const events = [];
+  for (const block of blocks) {
+  const ev = _parseOneAppleBlock(block);
+  if (ev) events.push(ev);
+  }
+  return events;
+}
+
+function _parseOneAppleBlock(block) {
+  const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
+  if (!lines.length) return null;
+  // Metadata prefixes Apple commonly produces. The ones we care about are
+  // Scheduled and Location; the rest are noise we want to skip without
+  // accidentally treating them as the title.
+  const KNOWN_PREFIX = /^(scheduled|location|invitees|attendees|repeats|alert|alarm|url|notes|note|calendar|account|status)\s*:/i;
+  let title = '';
+  let date  = '';
+  const locLines = [];
+  let inLocation = false;
+  for (const line of lines) {
+  if (/^scheduled\s*:/i.test(line)) {
+  inLocation = false;
+  const ymd = _parseAppleSchedDate(line);
+  if (ymd) date = ymd;
+  continue;
+  }
+  if (/^location\s*:/i.test(line)) {
+  inLocation = true;
+  const rest = line.replace(/^location\s*:\s*/i, '').trim();
+  if (rest) locLines.push(rest);
+  continue;
+  }
+  if (KNOWN_PREFIX.test(line)) {
+  inLocation = false;
+  continue;
+  }
+  if (inLocation) {
+  locLines.push(line);
+  continue;
+  }
+  if (!title) {
+  title = line;
+  }
+  // Stray extra lines past the title (and not in a Location: block) get
+  // ignored — they're usually invitee names, status text, etc.
+  }
+  if (!date) return null;
+  return {
+  date,
+  summary: title || '(no title)',
+  location: locLines.join(', ').trim(),
+  description: '',
+  uid: ''
   };
-  reader.readAsText(file);
+}
+
+// Extract YYYY-MM-DD from lines like:
+//   "Scheduled: May 23, 2026 at 9:00 AM to 4:00 PM, CDT"
+//   "Scheduled: 5/23/2026"
+//   "Scheduled: Sep 8, 2025"
+function _parseAppleSchedDate(line) {
+  const txt = line.replace(/^scheduled\s*:\s*/i, '').trim();
+  // Month-name form: "May 23, 2026" / "Sept 8, 2025" / "Friday, May 23, 2026"
+  const m = txt.match(/(jan|feb|mar|apr|may|jun|jul|aug|sept|sep|oct|nov|dec)[a-z.]*\s+(\d{1,2}),?\s*(\d{4})/i);
+  if (m) {
+  const months = {jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,sept:8,oct:9,nov:10,dec:11};
+  const mo = months[m[1].slice(0,3).toLowerCase()] !== undefined
+  ? months[m[1].slice(0,3).toLowerCase()]
+  : months[m[1].toLowerCase()];
+  if (mo === undefined) return null;
+  const day = parseInt(m[2], 10);
+  const year = parseInt(m[3], 10);
+  if (!day || !year) return null;
+  return year + '-' + String(mo+1).padStart(2,'0') + '-' + String(day).padStart(2,'0');
+  }
+  // Numeric form: "5/23/2026" or "5/23/26"
+  const ms = txt.match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+  if (ms) {
+  const mo  = parseInt(ms[1], 10);
+  const day = parseInt(ms[2], 10);
+  let   year = parseInt(ms[3], 10);
+  if (year < 100) year += 2000;
+  if (!mo || !day || !year) return null;
+  return year + '-' + String(mo).padStart(2,'0') + '-' + String(day).padStart(2,'0');
+  }
+  // Last-ditch: hand a clean prefix to Date.parse
+  const clean = txt.split(/\s+(at|to)\s+/i)[0];
+  const d = new Date(clean);
+  if (!isNaN(d)) {
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  }
+  return null;
 }
 
 // Decode RFC 5545 escaped chars: \n \, \; \\
@@ -3049,9 +3147,9 @@ function parseIcs(text) {
 
 function previewIcsImport() {
   const text = document.getElementById('ics-textarea')?.value || '';
-  const events = parseIcs(text);
+  const events = parseCalendarText(text);
   if (!events.length) {
-  alert('No events found. Upload an .ics file or paste valid .ics text and try again.');
+  alert('Could not read any events. Make sure you copied an event from Apple Calendar (⌘C) and pasted the whole block — including the "Scheduled:" line.');
   return;
   }
   // Date asc so the preview reads chronologically
@@ -3112,6 +3210,22 @@ function previewIcsImport() {
   `;
   document.getElementById('ics-preview').style.display = 'block';
   document.getElementById('ics-confirm-btn').disabled = false;
+
+  // Auto-calculate round-trip mileage for any event that has a location
+  // and doesn't already have a remembered mileage from a previous import.
+  // calcRoundTripFromHome already multiplies one-way driving distance ×2.
+  // (hasAnyLoc was already computed above for the "Calc All" button.)
+  if (hasAnyLoc && S.homeAddress && S.homeAddress.trim()) {
+  // Fire-and-forget; UI updates as each row resolves.
+  calcAllIcsRows();
+  } else if (hasAnyLoc && (!S.homeAddress || !S.homeAddress.trim())) {
+  // No home address means we can't auto-calc. Surface that inline.
+  const note = document.createElement('div');
+  note.className = 'alert alert-info';
+  note.style.cssText = 'margin-top:10px;font-size:12px';
+  note.innerHTML = '⚠️ Set your <strong>Home Address</strong> in Settings to auto-calculate mileage.';
+  document.getElementById('ics-preview-content').appendChild(note);
+  }
 }
 
 function toggleAllIcsRows(master) {
