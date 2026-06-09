@@ -1395,10 +1395,6 @@ function renderOverview() {
   const totalTx = t.sqCount + t.cashCount;
   const invRetail   = parseFloat(S.inventory.reduce((s, i) => s + (i.sellPrice || 0) * (i.qty || 0), 0).toFixed(2));
   const invUnits    = S.inventory.reduce((s, i) => s + (i.qty || 0), 0);
-  // Profit + Inventory: tax-basis profit plus the retail value of remaining
-  // stock. Treats unsold inventory as a forward-looking asset rather than
-  // a sunk cost — useful for "what's the business worth right now?"
-  const profitWithInv = parseFloat((t.netProfit + invRetail).toFixed(2));
   const taxSub = 'SE ' + fmtMoney(t.seTax) + ' · Fed ' + fmtMoney(t.fedTax) + ' @ ' + (S.fedTaxRate || 0).toFixed(0) + '%';
 
   // Tiles are grouped top-to-bottom in a clear narrative:
@@ -1449,8 +1445,6 @@ function renderOverview() {
   }
   metrics.push({ label: 'Inventory Retail Value', value: fmtMoney(invRetail), cls: 'green',
     sub: invUnits + ' unit' + (invUnits === 1 ? '' : 's') + ' in stock' });
-  metrics.push({ label: 'Profit + Inventory',     value: fmtMoney(profitWithInv), cls: profitWithInv >= 0 ? 'green' : 'red',
-    sub: 'Net Profit + ' + fmtMoney(invRetail) + ' stock at retail' });
   metrics.push({ label: 'Net Cash Flow',          value: fmtMoney(t.netCash),     cls: t.netCash >= 0 ? 'green' : 'red',
     sub: 'every $ out incl. inventory buys' });
 
