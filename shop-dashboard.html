@@ -349,7 +349,7 @@ canvas{display:block}
   border:3px solid var(--border);
   border-radius:18px;
   padding:8px;
-  width:240px;
+  width:280px;
   z-index:150;
   display:none;
   box-shadow:6px 6px 0 #000000;
@@ -524,6 +524,11 @@ input[type=checkbox].row-cb{width:16px;height:16px;accent-color:var(--accent);cu
   <input type="number" id="global-mileage-rate" style="width:65px;text-align:right;-webkit-appearance:textfield;-moz-appearance:textfield;appearance:textfield" step="0.001" min="0" max="5" onchange="updateMileageRate(this.value)" />
   <span class="text-muted">/mi</span>
   </div>
+  </div>
+  <div class="settings-item" style="flex-direction:column;align-items:stretch;gap:6px" title="Starting point for auto-calculated mileage. Stored locally in this browser only.">
+  <span>Home / Shop Address</span>
+  <input type="text" id="global-home-address" placeholder="e.g. 123 Main St, Madison, WI 53703" style="padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:12px;width:100%;box-sizing:border-box" onchange="updateHomeAddress(this.value)" />
+  <span class="text-muted" style="font-size:10px;line-height:1.4">Used by the 🧭 button in mileage forms. Geocoding via OpenStreetMap; routes via OSRM. Results cached locally.</span>
   </div>
   <div class="settings-item">
   <button class="link" onclick="exportData()" style="color:var(--green)">⬇ Export Backup (.json)</button>
@@ -914,6 +919,9 @@ const S = {
   costs: [],
   mileage: [], // { id, date, miles, purpose, notes, rate } — rate locked in at save time
   tripMilesByLocation: {}, // { "1234 main st, madison wi": 145.6 } — remembered round-trip miles per location, populated by .ics imports
+  homeAddress: '', // user's home/shop address, used as the origin for auto-calc'd mileage
+  geocodeCache: {}, // { addrLower: [lon, lat] } — caches Nominatim lookups so we don't re-hit the API
+  routeMilesCache: {}, // { "fromLower|||toLower": oneWayMiles } — caches OSRM driving distance lookups
   processedSaleIds: new Set(), // IDs already auto-deducted
   period: 'all',
   customStart: '',
@@ -937,6 +945,9 @@ function saveState() {
   localStorage.setItem('costs', JSON.stringify(S.costs));
   localStorage.setItem('mileage', JSON.stringify(S.mileage));
   localStorage.setItem('trip_miles_by_loc', JSON.stringify(S.tripMilesByLocation || {}));
+  localStorage.setItem('home_address', S.homeAddress || '');
+  localStorage.setItem('geocode_cache', JSON.stringify(S.geocodeCache || {}));
+  localStorage.setItem('route_miles_cache', JSON.stringify(S.routeMilesCache || {}));
   localStorage.setItem('processed_ids', JSON.stringify([...S.processedSaleIds]));
   localStorage.setItem('tax_rate', String(S.taxRate));
   localStorage.setItem('fed_tax_rate', String(S.fedTaxRate));
@@ -962,6 +973,9 @@ function loadState() {
   S.costs = safeJSON('costs', []);
   S.mileage = safeJSON('mileage', []);
   S.tripMilesByLocation = safeJSON('trip_miles_by_loc', {}) || {};
+  S.homeAddress = localStorage.getItem('home_address') || '';
+  S.geocodeCache = safeJSON('geocode_cache', {}) || {};
+  S.routeMilesCache = safeJSON('route_miles_cache', {}) || {};
   S.processedSaleIds = new Set(safeJSON('processed_ids', []));
   S.taxRate = parseFloat(localStorage.getItem('tax_rate') || '5') || 5;
   S.fedTaxRate = parseFloat(localStorage.getItem('fed_tax_rate') || '12') || 12;
@@ -2850,7 +2864,10 @@ function buildMileageForm(d) {
   </div>
   <div class="form-row">
   <label class="field-label">Miles *</label>
-  <input type="number" id="mile-miles" value="${d ? d.miles : ''}" placeholder="e.g. 42.6" step="0.1" min="0" oninput="updateMileageDedDisplay()" />
+  <div style="display:flex;gap:6px;align-items:stretch">
+  <input type="number" id="mile-miles" value="${d ? d.miles : ''}" placeholder="e.g. 42.6" step="0.1" min="0" oninput="updateMileageDedDisplay()" style="flex:1;min-width:0" />
+  <button type="button" id="mile-calc-btn" class="btn btn-secondary btn-sm" onclick="calcMilesFromTripForm()" title="Auto-calculate round-trip from your home address (set in Settings) to the address in Notes" style="padding:6px 10px;white-space:nowrap">🧭 Calc</button>
+  </div>
   </div>
 </div>
 <div class="form-row">
@@ -2868,8 +2885,8 @@ function buildMileageForm(d) {
   </div>
 </div>
 <div class="form-row">
-  <label class="field-label">Notes</label>
-  <input type="text" id="mile-notes" value="${escA(d?.notes||'')}" placeholder="Optional — start/end location, odometer, etc." />
+  <label class="field-label">Notes / Destination Address</label>
+  <input type="text" id="mile-notes" value="${escA(d?.notes||'')}" placeholder="e.g. 123 Main St, Madison WI — used by 🧭 Calc to auto-fill miles" />
 </div>`;
 }
 
@@ -3049,13 +3066,19 @@ function previewIcsImport() {
   // obvious business trips. Rows with blank miles default unchecked so
   // a calendar full of personal events doesn't get imported wholesale.
   const checked = remembered ? 'checked' : '';
+  const hasLoc  = !!ev.location;
   return `
   <tr>
   <td><input type="checkbox" class="ics-row-cb" data-i="${i}" ${checked}></td>
   <td style="white-space:nowrap">${fmtDate(ev.date + 'T12:00:00Z')}</td>
   <td>${esc(ev.summary)}</td>
   <td class="muted">${esc(ev.location || '—')}</td>
-  <td><input type="number" class="ics-miles-input" data-i="${i}" value="${remembered}" step="0.1" min="0" placeholder="0.0" style="width:80px;text-align:right;padding:4px 6px;background:var(--bg2);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:12px" oninput="onIcsMilesEdited(${i})" /></td>
+  <td>
+  <div style="display:flex;gap:4px;align-items:center;justify-content:flex-end">
+  <input type="number" class="ics-miles-input" data-i="${i}" value="${remembered}" step="0.1" min="0" placeholder="0.0" style="width:70px;text-align:right;padding:4px 6px;background:var(--bg2);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:12px" oninput="onIcsMilesEdited(${i})" />
+  ${hasLoc ? `<button type="button" class="btn btn-secondary btn-sm ics-calc-btn" data-i="${i}" onclick="calcIcsRowMiles(${i})" title="Auto-calculate round-trip miles from your home address" style="padding:3px 6px;font-size:11px">🧭</button>` : ''}
+  </div>
+  </td>
   </tr>`;
   }).join('');
 
@@ -3064,12 +3087,16 @@ function previewIcsImport() {
   return k && locMap[k];
   }).length;
 
+  const hasAnyLoc = events.some(ev => !!ev.location);
   document.getElementById('ics-preview-content').innerHTML = `
-  <p style="font-size:12px;color:var(--text2);margin-bottom:8px">
+  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
+  <p style="font-size:12px;color:var(--text2);margin:0;flex:1;min-width:240px">
   Found <strong>${events.length}</strong> event${events.length === 1 ? '' : 's'}.
   ${remembered ? remembered + ' had a remembered mileage from previous imports (pre-checked). ' : ''}
-  Check the events you want to import and set the round-trip miles. Miles are remembered per location for next time.
+  Click 🧭 to auto-calculate miles, or type them manually.
   </p>
+  ${hasAnyLoc ? '<button type="button" class="btn btn-secondary btn-sm" id="ics-calc-all-btn" onclick="calcAllIcsRows()" title="Geocode every event with a location and fill its miles. Skips rows that already have miles.">🧭 Calc All Miles</button>' : ''}
+  </div>
   <div style="overflow-x:auto">
   <table class="paste-preview-table">
   <thead><tr>
@@ -3077,7 +3104,7 @@ function previewIcsImport() {
   <th>Date</th>
   <th>Purpose</th>
   <th>Location</th>
-  <th>Miles</th>
+  <th style="text-align:right">Miles</th>
   </tr></thead>
   <tbody>${rowsHtml}</tbody>
   </table>
@@ -3142,6 +3169,175 @@ function confirmIcsImport() {
 }
 
 // ============================================================
+// MILEAGE AUTO-CALC (geocoding + routing)
+// ============================================================
+// Uses two free, no-key public services:
+//   • Nominatim (OpenStreetMap) for address → lat/lon
+//   • OSRM demo server for lat/lon pair → driving distance
+// Both are CORS-enabled for browser use, both are rate-limited (~1 req/sec
+// nominatim, no firm cap on OSRM demo but "don't abuse"). For a personal
+// dashboard that's plenty. Results are cached in S.geocodeCache and
+// S.routeMilesCache so repeated lookups are free.
+//
+// Nominatim asks the User-Agent identify the app. Browsers won't let JS
+// override UA, so the Referer header (sent automatically) identifies the
+// page origin. For this volume of use that's acceptable.
+
+async function geocodeAddress(addr) {
+  if (!addr) throw new Error('Address is empty.');
+  const key = addr.toLowerCase().trim();
+  S.geocodeCache = S.geocodeCache || {};
+  if (S.geocodeCache[key]) return S.geocodeCache[key]; // [lon, lat]
+  const url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(addr);
+  const r = await fetch(url, { headers: { 'Accept': 'application/json' } });
+  if (!r.ok) throw new Error('Geocoding service returned ' + r.status);
+  const json = await r.json();
+  if (!Array.isArray(json) || !json.length) throw new Error('Address not found: "' + addr + '"');
+  const lon = parseFloat(json[0].lon);
+  const lat = parseFloat(json[0].lat);
+  if (isNaN(lon) || isNaN(lat)) throw new Error('Bad geocode response for: ' + addr);
+  S.geocodeCache[key] = [lon, lat];
+  saveState();
+  return [lon, lat];
+}
+
+async function routeMilesOneWay(fromLonLat, toLonLat) {
+  const url = 'https://router.project-osrm.org/route/v1/driving/'
+  + fromLonLat[0] + ',' + fromLonLat[1] + ';'
+  + toLonLat[0]   + ',' + toLonLat[1]
+  + '?overview=false';
+  const r = await fetch(url);
+  if (!r.ok) throw new Error('Routing service returned ' + r.status);
+  const json = await r.json();
+  if (json.code !== 'Ok' || !json.routes || !json.routes.length) {
+  throw new Error('No driving route found between those points.');
+  }
+  // OSRM returns meters → miles
+  const miles = json.routes[0].distance / 1609.344;
+  return parseFloat(miles.toFixed(2));
+}
+
+// Returns round-trip miles (home → dest → home), cached by address pair.
+async function calcRoundTripFromHome(destAddr) {
+  if (!S.homeAddress || !S.homeAddress.trim()) {
+  throw new Error('Set your Home Address in Settings (gear icon) first.');
+  }
+  if (!destAddr || !destAddr.trim()) {
+  throw new Error('Enter a destination address.');
+  }
+  const fromKey = S.homeAddress.toLowerCase().trim();
+  const toKey   = destAddr.toLowerCase().trim();
+  const cacheKey = fromKey + '|||' + toKey;
+  S.routeMilesCache = S.routeMilesCache || {};
+  let oneWay = S.routeMilesCache[cacheKey];
+  if (typeof oneWay !== 'number') {
+  const from = await geocodeAddress(S.homeAddress);
+  const to   = await geocodeAddress(destAddr);
+  oneWay = await routeMilesOneWay(from, to);
+  S.routeMilesCache[cacheKey] = oneWay;
+  saveState();
+  }
+  return parseFloat((oneWay * 2).toFixed(2));
+}
+
+// Wrapper that flips a button's text to a loading state while the
+// async lookup runs and restores it after — used by both the trip
+// form and the .ics preview row buttons.
+async function _withCalcButton(btn, fn) {
+  if (!btn) return await fn();
+  const orig = btn.innerHTML;
+  btn.innerHTML = '⌛';
+  btn.disabled = true;
+  try {
+  return await fn();
+  } finally {
+  btn.innerHTML = orig;
+  btn.disabled = false;
+  }
+}
+
+// Handler wired to the 🧭 button inside buildMileageForm. Reads the
+// notes field as the destination address.
+async function calcMilesFromTripForm() {
+  const btn  = document.getElementById('mile-calc-btn');
+  const notesEl = document.getElementById('mile-notes');
+  const milesEl = document.getElementById('mile-miles');
+  const errEl   = document.getElementById('form-err');
+  if (errEl) errEl.style.display = 'none';
+  const dest = (notesEl?.value || '').trim();
+  if (!dest) {
+  if (errEl) { errEl.textContent = 'Type the destination address into the Notes field first.'; errEl.style.display = 'flex'; }
+  return;
+  }
+  try {
+  await _withCalcButton(btn, async () => {
+  const miles = await calcRoundTripFromHome(dest);
+  if (milesEl) {
+  milesEl.value = miles;
+  updateMileageDedDisplay();
+  }
+  });
+  } catch (e) {
+  if (errEl) { errEl.textContent = 'Auto-calc failed: ' + e.message; errEl.style.display = 'flex'; }
+  }
+}
+
+// Per-row 🧭 in the .ics preview table. Reads the event's location and
+// fills that row's miles input.
+async function calcIcsRowMiles(i) {
+  const btn   = document.querySelector(`.ics-calc-btn[data-i="${i}"]`);
+  const milesEl = document.querySelector(`.ics-miles-input[data-i="${i}"]`);
+  const cbEl  = document.querySelector(`.ics-row-cb[data-i="${i}"]`);
+  const ev = _icsParsedEvents[i];
+  if (!ev || !ev.location) {
+  alert('This event has no location to geocode.');
+  return;
+  }
+  try {
+  await _withCalcButton(btn, async () => {
+  const miles = await calcRoundTripFromHome(ev.location);
+  if (milesEl) milesEl.value = miles;
+  if (cbEl)    cbEl.checked  = true;
+  });
+  } catch (e) {
+  alert('Auto-calc failed: ' + e.message);
+  }
+}
+
+// "Calc all" header button on the preview table. Sequential (with a small
+// pause) to be polite to Nominatim's rate limit.
+async function calcAllIcsRows() {
+  const btn = document.getElementById('ics-calc-all-btn');
+  if (!_icsParsedEvents.length) return;
+  if (!S.homeAddress || !S.homeAddress.trim()) {
+  alert('Set your Home Address in Settings (gear icon) first.');
+  return;
+  }
+  await _withCalcButton(btn, async () => {
+  for (let i = 0; i < _icsParsedEvents.length; i++) {
+  const ev = _icsParsedEvents[i];
+  if (!ev.location) continue;
+  const milesEl = document.querySelector(`.ics-miles-input[data-i="${i}"]`);
+  const cbEl    = document.querySelector(`.ics-row-cb[data-i="${i}"]`);
+  // Skip rows that already have miles — preserves remembered or
+  // user-typed values.
+  if (milesEl && parseFloat(milesEl.value) > 0) continue;
+  try {
+  const miles = await calcRoundTripFromHome(ev.location);
+  if (milesEl) milesEl.value = miles;
+  if (cbEl)    cbEl.checked  = true;
+  } catch (e) {
+  // Don't abort the batch on one bad address — just keep going.
+  console.warn('Skipped row ' + i + ': ' + e.message);
+  }
+  // Polite pause between API hits (cached lookups skip the actual fetch
+  // so the sleep is wasted there; cheap insurance for the uncached case).
+  await new Promise(r => setTimeout(r, 1100));
+  }
+  });
+}
+
+// ============================================================
 // TABLE SORT
 // ============================================================
 function sortTable(tableId, col, mode) {
@@ -3200,6 +3396,19 @@ function toggleSettings(e) {
   if (fedEl) fedEl.value = S.fedTaxRate;
   const milEl = document.getElementById('global-mileage-rate');
   if (milEl) milEl.value = (S.mileageRate || 0).toFixed(3);
+  const homeEl = document.getElementById('global-home-address');
+  if (homeEl) homeEl.value = S.homeAddress || '';
+}
+
+function updateHomeAddress(val) {
+  const newAddr = (val || '').trim();
+  // Invalidate route cache if the home address changed — those cached miles
+  // were measured from the old address and would lie about the new one.
+  if (newAddr !== (S.homeAddress || '').trim()) {
+  S.routeMilesCache = {};
+  }
+  S.homeAddress = newAddr;
+  saveState();
 }
 
 function updateTaxRate(val) {
@@ -3256,6 +3465,9 @@ function exportData() {
   costs: S.costs,
   mileage: S.mileage,
   tripMilesByLocation: S.tripMilesByLocation || {},
+  homeAddress: S.homeAddress || '',
+  geocodeCache: S.geocodeCache || {},
+  routeMilesCache: S.routeMilesCache || {},
   processedSaleIds: [...S.processedSaleIds]
   };
 
@@ -3304,6 +3516,9 @@ function importData(event) {
   S.costs  = backup.costs  || [];
   S.mileage  = backup.mileage  || [];
   S.tripMilesByLocation = backup.tripMilesByLocation || S.tripMilesByLocation || {};
+  S.homeAddress = backup.homeAddress ?? S.homeAddress ?? '';
+  S.geocodeCache = backup.geocodeCache || S.geocodeCache || {};
+  S.routeMilesCache = backup.routeMilesCache || S.routeMilesCache || {};
   S.processedSaleIds = new Set(backup.processedSaleIds || []);
   saveState();
   refreshCurrentTab();
