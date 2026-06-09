@@ -533,6 +533,13 @@ input[type=checkbox].row-cb{width:16px;height:16px;accent-color:var(--accent);cu
   <input type="number" id="global-begin-inv" style="width:80px;text-align:right;-webkit-appearance:textfield;-moz-appearance:textfield;appearance:textfield" step="0.01" min="0" onchange="updateBeginningInv(this.value)" />
   </div>
   </div>
+  <div class="settings-item" style="gap:8px" title="Your typical buy price as a percentage of sell price. Used to estimate the cost basis of current inventory (Ending Inventory in the COGS formula). 80% = you buy at 80¢ on the dollar.">
+  <span>Inventory Cost %</span>
+  <div class="flex-gap" style="gap:4px">
+  <input type="number" id="global-inv-cost-ratio" style="width:60px;text-align:right;-webkit-appearance:textfield;-moz-appearance:textfield;appearance:textfield" step="1" min="1" max="100" onchange="updateInvCostRatio(this.value)" />
+  <span class="text-muted">% of sell</span>
+  </div>
+  </div>
   <div class="settings-item" style="gap:8px" title="Your average cost as a percentage of retail. 80% means you pay 80¢ per $1 of sell price. Applied to inventory purchases AND to inventory items where the per-unit cost is blank (falls back to sellPrice × this ratio). Set to 100% if you log at actual cost.">
   <span>Cost Ratio (vs retail)</span>
   <div class="flex-gap" style="gap:4px">
@@ -931,7 +938,7 @@ const S = {
   fedTaxRate: 12.0, // federal income-tax bracket used in the tax-estimate tile
   mileageRate: 0.725, // IRS standard business mileage rate — default for new entries
   beginningInventoryValue: 0, // cost basis of inventory at the start of the tax year, used in the COGS formula
-  inventoryCostRatio: 0.80, // user's avg cost as a % of sell price (e.g. 0.80 = pays 80¢ per $1 of retail). Applies to both inventory purchases and to the ending-inventory fallback when an item has no explicit per-unit cost.
+  inventoryCostRatio: 0.80, // user's avg cost as a fraction of sell price. Used to estimate Ending Inventory at cost basis as (ratio × retail value). Does NOT apply to logged purchase amounts — those are recorded at cost already.
   squareSales: [],
   cashSales: [],
   inventory: [],
@@ -1010,7 +1017,7 @@ function loadState() {
   const biv = parseFloat(localStorage.getItem('begin_inv_value'));
   S.beginningInventoryValue = (!isNaN(biv) && biv >= 0) ? biv : 0;
   const icr = parseFloat(localStorage.getItem('inv_cost_ratio'));
-  S.inventoryCostRatio = (!isNaN(icr) && icr > 0 && icr <= 2) ? icr : 0.80;
+  S.inventoryCostRatio = (!isNaN(icr) && icr > 0 && icr <= 1) ? icr : 0.80;
   // One-shot migration: the very first default was 0.70. Bump anyone still
   // sitting on that exact value up to the new 0.725 default. Anyone who
   // deliberately customized their rate (any other value) is left alone.
@@ -1198,38 +1205,31 @@ function currentInventoryCostBasis() {
   );
 }
 
-// Cost of Goods Sold via Schedule C Part III formula with the user's
-// configured Cost Ratio applied to Purchases:
+// Cost of Goods Sold via Schedule C Part III:
 //
-//   COGS = Beginning Inventory + (Purchases × ratio) − Ending Inventory
+//   COGS = Beginning Inventory + Purchases − Ending Inventory
 //
-// The ratio (S.inventoryCostRatio, default 0.80) is the user's average
-// cost as a fraction of retail. Setting it to 1.00 disables the markdown
-// (use when purchase entries already record what you actually paid).
-//
-// Beginning Inventory comes from Settings — cost basis at start of the
-// tax year. Purchases is the sum of inventory-typed cost entries in the
-// active filter period. Ending Inventory is the live cost basis of items
-// currently in stock (with the same ratio fallback for items lacking
-// an explicit per-unit cost).
+// Beginning: from Settings (cost basis at start of the tax year).
+// Purchases: sum of inventory-typed cost entries in the active period —
+//   these are what the user actually paid, so they're already at cost
+//   basis; the cost ratio is NOT applied here.
+// Ending: currentInventoryCostBasis(), which falls back to
+//   (S.inventoryCostRatio × retail) for items lacking an explicit cost.
 function calcCogsForPeriod(inventoryCosts) {
-  const ratio = S.inventoryCostRatio || 0.80;
   const beg = S.beginningInventoryValue || 0;
   const end = currentInventoryCostBasis();
-  const purchasesRaw = inventoryCosts || 0;
-  const purchases = parseFloat((purchasesRaw * ratio).toFixed(2));
+  const purchases = parseFloat((inventoryCosts || 0).toFixed(2));
   const raw = beg + purchases - end;
-  // Clamp negative to zero — a negative number means your ending
-  // inventory grew by more than you bought, which usually points to
-  // mis-entered cost basis. Either way, no COGS deduction.
+  // Clamp negative to zero — a negative result usually means your ending
+  // inventory grew by more than (beginning + purchases), which points to
+  // a stale beginning balance or under-logged purchases.
   const cogs = Math.max(0, raw);
   return {
   cogs: parseFloat(cogs.toFixed(2)),
   beg: parseFloat(beg.toFixed(2)),
-  purchasesRaw: parseFloat(purchasesRaw.toFixed(2)),
   purchases,
   end,
-  ratio,
+  ratio: S.inventoryCostRatio || 0.80,
   raw: parseFloat(raw.toFixed(2))
   };
 }
@@ -1335,8 +1335,7 @@ function calcTotals() {
   totalGross, totalFees, totalTax, totalNet, totalCosts, netProfit, netCash,
   expenseCosts, inventoryCosts,
   cogs, cogsBeg: cogsInfo.beg, cogsPurchases: cogsInfo.purchases,
-  cogsPurchasesRaw: cogsInfo.purchasesRaw, cogsRatio: cogsInfo.ratio,
-  cogsEnd: cogsInfo.end, cogsRaw: cogsInfo.raw,
+  cogsRatio: cogsInfo.ratio, cogsEnd: cogsInfo.end, cogsRaw: cogsInfo.raw,
   reportedNet, unreportedNet, reportedNetProfit,
   totalMiles, mileageDeduction, mileageCount: mileage.length,
   taxable, seTax, fedTax, estTax
@@ -1441,10 +1440,8 @@ function renderOverview() {
   metrics.push({ label: 'Business Expenses',      value: fmtMoney(t.expenseCosts), cls: 'red',
     sub: 'tables, gas, supplies — deductible now' });
   metrics.push({ label: 'Est. Cost of Goods Sold', value: fmtMoney(t.cogs),       cls: 'red',
-    sub: 'Beg ' + fmtMoney(t.cogsBeg)
-    + ' + Buys ' + fmtMoney(t.cogsPurchasesRaw)
-    + (t.cogsRatio !== 1 ? '×' + Math.round(t.cogsRatio * 100) + '%' : '')
-    + ' − End ' + fmtMoney(t.cogsEnd) });
+    sub: 'Beg ' + fmtMoney(t.cogsBeg) + ' + Buys ' + fmtMoney(t.cogsPurchases)
+    + ' − End ' + fmtMoney(t.cogsEnd) + ' (' + Math.round(t.cogsRatio * 100) + '% of retail)' });
   metrics.push({ label: 'Mileage Deduction',       value: fmtMoney(t.mileageDeduction), cls: 'red',
     sub: t.totalMiles ? t.totalMiles.toFixed(1) + ' mi · ' + t.mileageCount + ' trip' + (t.mileageCount === 1 ? '' : 's') : 'no trips logged' });
 
@@ -2638,7 +2635,7 @@ ${mileage.length ? `
 </table>
 <p style="font-size:9pt;color:#888;margin-top:6px">
 Inventory purchases this period: <strong>${fmtMoney(t.inventoryCosts)}</strong> (not deducted here — only sold inventory hits the P&amp;L via COGS).<br>
-COGS formula: Beginning Inventory (${fmtMoney(t.cogsBeg)}) + Purchases ${t.cogsRatio !== 1 ? '(' + fmtMoney(t.cogsPurchasesRaw) + ' × ' + Math.round(t.cogsRatio * 100) + '% = ' + fmtMoney(t.cogsPurchases) + ')' : fmtMoney(t.cogsPurchases)} − Ending Inventory (${fmtMoney(t.cogsEnd)}) = ${fmtMoney(t.cogs)}.
+COGS formula: Beginning Inventory (${fmtMoney(t.cogsBeg)}) + Purchases (${fmtMoney(t.cogsPurchases)}) − Ending Inventory (${fmtMoney(t.cogsEnd)} ≈ ${Math.round(t.cogsRatio * 100)}% of retail) = ${fmtMoney(t.cogs)}.
 ${t.cogsRaw < 0 ? ' (Raw result was negative ' + fmtMoney(t.cogsRaw) + '; clamped to $0 — check that inventory cost basis is up to date.)' : ''}
 </p>
 
@@ -3824,7 +3821,7 @@ function toggleSettings(e) {
   if (milEl) milEl.value = (S.mileageRate || 0).toFixed(3);
   const bivEl = document.getElementById('global-begin-inv');
   if (bivEl) bivEl.value = (S.beginningInventoryValue || 0).toFixed(2);
-  const icrEl = document.getElementById('global-inv-ratio');
+  const icrEl = document.getElementById('global-inv-cost-ratio');
   if (icrEl) icrEl.value = Math.round((S.inventoryCostRatio || 0.80) * 100);
   const homeEl = document.getElementById('global-home-address');
   if (homeEl) homeEl.value = S.homeAddress || '';
@@ -3839,9 +3836,10 @@ function updateBeginningInv(val) {
   }
 }
 
-function updateInvCostRatio(pctVal) {
-  const pct = parseFloat(pctVal);
-  if (!isNaN(pct) && pct > 0 && pct <= 200) {
+function updateInvCostRatio(val) {
+  // Input is a percentage (1–100); stored as a 0–1 fraction.
+  const pct = parseFloat(val);
+  if (!isNaN(pct) && pct > 0 && pct <= 100) {
   S.inventoryCostRatio = pct / 100;
   saveState();
   if (S.tab === 'overview') renderOverview();
