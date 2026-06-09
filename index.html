@@ -1311,6 +1311,14 @@ function calcTotals() {
   );
   const unreportedNet = parseFloat((totalNet - reportedNet).toFixed(2));
 
+  // Reported Profit — same tax-basis formula as netProfit, but using only
+  // reported revenue. Unclamped (can go negative) so the user sees how
+  // far underwater their reported activity is; the Est. Income Tax tile
+  // separately clamps to zero before applying SE/federal rates.
+  const reportedNetProfit = parseFloat(
+    (reportedNet - expenseCosts - cogs - mileageDeduction).toFixed(2)
+  );
+
   // Estimated tax — reported revenue minus deductible expenses, COGS, and mileage.
   // Inventory PURCHASES don't reduce taxable income; only the cost of items
   // actually sold (COGS) does. This matches Schedule C Part III treatment.
@@ -1329,7 +1337,7 @@ function calcTotals() {
   cogs, cogsBeg: cogsInfo.beg, cogsPurchases: cogsInfo.purchases,
   cogsPurchasesRaw: cogsInfo.purchasesRaw, cogsRatio: cogsInfo.ratio,
   cogsEnd: cogsInfo.end, cogsRaw: cogsInfo.raw,
-  reportedNet, unreportedNet,
+  reportedNet, unreportedNet, reportedNetProfit,
   totalMiles, mileageDeduction, mileageCount: mileage.length,
   taxable, seTax, fedTax, estTax
   };
@@ -1411,6 +1419,8 @@ function renderOverview() {
     sub: totalTx + ' transaction' + (totalTx === 1 ? '' : 's') });
   metrics.push({ label: 'Net Profit',      value: fmtMoney(t.netProfit),   cls: t.netProfit >= 0 ? 'green' : 'red',
     sub: 'tax basis — unsold stock not counted' });
+  metrics.push({ label: 'Reported Profit', value: fmtMoney(t.reportedNetProfit), cls: t.reportedNetProfit >= 0 ? 'green' : 'red',
+    sub: 'reported sales − expenses − COGS − mileage' });
   metrics.push({ label: 'Est. Income Tax', value: fmtMoney(t.estTax),      cls: 'red', sub: taxSub });
 
   // 2 — Revenue breakdown (fees folded into Square Sales sub — no need for a separate tile)
