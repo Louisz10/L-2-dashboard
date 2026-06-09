@@ -3173,6 +3173,7 @@ function previewIcsImport() {
   <td class="muted">${esc(ev.location || '—')}</td>
   <td>
   <div style="display:flex;gap:4px;align-items:center;justify-content:flex-end">
+  <span class="ics-status" data-i="${i}" style="font-size:13px;min-width:16px;text-align:center;cursor:help"></span>
   <input type="number" class="ics-miles-input" data-i="${i}" value="${remembered}" step="0.1" min="0" placeholder="0.0" style="width:70px;text-align:right;padding:4px 6px;background:var(--bg2);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:12px" oninput="onIcsMilesEdited(${i})" />
   ${hasLoc ? `<button type="button" class="btn btn-secondary btn-sm ics-calc-btn" data-i="${i}" onclick="calcIcsRowMiles(${i})" title="Auto-calculate round-trip miles from your home address" style="padding:3px 6px;font-size:11px">🧭</button>` : ''}
   </div>
@@ -3297,22 +3298,66 @@ function confirmIcsImport() {
 // override UA, so the Referer header (sent automatically) identifies the
 // page origin. For this volume of use that's acceptable.
 
+// Hit Nominatim once for a single query string. Returns [lon, lat] or null.
+async function _nominatimLookup(q) {
+  const url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(q);
+  const r = await fetch(url, { headers: { 'Accept': 'application/json' } });
+  if (!r.ok) throw new Error('Geocoding service returned ' + r.status);
+  const json = await r.json();
+  if (!Array.isArray(json) || !json.length) return null;
+  const lon = parseFloat(json[0].lon);
+  const lat = parseFloat(json[0].lat);
+  if (isNaN(lon) || isNaN(lat)) return null;
+  return [lon, lat];
+}
+
 async function geocodeAddress(addr) {
   if (!addr) throw new Error('Address is empty.');
   const key = addr.toLowerCase().trim();
   S.geocodeCache = S.geocodeCache || {};
   if (S.geocodeCache[key]) return S.geocodeCache[key]; // [lon, lat]
-  const url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(addr);
-  const r = await fetch(url, { headers: { 'Accept': 'application/json' } });
-  if (!r.ok) throw new Error('Geocoding service returned ' + r.status);
-  const json = await r.json();
-  if (!Array.isArray(json) || !json.length) throw new Error('Address not found: "' + addr + '"');
-  const lon = parseFloat(json[0].lon);
-  const lat = parseFloat(json[0].lat);
-  if (isNaN(lon) || isNaN(lat)) throw new Error('Bad geocode response for: ' + addr);
-  S.geocodeCache[key] = [lon, lat];
+
+  // Build a list of candidate queries to try in order. Apple Calendar's
+  // copied location string typically looks like:
+  //   "Mccook Athletic Expo Center, 4750 S Vernon Ave, McCook, IL 60525, United States"
+  // Nominatim returns zero hits for the venue-name-prefixed form even when
+  // the bare street address resolves perfectly. So: try the full string,
+  // then progressively chop the leading comma-separated chunks (venue,
+  // building, etc.) until something hits.
+  const candidates = [];
+  candidates.push(addr.trim());
+  const parts = addr.split(',').map(s => s.trim()).filter(Boolean);
+  for (let i = 1; i < parts.length && i < 4; i++) {
+  candidates.push(parts.slice(i).join(', '));
+  }
+  // Also try dropping the trailing country if present — improves matching
+  // for some US addresses where OSM doesn't index "United States" verbatim.
+  if (/,\s*united states\s*$/i.test(addr)) {
+  candidates.push(addr.replace(/,\s*united states\s*$/i, '').trim());
+  }
+
+  let lastErr = null;
+  for (const q of candidates) {
+  if (!q) continue;
+  try {
+  const hit = await _nominatimLookup(q);
+  if (hit) {
+  S.geocodeCache[key] = hit;
   saveState();
-  return [lon, lat];
+  return hit;
+  }
+  } catch (e) {
+  lastErr = e;
+  // network/HTTP error — surface immediately rather than fall through
+  // to the "Address not found" message which would mislead the user.
+  throw e;
+  }
+  // Be polite if we have more candidates left to try.
+  if (q !== candidates[candidates.length - 1]) {
+  await new Promise(r => setTimeout(r, 1100));
+  }
+  }
+  throw new Error('Address not found by geocoder: "' + addr + '"');
 }
 
 async function routeMilesOneWay(fromLonLat, toLonLat) {
@@ -3418,8 +3463,26 @@ async function calcIcsRowMiles(i) {
   }
 }
 
+// Visible inline error banner inside the preview area. Used when something
+// fails that blocks the whole batch (e.g. home address can't be geocoded).
+function showIcsTopError(msg) {
+  const content = document.getElementById('ics-preview-content');
+  if (!content) return;
+  let err = document.getElementById('ics-top-err');
+  if (!err) {
+  err = document.createElement('div');
+  err.id = 'ics-top-err';
+  err.className = 'alert alert-error';
+  err.style.cssText = 'margin-top:10px;font-size:12px;line-height:1.5';
+  content.appendChild(err);
+  }
+  err.innerHTML = '⚠️ ' + msg;
+}
+
 // "Calc all" header button on the preview table. Sequential (with a small
-// pause) to be polite to Nominatim's rate limit.
+// pause) to be polite to Nominatim's rate limit. Per-row status is shown
+// next to the miles input: ⌛ while calculating, ⚠️ on failure (hover for
+// the specific error message), empty on success.
 async function calcAllIcsRows() {
   const btn = document.getElementById('ics-calc-all-btn');
   if (!_icsParsedEvents.length) return;
@@ -3428,24 +3491,37 @@ async function calcAllIcsRows() {
   return;
   }
   await _withCalcButton(btn, async () => {
+  // Pre-flight the home address once. If it can't be geocoded, every
+  // row would fail with the same error — surface it loudly instead.
+  try {
+  await geocodeAddress(S.homeAddress);
+  } catch (e) {
+  showIcsTopError('Could not geocode your <strong>Home Address</strong> ("' + esc(S.homeAddress) + '"): ' + esc(e.message) + '. Edit it in Settings (try just the street address) and click 🧭 Calc All again.');
+  return;
+  }
   for (let i = 0; i < _icsParsedEvents.length; i++) {
   const ev = _icsParsedEvents[i];
   if (!ev.location) continue;
-  const milesEl = document.querySelector(`.ics-miles-input[data-i="${i}"]`);
-  const cbEl    = document.querySelector(`.ics-row-cb[data-i="${i}"]`);
-  // Skip rows that already have miles — preserves remembered or
-  // user-typed values.
+  const milesEl  = document.querySelector(`.ics-miles-input[data-i="${i}"]`);
+  const cbEl     = document.querySelector(`.ics-row-cb[data-i="${i}"]`);
+  const statusEl = document.querySelector(`.ics-status[data-i="${i}"]`);
+  // Skip rows that already have miles — preserves remembered or user-typed values.
   if (milesEl && parseFloat(milesEl.value) > 0) continue;
+  if (statusEl) { statusEl.textContent = '⌛'; statusEl.title = 'Calculating round-trip miles…'; }
   try {
   const miles = await calcRoundTripFromHome(ev.location);
   if (milesEl) milesEl.value = miles;
   if (cbEl)    cbEl.checked  = true;
+  if (statusEl) { statusEl.textContent = '✓'; statusEl.style.color = 'var(--green)'; statusEl.title = 'Auto-calculated'; }
   } catch (e) {
-  // Don't abort the batch on one bad address — just keep going.
-  console.warn('Skipped row ' + i + ': ' + e.message);
+  if (statusEl) {
+  statusEl.textContent = '⚠️';
+  statusEl.style.color = 'var(--red)';
+  statusEl.title = 'Auto-calc failed: ' + e.message + '\nType miles manually for this row.';
   }
-  // Polite pause between API hits (cached lookups skip the actual fetch
-  // so the sleep is wasted there; cheap insurance for the uncached case).
+  }
+  // Polite pause between events — cached lookups skip the actual
+  // network call so the sleep is mostly wasted there; cheap insurance.
   await new Promise(r => setTimeout(r, 1100));
   }
   });
