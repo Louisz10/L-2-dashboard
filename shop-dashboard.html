@@ -517,7 +517,7 @@ input[type=checkbox].row-cb{width:16px;height:16px;accent-color:var(--accent);cu
   <span class="text-muted">%</span>
   </div>
   </div>
-  <div class="settings-item" style="gap:8px" title="IRS standard business mileage rate. 2025: $0.70/mi. New mileage entries default to this rate; per-entry rate is locked in at save time, so changing this won't shift historical entries.">
+  <div class="settings-item" style="gap:8px" title="IRS standard business mileage rate. Default: $0.725/mi. New mileage entries default to this rate; per-entry rate is locked in at save time, so changing this won't shift historical entries.">
   <span>Mileage Rate</span>
   <div class="flex-gap" style="gap:4px">
   <span class="text-muted">$</span>
@@ -862,7 +862,7 @@ input[type=checkbox].row-cb{width:16px;height:16px;accent-color:var(--accent);cu
 const S = {
   taxRate: 5.0,
   fedTaxRate: 12.0, // federal income-tax bracket used in the tax-estimate tile
-  mileageRate: 0.70, // IRS standard business mileage rate (2025 = $0.70/mi) — default for new entries
+  mileageRate: 0.725, // IRS standard business mileage rate — default for new entries
   squareSales: [],
   cashSales: [],
   inventory: [],
@@ -919,7 +919,14 @@ function loadState() {
   S.taxRate = parseFloat(localStorage.getItem('tax_rate') || '5') || 5;
   S.fedTaxRate = parseFloat(localStorage.getItem('fed_tax_rate') || '12') || 12;
   const mr = parseFloat(localStorage.getItem('mileage_rate'));
-  S.mileageRate = (!isNaN(mr) && mr > 0) ? mr : 0.70;
+  S.mileageRate = (!isNaN(mr) && mr > 0) ? mr : 0.725;
+  // One-shot migration: the very first default was 0.70. Bump anyone still
+  // sitting on that exact value up to the new 0.725 default. Anyone who
+  // deliberately customized their rate (any other value) is left alone.
+  if (S.mileageRate === 0.70) {
+  S.mileageRate = 0.725;
+  localStorage.setItem('mileage_rate', '0.725');
+  }
   S.businessName = localStorage.getItem('biz_name') || 'Pokemon Card Shop';
   // Chart series — array of enabled keys. Migrate from legacy 'chart_source'
   // (single-string: 'all'|'square'|'cash') if present, else use saved array.
