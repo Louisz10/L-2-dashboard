@@ -770,7 +770,10 @@ input[type=checkbox].row-cb{width:16px;height:16px;accent-color:var(--accent);cu
   <div class="section">
   <div class="section-header">
   <span class="section-title">Business Mileage</span>
+  <div style="display:flex;gap:6px;flex-wrap:wrap">
+  <button class="btn btn-secondary btn-sm" onclick="openIcsModal()" title="Import trips from an Apple Calendar .ics file">📅 Import from Calendar</button>
   <button class="btn btn-primary btn-sm" onclick="openModal('add-mileage')">+ Add Trip</button>
+  </div>
   </div>
   <div class="filter-bar" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 18px;border-bottom:2px dashed var(--border)">
   <input type="text" id="mileage-search" placeholder="Search purpose or notes…" oninput="renderMileage()" style="flex:1;min-width:220px;padding:8px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" />
@@ -841,6 +844,47 @@ input[type=checkbox].row-cb{width:16px;height:16px;accent-color:var(--accent);cu
   </div>
 </div>
 
+<!-- ICS (CALENDAR) IMPORT MODAL -->
+<div class="modal-overlay" id="ics-modal-overlay" onclick="closeIcsModalIfOutside(event)">
+  <div class="modal" style="max-width:820px">
+  <div class="modal-header">
+  <h3>Import Trips from Apple Calendar (.ics)</h3>
+  <button class="btn btn-secondary btn-sm btn-icon" onclick="closeIcsModal()">✕</button>
+  </div>
+  <div class="modal-body">
+
+  <div class="alert alert-info" style="margin-bottom:14px;font-size:12px;line-height:1.7">
+  <strong>How to grab an .ics file:</strong><br>
+  • <strong>Single event:</strong> drag it from Apple Calendar onto your Desktop — that creates a <code>.ics</code> file<br>
+  • <strong>Whole calendar:</strong> Calendar → File → Export → Export…<br>
+  • Then upload below, or paste the file contents
+  </div>
+
+  <div class="form-row">
+  <label class="field-label">Upload .ics file</label>
+  <input type="file" id="ics-file" accept=".ics,text/calendar" onchange="onIcsFileChosen(event)" />
+  </div>
+
+  <div class="form-row">
+  <label class="field-label">…or paste .ics text directly</label>
+  <textarea id="ics-textarea" rows="6" placeholder="BEGIN:VCALENDAR&#10;BEGIN:VEVENT&#10;…" style="font-family:monospace;font-size:12px;resize:vertical"></textarea>
+  </div>
+
+  <button class="btn btn-primary" onclick="previewIcsImport()" style="margin-bottom:16px">Preview Events</button>
+
+  <div id="ics-preview" style="display:none">
+  <hr class="divider">
+  <div id="ics-preview-content"></div>
+  </div>
+
+  </div>
+  <div class="modal-footer">
+  <button class="btn btn-secondary" onclick="closeIcsModal()">Cancel</button>
+  <button class="btn btn-primary" id="ics-confirm-btn" onclick="confirmIcsImport()" disabled>Import Selected</button>
+  </div>
+  </div>
+</div>
+
 </div><!-- /app -->
 
 <!-- CUSTOM CONFIRM DIALOG -->
@@ -869,6 +913,7 @@ const S = {
   singles: [],
   costs: [],
   mileage: [], // { id, date, miles, purpose, notes, rate } — rate locked in at save time
+  tripMilesByLocation: {}, // { "1234 main st, madison wi": 145.6 } — remembered round-trip miles per location, populated by .ics imports
   processedSaleIds: new Set(), // IDs already auto-deducted
   period: 'all',
   customStart: '',
@@ -891,6 +936,7 @@ function saveState() {
   localStorage.setItem('singles', JSON.stringify(S.singles));
   localStorage.setItem('costs', JSON.stringify(S.costs));
   localStorage.setItem('mileage', JSON.stringify(S.mileage));
+  localStorage.setItem('trip_miles_by_loc', JSON.stringify(S.tripMilesByLocation || {}));
   localStorage.setItem('processed_ids', JSON.stringify([...S.processedSaleIds]));
   localStorage.setItem('tax_rate', String(S.taxRate));
   localStorage.setItem('fed_tax_rate', String(S.fedTaxRate));
@@ -915,6 +961,7 @@ function loadState() {
   S.singles = safeJSON('singles', []);
   S.costs = safeJSON('costs', []);
   S.mileage = safeJSON('mileage', []);
+  S.tripMilesByLocation = safeJSON('trip_miles_by_loc', {}) || {};
   S.processedSaleIds = new Set(safeJSON('processed_ids', []));
   S.taxRate = parseFloat(localStorage.getItem('tax_rate') || '5') || 5;
   S.fedTaxRate = parseFloat(localStorage.getItem('fed_tax_rate') || '12') || 12;
@@ -2871,6 +2918,230 @@ function deleteMileage(id) {
 }
 
 // ============================================================
+// ICS (APPLE CALENDAR) IMPORT — MILEAGE
+// ============================================================
+// Parses RFC 5545 .ics files exported from Apple Calendar (drag an event
+// onto the Desktop, or File → Export). For each VEVENT we pull date,
+// SUMMARY (used as purpose), and LOCATION (used as notes + the dedup key
+// for remembered miles). The .ics format doesn't contain mileage, so the
+// user supplies the round-trip miles per event in the preview step —
+// future imports for the same location auto-fill from S.tripMilesByLocation.
+let _icsParsedEvents = [];
+
+function openIcsModal() {
+  const o = document.getElementById('ics-modal-overlay');
+  if (!o) return;
+  o.classList.add('open');
+  // Reset everything every time so previous state doesn't leak
+  const ta = document.getElementById('ics-textarea');
+  const fi = document.getElementById('ics-file');
+  const pv = document.getElementById('ics-preview');
+  const cb = document.getElementById('ics-confirm-btn');
+  if (ta) ta.value = '';
+  if (fi) fi.value = '';
+  if (pv) pv.style.display = 'none';
+  if (cb) cb.disabled = true;
+  _icsParsedEvents = [];
+}
+
+function closeIcsModal() {
+  const o = document.getElementById('ics-modal-overlay');
+  if (o) o.classList.remove('open');
+}
+
+function closeIcsModalIfOutside(e) {
+  if (e.target === document.getElementById('ics-modal-overlay')) closeIcsModal();
+}
+
+function onIcsFileChosen(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+  const ta = document.getElementById('ics-textarea');
+  if (ta) ta.value = ev.target.result;
+  };
+  reader.readAsText(file);
+}
+
+// Decode RFC 5545 escaped chars: \n \, \; \\
+function _icsDecode(s) {
+  return s
+  .replace(/\\n/gi, '\n')
+  .replace(/\\,/g, ',')
+  .replace(/\\;/g, ';')
+  .replace(/\\\\/g, '\\');
+}
+
+// DTSTART can look like: 20260415, 20260415T140000, 20260415T140000Z, with
+// optional TZID parameter. Strip non-digits and take the first 8 chars =
+// YYYYMMDD. Returns 'YYYY-MM-DD' or null.
+function _icsDtstartToYmd(raw) {
+  if (!raw) return null;
+  const compact = String(raw).replace(/[^\d]/g, '').slice(0, 8);
+  if (!/^\d{8}$/.test(compact)) return null;
+  return compact.slice(0,4) + '-' + compact.slice(4,6) + '-' + compact.slice(6,8);
+}
+
+function parseIcs(text) {
+  if (!text) return [];
+  // RFC 5545 §3.1 line unfolding: any line starting with a space or tab is
+  // a continuation of the previous line.
+  const rawLines = text.replace(/\r\n/g, '\n').split('\n');
+  const lines = [];
+  for (const line of rawLines) {
+  if ((line.startsWith(' ') || line.startsWith('\t')) && lines.length) {
+  lines[lines.length - 1] += line.slice(1);
+  } else {
+  lines.push(line);
+  }
+  }
+  const events = [];
+  let cur = null;
+  for (const line of lines) {
+  const trimmed = line.trim();
+  if (trimmed === 'BEGIN:VEVENT') { cur = {}; continue; }
+  if (trimmed === 'END:VEVENT') {
+  if (cur && cur.dtstart) {
+  const ymd = _icsDtstartToYmd(cur.dtstart);
+  if (ymd) events.push({
+  date: ymd,
+  summary: cur.summary || '(no title)',
+  location: cur.location || '',
+  description: cur.description || '',
+  uid: cur.uid || ''
+  });
+  }
+  cur = null;
+  continue;
+  }
+  if (!cur) continue;
+  const colon = line.indexOf(':');
+  if (colon < 0) continue;
+  const keyPart = line.slice(0, colon);
+  const value = line.slice(colon + 1);
+  const key = keyPart.split(';')[0].toUpperCase();
+  if (key === 'DTSTART')          cur.dtstart    = value.trim();
+  else if (key === 'SUMMARY')     cur.summary    = _icsDecode(value).trim();
+  else if (key === 'LOCATION')    cur.location   = _icsDecode(value).trim();
+  else if (key === 'DESCRIPTION') cur.description = _icsDecode(value).trim();
+  else if (key === 'UID')         cur.uid        = value.trim();
+  }
+  return events;
+}
+
+function previewIcsImport() {
+  const text = document.getElementById('ics-textarea')?.value || '';
+  const events = parseIcs(text);
+  if (!events.length) {
+  alert('No events found. Upload an .ics file or paste valid .ics text and try again.');
+  return;
+  }
+  // Date asc so the preview reads chronologically
+  events.sort((a, b) => a.date.localeCompare(b.date));
+  _icsParsedEvents = events;
+
+  const locMap = S.tripMilesByLocation || {};
+  const rowsHtml = events.map((ev, i) => {
+  const key = (ev.location || '').toLowerCase().trim();
+  const remembered = key && locMap[key] ? locMap[key] : '';
+  // Pre-check rows that already have a remembered mileage — those are
+  // obvious business trips. Rows with blank miles default unchecked so
+  // a calendar full of personal events doesn't get imported wholesale.
+  const checked = remembered ? 'checked' : '';
+  return `
+  <tr>
+  <td><input type="checkbox" class="ics-row-cb" data-i="${i}" ${checked}></td>
+  <td style="white-space:nowrap">${fmtDate(ev.date + 'T12:00:00Z')}</td>
+  <td>${esc(ev.summary)}</td>
+  <td class="muted">${esc(ev.location || '—')}</td>
+  <td><input type="number" class="ics-miles-input" data-i="${i}" value="${remembered}" step="0.1" min="0" placeholder="0.0" style="width:80px;text-align:right;padding:4px 6px;background:var(--bg2);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:12px" oninput="onIcsMilesEdited(${i})" /></td>
+  </tr>`;
+  }).join('');
+
+  const remembered = events.filter(ev => {
+  const k = (ev.location || '').toLowerCase().trim();
+  return k && locMap[k];
+  }).length;
+
+  document.getElementById('ics-preview-content').innerHTML = `
+  <p style="font-size:12px;color:var(--text2);margin-bottom:8px">
+  Found <strong>${events.length}</strong> event${events.length === 1 ? '' : 's'}.
+  ${remembered ? remembered + ' had a remembered mileage from previous imports (pre-checked). ' : ''}
+  Check the events you want to import and set the round-trip miles. Miles are remembered per location for next time.
+  </p>
+  <div style="overflow-x:auto">
+  <table class="paste-preview-table">
+  <thead><tr>
+  <th style="width:30px"><input type="checkbox" id="ics-all-cb" onchange="toggleAllIcsRows(this)" title="Select all"></th>
+  <th>Date</th>
+  <th>Purpose</th>
+  <th>Location</th>
+  <th>Miles</th>
+  </tr></thead>
+  <tbody>${rowsHtml}</tbody>
+  </table>
+  </div>
+  `;
+  document.getElementById('ics-preview').style.display = 'block';
+  document.getElementById('ics-confirm-btn').disabled = false;
+}
+
+function toggleAllIcsRows(master) {
+  document.querySelectorAll('.ics-row-cb').forEach(cb => { cb.checked = master.checked; });
+}
+
+// Auto-check a row when the user types miles in — saves a click.
+function onIcsMilesEdited(i) {
+  const milesEl = document.querySelector(`.ics-miles-input[data-i="${i}"]`);
+  const cbEl    = document.querySelector(`.ics-row-cb[data-i="${i}"]`);
+  if (!milesEl || !cbEl) return;
+  const v = parseFloat(milesEl.value);
+  if (!isNaN(v) && v > 0) cbEl.checked = true;
+}
+
+function confirmIcsImport() {
+  if (!_icsParsedEvents.length) return;
+  S.tripMilesByLocation = S.tripMilesByLocation || {};
+  let added = 0;
+  let skippedNoMiles = 0;
+  document.querySelectorAll('.ics-row-cb').forEach(cb => {
+  if (!cb.checked) return;
+  const i = parseInt(cb.dataset.i, 10);
+  const ev = _icsParsedEvents[i];
+  if (!ev) return;
+  const milesEl = document.querySelector(`.ics-miles-input[data-i="${i}"]`);
+  const miles = parseFloat(milesEl?.value);
+  if (isNaN(miles) || miles <= 0) { skippedNoMiles++; return; }
+  S.mileage.push({
+  id: genId(),
+  date: ev.date + 'T12:00:00Z',
+  miles: parseFloat(miles.toFixed(2)),
+  purpose: ev.summary,
+  notes: ev.location || '',
+  rate: S.mileageRate
+  });
+  // Remember miles by location for next time
+  const locKey = (ev.location || '').toLowerCase().trim();
+  if (locKey) S.tripMilesByLocation[locKey] = parseFloat(miles.toFixed(2));
+  added++;
+  });
+  if (!added) {
+  alert('Nothing imported — make sure at least one row is checked AND has miles set above 0.');
+  return;
+  }
+  saveState();
+  closeIcsModal();
+  if (S.tab !== 'mileage') showTab('mileage'); else renderMileage();
+  const status = document.getElementById('sync-status');
+  if (status) {
+  const note = skippedNoMiles ? ` (skipped ${skippedNoMiles} with no miles)` : '';
+  status.innerHTML = `<span style="color:var(--green)">✓ Imported ${added} trip${added === 1 ? '' : 's'}${note}</span>`;
+  setTimeout(() => { if (status) status.textContent = ''; }, 5000);
+  }
+}
+
+// ============================================================
 // TABLE SORT
 // ============================================================
 function sortTable(tableId, col, mode) {
@@ -2984,6 +3255,7 @@ function exportData() {
   singles: S.singles,
   costs: S.costs,
   mileage: S.mileage,
+  tripMilesByLocation: S.tripMilesByLocation || {},
   processedSaleIds: [...S.processedSaleIds]
   };
 
@@ -3031,6 +3303,7 @@ function importData(event) {
   S.singles  = backup.singles  || [];
   S.costs  = backup.costs  || [];
   S.mileage  = backup.mileage  || [];
+  S.tripMilesByLocation = backup.tripMilesByLocation || S.tripMilesByLocation || {};
   S.processedSaleIds = new Set(backup.processedSaleIds || []);
   saveState();
   refreshCurrentTab();
