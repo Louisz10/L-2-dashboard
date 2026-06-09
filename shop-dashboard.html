@@ -2264,6 +2264,8 @@ function renderCosts() {
   el.innerHTML =
   '<div class="bulk-bar" id="bulk-bar-costs">' +
   '<span class="sel-count" id="bulk-count-costs">0 selected</span>' +
+  '<button class="btn btn-secondary btn-sm" onclick="retagSelectedCosts(\'expense\')" title="Mark all selected rows as Business Expense">→ Expense</button>' +
+  '<button class="btn btn-secondary btn-sm" onclick="retagSelectedCosts(\'inventory\')" title="Mark all selected rows as Inventory Purchase">→ Inventory</button>' +
   '<button class="btn btn-danger btn-sm" onclick="deleteSelected(\'costs\')">Delete Selected</button>' +
   '<button class="btn btn-secondary btn-sm" onclick="clearSelection(\'costs-tbl\',\'bulk-bar-costs\',\'bulk-count-costs\')">✕ Clear</button>' +
   '</div>' +
@@ -4633,6 +4635,33 @@ function deleteSelected(section) {
   saveState();
   refreshCurrentTab();
   });
+}
+
+// Bulk-flip the `type` field on every selected cost row. Used by the
+// "Mark as Expense" / "Mark as Inventory" buttons in the costs bulk bar
+// so the user can clean up the migration (everything defaulted to expense)
+// without opening each row's edit modal.
+function retagSelectedCosts(newType) {
+  const type = newType === 'inventory' ? 'inventory' : 'expense';
+  const ids = getSelectedIds('costs-tbl');
+  if (!ids.length) return;
+  const idSet = new Set(ids);
+  let changed = 0;
+  for (const c of S.costs) {
+  if (idSet.has(c.id) && c.type !== type) {
+  c.type = type;
+  changed++;
+  }
+  }
+  saveState();
+  refreshCurrentTab();
+  // Brief feedback in the existing sync-status slot.
+  const status = document.getElementById('sync-status');
+  if (status) {
+  const label = type === 'inventory' ? 'inventory purchase' : 'business expense';
+  status.innerHTML = '<span style="color:var(--green)">✓ Re-tagged ' + changed + ' row' + (changed === 1 ? '' : 's') + ' as ' + label + '</span>';
+  setTimeout(() => { if (status) status.textContent = ''; }, 4000);
+  }
 }
 
 // ============================================================
