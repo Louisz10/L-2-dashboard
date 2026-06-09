@@ -1366,38 +1366,64 @@ function renderOverview() {
   const t = calcTotals();
 
   const totalTx = t.sqCount + t.cashCount;
-  const invRetail = S.inventory.reduce((sum, i) => sum + (i.sellPrice || 0) * (i.qty || 0), 0);
-  // Profit-incl-inventory: how the business looks if you mark unsold
-  // stock at retail. Adds the retail value of inventory still on hand
-  // to the net profit baseline so what you've already paid for but
-  // haven't sold doesn't drag the number down to "loss" territory.
-  // Formula: Total Revenue + Inventory Retail Value − Business Expenses.
+  const invRetail   = parseFloat(S.inventory.reduce((s, i) => s + (i.sellPrice || 0) * (i.qty || 0), 0).toFixed(2));
+  const invUnits    = S.inventory.reduce((s, i) => s + (i.qty || 0), 0);
+  // Profit + Inventory: business value if unsold stock is marked at retail.
+  // Formula: net revenue + retail value of remaining stock − all cash outflows.
   const profitWithInv = parseFloat((t.totalNet + invRetail - t.totalCosts).toFixed(2));
-  const taxSub = 'SE ' + fmtMoney(t.seTax) + ' · Fed ' + fmtMoney(t.fedTax)
-  + ' @ ' + (S.fedTaxRate || 0).toFixed(0) + '%';
-  const metrics = [
-  { label: 'Total Revenue',  value: fmtMoney(t.totalNet),   cls: 'green', sub: totalTx + ' transactions' },
-  { label: 'Square Sales',   value: fmtMoney(t.sqNet),      cls: 'green', sub: t.sqCount + ' transactions' },
-  { label: 'Cash / Other Sales', value: fmtMoney(t.cashNet), cls: 'green', sub: t.cashCount + ' entries' },
-  { label: 'Reported Revenue', value: fmtMoney(t.reportedNet), cls: 'green', sub: 'after fees & sales tax' },
-  { label: 'Unreported Revenue', value: fmtMoney(t.unreportedNet), cls: 'muted', muted: true,
-    sub: t.unreportedNet > 0 ? 'excluded from tax estimate' : 'none flagged off' },
-  { label: 'Square Processing Fees', value: fmtMoney(t.sqFees),  cls: 'red' },
-  { label: 'WI Tax Collected', value: fmtMoney(t.totalTax),  cls: 'red' },
-  { label: 'Business Expenses', value: fmtMoney(t.expenseCosts), cls: 'red',
-    sub: 'deductible — table fees, gas, supplies, etc.' },
-  { label: 'Inventory Purchases', value: fmtMoney(t.inventoryCosts), cls: 'muted', muted: true,
-    sub: t.inventoryCosts > 0 ? 'not deductible until sold (see COGS)' : 'none logged' },
-  { label: 'Est. Cost of Goods Sold', value: fmtMoney(t.cogs), cls: 'red',
-    sub: 'Beg ' + fmtMoney(t.cogsBeg) + ' + Buys ' + fmtMoney(t.cogsPurchases) + ' − End ' + fmtMoney(t.cogsEnd) },
-  { label: 'Mileage Deduction', value: fmtMoney(t.mileageDeduction), cls: 'red',
-    sub: t.totalMiles ? t.totalMiles.toFixed(1) + ' mi · ' + t.mileageCount + ' trip' + (t.mileageCount === 1 ? '' : 's') : 'no trips logged' },
-  { label: 'Est. Income Tax', value: fmtMoney(t.estTax), cls: 'red', sub: taxSub },
-  { label: 'Net Profit',     value: fmtMoney(t.netProfit),  cls: t.netProfit >= 0 ? 'green' : 'red' },
-  { label: 'Profit + Inventory', value: fmtMoney(profitWithInv), cls: profitWithInv >= 0 ? 'green' : 'red',
-    sub: 'revenue + stock retail − expenses' },
-  { label: 'Inventory Retail Value', value: fmtMoney(invRetail), cls: 'green', sub: S.inventory.reduce((s,i) => s + (i.qty||0), 0) + ' units in stock' }
-  ];
+  const taxSub = 'SE ' + fmtMoney(t.seTax) + ' · Fed ' + fmtMoney(t.fedTax) + ' @ ' + (S.fedTaxRate || 0).toFixed(0) + '%';
+
+  // Tiles are grouped top-to-bottom in a clear narrative:
+  //   1. Headline numbers      (the three things the user cares about most)
+  //   2. Revenue breakdown     (where the money came from)
+  //   3. Reported / unreported (conditional — only if user uses the toggle)
+  //   4. Tax-deductible costs  (what reduces taxable income)
+  //   5. Inventory snapshot    (book value + alternative profit view)
+  //   6. Pass-throughs         (WI sales tax — pass to state)
+  const metrics = [];
+
+  // 1 — Headline
+  metrics.push({ label: 'Total Revenue',   value: fmtMoney(t.totalNet),    cls: 'green',
+    sub: totalTx + ' transaction' + (totalTx === 1 ? '' : 's') });
+  metrics.push({ label: 'Net Profit',      value: fmtMoney(t.netProfit),   cls: t.netProfit >= 0 ? 'green' : 'red',
+    sub: 'cash-flow basis' });
+  metrics.push({ label: 'Est. Income Tax', value: fmtMoney(t.estTax),      cls: 'red', sub: taxSub });
+
+  // 2 — Revenue breakdown (fees folded into Square Sales sub — no need for a separate tile)
+  metrics.push({ label: 'Square Sales',    value: fmtMoney(t.sqNet),       cls: 'green',
+    sub: t.sqCount + ' txn' + (t.sqCount === 1 ? '' : 's') + ' · ' + fmtMoney(t.sqFees) + ' in fees' });
+  metrics.push({ label: 'Cash / Other Sales', value: fmtMoney(t.cashNet), cls: 'green',
+    sub: t.cashCount + ' entr' + (t.cashCount === 1 ? 'y' : 'ies') });
+
+  // 3 — Reported / unreported (only when user has flagged something off)
+  if (t.unreportedNet > 0) {
+  metrics.push({ label: 'Reported Revenue',   value: fmtMoney(t.reportedNet),   cls: 'green',
+    sub: 'feeds the tax estimate' });
+  metrics.push({ label: 'Unreported Revenue', value: fmtMoney(t.unreportedNet), cls: 'muted', muted: true,
+    sub: 'excluded from tax estimate' });
+  }
+
+  // 4 — Tax-deductible stack
+  metrics.push({ label: 'Business Expenses',      value: fmtMoney(t.expenseCosts), cls: 'red',
+    sub: 'tables, gas, supplies — deductible now' });
+  metrics.push({ label: 'Est. Cost of Goods Sold', value: fmtMoney(t.cogs),       cls: 'red',
+    sub: 'Beg ' + fmtMoney(t.cogsBeg) + ' + Buys ' + fmtMoney(t.cogsPurchases) + ' − End ' + fmtMoney(t.cogsEnd) });
+  metrics.push({ label: 'Mileage Deduction',       value: fmtMoney(t.mileageDeduction), cls: 'red',
+    sub: t.totalMiles ? t.totalMiles.toFixed(1) + ' mi · ' + t.mileageCount + ' trip' + (t.mileageCount === 1 ? '' : 's') : 'no trips logged' });
+
+  // 5 — Inventory + alt profit view (inventory purchases only show when there are any)
+  if (t.inventoryCosts > 0) {
+  metrics.push({ label: 'Inventory Purchases',   value: fmtMoney(t.inventoryCosts), cls: 'muted', muted: true,
+    sub: 'not deductible until sold (see COGS)' });
+  }
+  metrics.push({ label: 'Inventory Retail Value', value: fmtMoney(invRetail), cls: 'green',
+    sub: invUnits + ' unit' + (invUnits === 1 ? '' : 's') + ' in stock' });
+  metrics.push({ label: 'Profit + Inventory',     value: fmtMoney(profitWithInv), cls: profitWithInv >= 0 ? 'green' : 'red',
+    sub: 'incl. ' + fmtMoney(invRetail) + ' stock at retail' });
+
+  // 6 — Pass-throughs
+  metrics.push({ label: 'WI Tax Collected', value: fmtMoney(t.totalTax), cls: 'red',
+    sub: 'owed to WI DOR' });
 
   const grid = document.getElementById('overview-metrics');
   if (grid) {
