@@ -1286,6 +1286,13 @@ function calcTotals() {
   // matches receipts; both reduce taxable income in the estimate below.
   const totalMiles = mileage.reduce((s, m) => s + (m.miles || 0), 0);
   const mileageDeduction = parseFloat(mileage.reduce((s, m) => s + mileageDeductionOf(m), 0).toFixed(2));
+
+  // Net = what the merchant actually keeps. For Square sales: gross − fee − tax.
+  // For cash sales (no card fees): amount − tax. Total just sums them.
+  const sqNet   = parseFloat((sqGross - sqFees - sqTax).toFixed(2));
+  const cashNet = parseFloat((cashGross - cashTax).toFixed(2));
+  const totalNet = parseFloat((sqNet + cashNet).toFixed(2));
+
   // Net Profit — TAX BASIS. Unsold inventory purchases don't reduce this;
   // only the cost of items actually sold (COGS) does. This is what
   // Schedule C considers your net business income.
@@ -1294,12 +1301,6 @@ function calcTotals() {
   // including stock you bought but haven't sold yet. Useful for "did I
   // come out ahead this period" sanity-checking, NOT for tax filing.
   const netCash   = parseFloat((totalNet - totalCosts - mileageDeduction).toFixed(2));
-
-  // Net = what the merchant actually keeps. For Square sales: gross − fee − tax.
-  // For cash sales (no card fees): amount − tax. Total just sums them.
-  const sqNet   = parseFloat((sqGross - sqFees - sqTax).toFixed(2));
-  const cashNet = parseFloat((cashGross - cashTax).toFixed(2));
-  const totalNet = parseFloat((sqNet + cashNet).toFixed(2));
 
   // Reported vs unreported split, computed on net (what actually counts
   // as taxable income — tax pass-through and processor fees stripped out).
