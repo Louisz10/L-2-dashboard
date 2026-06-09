@@ -495,6 +495,7 @@ input[type=checkbox].row-cb{width:16px;height:16px;accent-color:var(--accent);cu
   <button class="nav-tab" data-tab="sales" onclick="showTab('sales')">Sales</button>
   <button class="nav-tab" data-tab="inventory" onclick="showTab('inventory')">Inventory</button>
   <button class="nav-tab" data-tab="costs" onclick="showTab('costs')">Costs</button>
+  <button class="nav-tab" data-tab="mileage" onclick="showTab('mileage')">Mileage</button>
   </div>
   <div class="nav-actions">
   <span id="sync-status"></span>
@@ -514,6 +515,14 @@ input[type=checkbox].row-cb{width:16px;height:16px;accent-color:var(--accent);cu
   <div class="flex-gap" style="gap:4px">
   <input type="number" id="global-fed-tax-rate" style="width:55px;text-align:right;-webkit-appearance:textfield;-moz-appearance:textfield;appearance:textfield" step="any" min="0" max="50" onchange="updateFedTaxRate(this.value)" />
   <span class="text-muted">%</span>
+  </div>
+  </div>
+  <div class="settings-item" style="gap:8px" title="IRS standard business mileage rate. 2025: $0.70/mi. New mileage entries default to this rate; per-entry rate is locked in at save time, so changing this won't shift historical entries.">
+  <span>Mileage Rate</span>
+  <div class="flex-gap" style="gap:4px">
+  <span class="text-muted">$</span>
+  <input type="number" id="global-mileage-rate" style="width:65px;text-align:right;-webkit-appearance:textfield;-moz-appearance:textfield;appearance:textfield" step="0.001" min="0" max="5" onchange="updateMileageRate(this.value)" />
+  <span class="text-muted">/mi</span>
   </div>
   </div>
   <div class="settings-item">
@@ -756,6 +765,22 @@ input[type=checkbox].row-cb{width:16px;height:16px;accent-color:var(--accent);cu
   </div>
   </div>
 
+  <!-- ── TAB: MILEAGE ── -->
+  <div class="tab-content" id="tab-mileage">
+  <div class="section">
+  <div class="section-header">
+  <span class="section-title">Business Mileage</span>
+  <button class="btn btn-primary btn-sm" onclick="openModal('add-mileage')">+ Add Trip</button>
+  </div>
+  <div class="filter-bar" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 18px;border-bottom:2px dashed var(--border)">
+  <input type="text" id="mileage-search" placeholder="Search purpose or notes…" oninput="renderMileage()" style="flex:1;min-width:220px;padding:8px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" />
+  <button class="btn btn-secondary btn-sm" onclick="clearMileageFilter()">Clear</button>
+  </div>
+  <div id="mileage-total-bar" class="costs-total-bar" style="display:none"></div>
+  <div id="mileage-table-wrap"></div>
+  </div>
+  </div>
+
   <!-- ── TAB: REPORTS ── -->
 
 </div><!-- /main-app -->
@@ -837,11 +862,13 @@ input[type=checkbox].row-cb{width:16px;height:16px;accent-color:var(--accent);cu
 const S = {
   taxRate: 5.0,
   fedTaxRate: 12.0, // federal income-tax bracket used in the tax-estimate tile
+  mileageRate: 0.70, // IRS standard business mileage rate (2025 = $0.70/mi) — default for new entries
   squareSales: [],
   cashSales: [],
   inventory: [],
   singles: [],
   costs: [],
+  mileage: [], // { id, date, miles, purpose, notes, rate } — rate locked in at save time
   processedSaleIds: new Set(), // IDs already auto-deducted
   period: 'all',
   customStart: '',
@@ -863,9 +890,11 @@ function saveState() {
   localStorage.setItem('inventory', JSON.stringify(S.inventory));
   localStorage.setItem('singles', JSON.stringify(S.singles));
   localStorage.setItem('costs', JSON.stringify(S.costs));
+  localStorage.setItem('mileage', JSON.stringify(S.mileage));
   localStorage.setItem('processed_ids', JSON.stringify([...S.processedSaleIds]));
   localStorage.setItem('tax_rate', String(S.taxRate));
   localStorage.setItem('fed_tax_rate', String(S.fedTaxRate));
+  localStorage.setItem('mileage_rate', String(S.mileageRate));
   localStorage.setItem('biz_name', S.businessName);
   localStorage.setItem('chart_series', JSON.stringify(S.chartSeries));
   localStorage.removeItem('chart_source'); // clean up legacy single-source key
@@ -885,9 +914,12 @@ function loadState() {
   S.inventory = safeJSON('inventory', []);
   S.singles = safeJSON('singles', []);
   S.costs = safeJSON('costs', []);
+  S.mileage = safeJSON('mileage', []);
   S.processedSaleIds = new Set(safeJSON('processed_ids', []));
   S.taxRate = parseFloat(localStorage.getItem('tax_rate') || '5') || 5;
   S.fedTaxRate = parseFloat(localStorage.getItem('fed_tax_rate') || '12') || 12;
+  const mr = parseFloat(localStorage.getItem('mileage_rate'));
+  S.mileageRate = (!isNaN(mr) && mr > 0) ? mr : 0.70;
   S.businessName = localStorage.getItem('biz_name') || 'Pokemon Card Shop';
   // Chart series — array of enabled keys. Migrate from legacy 'chart_source'
   // (single-string: 'all'|'square'|'cash') if present, else use saved array.
@@ -909,7 +941,7 @@ function loadState() {
   S.customStart = localStorage.getItem('custom_start') || '';
   S.customEnd   = localStorage.getItem('custom_end')   || '';
   const savedTab = localStorage.getItem('tab');
-  const validTabs = ['overview','sales','inventory','costs','reports'];
+  const validTabs = ['overview','sales','inventory','costs','mileage','reports'];
   S.tab = validTabs.includes(savedTab) ? savedTab : 'overview';
   S.lastSync = localStorage.getItem('last_sync') || null;
 }
@@ -1051,6 +1083,12 @@ function notifyIfOutsidePeriod(dateISO, entryWord) {
 function filteredSqSales() { return S.squareSales.filter(s => inRange(s.date)); }
 function filteredCashSales() { return S.cashSales.filter(s => inRange(s.date)); }
 function filteredCosts() { return S.costs.filter(c => inRange(c.date)); }
+function filteredMileage() { return S.mileage.filter(m => inRange(m.date)); }
+// Per-entry rate falls back to current global rate for legacy rows missing `rate`.
+function mileageDeductionOf(m) {
+  const rate = (typeof m.rate === 'number' && m.rate > 0) ? m.rate : S.mileageRate;
+  return (m.miles || 0) * rate;
+}
 
 // ============================================================
 // CALCULATIONS
@@ -1073,6 +1111,7 @@ function calcTotals() {
   const sq   = filteredSqSales();
   const cash = filteredCashSales();
   const costs = filteredCosts();
+  const mileage = filteredMileage();
 
   const sqGross  = sq.reduce((s, x) => s + (x.gross || 0), 0);
   const sqFees   = sq.reduce((s, x) => s + (x.fee   || 0), 0);
@@ -1083,7 +1122,12 @@ function calcTotals() {
   const totalFees  = sqFees;
   const totalTax   = sqTax + cashTax;
   const totalCosts = costs.reduce((s, x) => s + (x.amount || 0), 0);
-  const netProfit  = totalGross - totalFees - totalTax - totalCosts;
+  // Mileage deduction is a separate IRS write-off (std. business mileage rate ×
+  // business miles). Kept distinct from `totalCosts` so the Costs tab still
+  // matches receipts; both reduce taxable income in the estimate below.
+  const totalMiles = mileage.reduce((s, m) => s + (m.miles || 0), 0);
+  const mileageDeduction = parseFloat(mileage.reduce((s, m) => s + mileageDeductionOf(m), 0).toFixed(2));
+  const netProfit  = totalGross - totalFees - totalTax - totalCosts - mileageDeduction;
 
   // Net = what the merchant actually keeps. For Square sales: gross − fee − tax.
   // For cash sales (no card fees): amount − tax. Total just sums them.
@@ -1100,8 +1144,8 @@ function calcTotals() {
   );
   const unreportedNet = parseFloat((totalNet - reportedNet).toFixed(2));
 
-  // Estimated tax — only on what you report, minus expenses.
-  const taxable    = Math.max(0, reportedNet - totalCosts);
+  // Estimated tax — only on what you report, minus expenses AND mileage deduction.
+  const taxable    = Math.max(0, reportedNet - totalCosts - mileageDeduction);
   const seTax      = parseFloat((taxable * 0.9235 * 0.153).toFixed(2));
   const fedTaxable = Math.max(0, taxable - seTax / 2);
   const fedRate    = (S.fedTaxRate || 0) / 100;
@@ -1113,6 +1157,7 @@ function calcTotals() {
   cashGross, cashTax, cashNet, cashCount: cash.length,
   totalGross, totalFees, totalTax, totalNet, totalCosts, netProfit,
   reportedNet, unreportedNet,
+  totalMiles, mileageDeduction, mileageCount: mileage.length,
   taxable, seTax, fedTax, estTax
   };
 }
@@ -1162,6 +1207,7 @@ function renderTab(name) {
   case 'sales':  renderSales();  break;
   case 'inventory': renderInventory();  break;
   case 'costs':  renderCosts();  break;
+  case 'mileage':  renderMileage();  break;
   }
 }
 
@@ -1193,6 +1239,8 @@ function renderOverview() {
   { label: 'Square Processing Fees', value: fmtMoney(t.sqFees),  cls: 'red' },
   { label: 'WI Tax Collected', value: fmtMoney(t.totalTax),  cls: 'red' },
   { label: 'Business Expenses', value: fmtMoney(t.totalCosts), cls: 'red' },
+  { label: 'Mileage Deduction', value: fmtMoney(t.mileageDeduction), cls: 'red',
+    sub: t.totalMiles ? t.totalMiles.toFixed(1) + ' mi · ' + t.mileageCount + ' trip' + (t.mileageCount === 1 ? '' : 's') : 'no trips logged' },
   { label: 'Est. Income Tax', value: fmtMoney(t.estTax), cls: 'red', sub: taxSub },
   { label: 'Net Profit',     value: fmtMoney(t.netProfit),  cls: t.netProfit >= 0 ? 'green' : 'red' },
   { label: 'Profit + Inventory', value: fmtMoney(profitWithInv), cls: profitWithInv >= 0 ? 'green' : 'red',
@@ -2083,6 +2131,83 @@ function renderCosts() {
 }
 
 // ============================================================
+// RENDER: MILEAGE
+// ============================================================
+function clearMileageFilter() {
+  const search = document.getElementById('mileage-search');
+  if (search) search.value = '';
+  renderMileage();
+}
+
+function renderMileage() {
+  const el  = document.getElementById('mileage-table-wrap');
+  const totEl = document.getElementById('mileage-total-bar');
+  if (!el) return;
+
+  const allRows = filteredMileage().slice().reverse();
+
+  const q = (document.getElementById('mileage-search')?.value || '').toLowerCase().trim();
+  const rows = q
+  ? allRows.filter(m => ((m.purpose || '') + ' ' + (m.notes || '')).toLowerCase().includes(q))
+  : allRows;
+
+  if (!rows.length) {
+  el.innerHTML = emptyHTML(
+  q ? 'No trips match "' + q + '"' : 'No mileage logged',
+  q ? 'Try clearing the search or pick a different keyword.' : 'Click "+ Add Trip" to log business miles. Each trip multiplies miles × IRS rate to produce a tax deduction.'
+  );
+  if (totEl) totEl.style.display = 'none';
+  return;
+  }
+
+  el.innerHTML =
+  '<div class="bulk-bar" id="bulk-bar-mileage">' +
+  '<span class="sel-count" id="bulk-count-mileage">0 selected</span>' +
+  '<button class="btn btn-danger btn-sm" onclick="deleteSelected(\'mileage\')">Delete Selected</button>' +
+  '<button class="btn btn-secondary btn-sm" onclick="clearSelection(\'mileage-tbl\',\'bulk-bar-mileage\',\'bulk-count-mileage\')">✕ Clear</button>' +
+  '</div>' +
+  '<div class="table-wrap"><table id="mileage-tbl">' +
+  '<thead><tr>' +
+  '<th class="cb-col"><input type="checkbox" class="select-all-cb" onchange="toggleSelectAll(\'mileage-tbl\',this,\'bulk-bar-mileage\',\'bulk-count-mileage\')" title="Select all"></th>' +
+  '<th onclick="sortTable(\'mileage-tbl\',1,\'date\')">Date</th>' +
+  '<th onclick="sortTable(\'mileage-tbl\',2)">Purpose</th>' +
+  '<th onclick="sortTable(\'mileage-tbl\',3,true)">Miles</th>' +
+  '<th onclick="sortTable(\'mileage-tbl\',4,true)">Rate</th>' +
+  '<th onclick="sortTable(\'mileage-tbl\',5,true)">Deduction</th>' +
+  '<th onclick="sortTable(\'mileage-tbl\',6)">Notes</th>' +
+  '<th>Actions</th>' +
+  '</tr></thead><tbody>' +
+  rows.map(m => {
+    const rate = (typeof m.rate === 'number' && m.rate > 0) ? m.rate : S.mileageRate;
+    const ded  = mileageDeductionOf(m);
+    return '<tr>' +
+    '<td class="cb-col"><input type="checkbox" class="row-cb" data-id="' + escA(m.id) + '" onchange="onRowCbChange(\'bulk-bar-mileage\',\'bulk-count-mileage\',\'mileage-tbl\')"></td>' +
+    '<td>' + fmtDate(m.date) + '</td>' +
+    '<td>' + esc(m.purpose || '—') + '</td>' +
+    '<td class="right">' + (m.miles || 0).toFixed(1) + '</td>' +
+    '<td class="right muted">$' + rate.toFixed(3) + '</td>' +
+    '<td class="right green">' + fmtMoney(ded) + '</td>' +
+    '<td class="muted">' + esc(m.notes || '—') + '</td>' +
+    '<td>' +
+    '<button class="btn btn-secondary btn-sm" onclick="openModal(\'edit-mileage\',\'' + escA(m.id) + '\')">Edit</button> ' +
+    '<button class="btn btn-danger btn-sm" onclick="deleteMileage(\'' + escA(m.id) + '\')">Del</button>' +
+    '</td>' +
+    '</tr>';
+  }).join('') + '</tbody></table></div>';
+
+  const miles = rows.reduce((s, m) => s + (m.miles || 0), 0);
+  const ded   = rows.reduce((s, m) => s + mileageDeductionOf(m), 0);
+  if (totEl) {
+  totEl.style.display = 'block';
+  const label = q ? 'Filtered Total (' + rows.length + ' of ' + allRows.length + '): ' : 'Total: ';
+  totEl.innerHTML = '<span class="text-muted fw600">' + label + '</span>' +
+  '<span style="color:var(--text);font-size:14px;font-weight:700;margin-right:14px">' + miles.toFixed(1) + ' mi</span>' +
+  '<span class="text-muted fw600">Deduction: </span>' +
+  '<span style="color:var(--green);font-size:16px;font-weight:700">' + fmtMoney(ded) + '</span>';
+  }
+}
+
+// ============================================================
 // RENDER: REPORTS
 // ============================================================
 
@@ -2114,6 +2239,7 @@ function generateReport() {
   const topSets  = buildSetMap().slice(0, 8);
   const lowStock = getLowStockItems();
   const costs  = filteredCosts();
+  const mileage = filteredMileage();
   const periodLbl = fmtDate(start.toISOString()) + ' – ' + fmtDate(end.toISOString());
 
   // Restore
@@ -2214,12 +2340,42 @@ ${costs.length ? `
   </tbody>
 </table>` : '<p style="color:#777;font-size:10pt">No expenses for this period.</p>'}
 
+<h2 style="font-size:13pt;border-bottom:1px solid #ccc;padding-bottom:5px;margin:24px 0 10px">5b — Business Mileage</h2>
+${mileage.length ? `
+<table style="width:100%;border-collapse:collapse;font-size:10.5pt">
+  <thead><tr style="background:#f0f0f0">
+  <th style="padding:6px 8px;border:1px solid #ddd;text-align:left">Date</th>
+  <th style="padding:6px 8px;border:1px solid #ddd;text-align:left">Purpose</th>
+  <th style="padding:6px 8px;border:1px solid #ddd;text-align:right">Miles</th>
+  <th style="padding:6px 8px;border:1px solid #ddd;text-align:right">Rate</th>
+  <th style="padding:6px 8px;border:1px solid #ddd;text-align:right">Deduction</th>
+  <th style="padding:6px 8px;border:1px solid #ddd;text-align:left">Notes</th>
+  </tr></thead>
+  <tbody>
+  ${mileage.map((m,i) => {
+    const rate = (typeof m.rate === 'number' && m.rate > 0) ? m.rate : S.mileageRate;
+    return `<tr${i%2?' style="background:#f9f9f9"':''}>
+    <td style="padding:5px 8px;border:1px solid #ddd">${fmtDate(m.date)}</td>
+    <td style="padding:5px 8px;border:1px solid #ddd">${esc(m.purpose||'—')}</td>
+    <td style="padding:5px 8px;border:1px solid #ddd;text-align:right">${(m.miles||0).toFixed(1)}</td>
+    <td style="padding:5px 8px;border:1px solid #ddd;text-align:right">$${rate.toFixed(3)}</td>
+    <td style="padding:5px 8px;border:1px solid #ddd;text-align:right">${fmtMoney(mileageDeductionOf(m))}</td>
+    <td style="padding:5px 8px;border:1px solid #ddd">${esc(m.notes||'—')}</td>
+    </tr>`;
+  }).join('')}
+  <tr style="background:#f0f0f0;font-weight:bold"><td colspan="2" style="padding:6px 8px;border:1px solid #ddd">TOTAL MILEAGE</td><td style="padding:6px 8px;border:1px solid #ddd;text-align:right">${t.totalMiles.toFixed(1)} mi</td><td style="border:1px solid #ddd"></td><td style="padding:6px 8px;border:1px solid #ddd;text-align:right">${fmtMoney(t.mileageDeduction)}</td><td style="border:1px solid #ddd"></td></tr>
+  </tbody>
+</table>
+<p style="font-size:9pt;color:#888;margin-top:6px">Computed at IRS standard mileage rate. Per-entry rates are locked in at the time of logging.</p>
+` : '<p style="color:#777;font-size:10pt">No business trips logged for this period.</p>'}
+
 <h2 style="font-size:13pt;border-bottom:1px solid #ccc;padding-bottom:5px;margin:24px 0 10px">6 — Net Profit Summary (P&amp;L)</h2>
 <table style="width:360px;border-collapse:collapse;font-size:11pt">
   ${pRow('Gross Revenue',  fmtMoney(t.totalGross))}
   ${pRow('Less: Square Processing Fees', '(' + fmtMoney(t.sqFees)  + ')', false, true)}
   ${pRow('Less: Tax Collected (WI)',  '(' + fmtMoney(t.totalTax)  + ')', false, true)}
   ${pRow('Less: Business Expenses',  '(' + fmtMoney(t.totalCosts) + ')', false, true)}
+  ${pRow('Less: Mileage Deduction',  '(' + fmtMoney(t.mileageDeduction) + ')', false, true)}
   ${pRow('NET PROFIT', fmtMoney(t.netProfit), true, t.netProfit < 0)}
 </table>
 
@@ -2317,6 +2473,21 @@ function openModal(type, id) {
   title.textContent = 'Edit Expense';
   body.innerHTML = buildCostForm(cost);
   footer.innerHTML = '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveCost(\'' + escA(id) + '\')">Update Expense</button>';
+  break;
+  }
+
+  case 'add-mileage':
+  title.textContent = 'Log Business Trip';
+  body.innerHTML = buildMileageForm();
+  footer.innerHTML = '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveMileage()">Save Trip</button>';
+  break;
+
+  case 'edit-mileage': {
+  const trip = S.mileage.find(x => x.id === id);
+  if (!trip) { closeModal(); return; }
+  title.textContent = 'Edit Trip';
+  body.innerHTML = buildMileageForm(trip);
+  footer.innerHTML = '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveMileage(\'' + escA(id) + '\')">Update Trip</button>';
   break;
   }
 
@@ -2608,6 +2779,90 @@ function deleteCost(id) {
   });
 }
 
+function buildMileageForm(d) {
+  const dateVal = d ? (d.date || '').slice(0,10) : todayISO();
+  // For new entries, pre-fill the rate field with the global rate. For edits,
+  // show whatever rate was locked in at save time (falls back to global rate
+  // for legacy rows that pre-date per-entry rate storage).
+  const rateVal = d
+  ? ((typeof d.rate === 'number' && d.rate > 0) ? d.rate : S.mileageRate)
+  : S.mileageRate;
+  return `
+<div id="form-err" class="alert alert-error" style="display:none"></div>
+<div class="form-grid">
+  <div class="form-row">
+  <label class="field-label">Date *</label>
+  <input type="date" id="mile-date" value="${dateVal}" />
+  </div>
+  <div class="form-row">
+  <label class="field-label">Miles *</label>
+  <input type="number" id="mile-miles" value="${d ? d.miles : ''}" placeholder="e.g. 42.6" step="0.1" min="0" oninput="updateMileageDedDisplay()" />
+  </div>
+</div>
+<div class="form-row">
+  <label class="field-label">Purpose * (e.g. Card show in Madison)</label>
+  <input type="text" id="mile-purpose" value="${escA(d?.purpose||'')}" placeholder="e.g. Drive to Chicago show, supply run, customer pickup" />
+</div>
+<div class="form-grid">
+  <div class="form-row">
+  <label class="field-label">Rate ($/mi)</label>
+  <input type="number" id="mile-rate" value="${rateVal.toFixed(3)}" step="0.001" min="0" oninput="updateMileageDedDisplay()" />
+  </div>
+  <div class="form-row">
+  <label class="field-label">Deduction (preview)</label>
+  <input type="text" id="mile-ded-display" value="${d ? '$' + ((d.miles||0) * rateVal).toFixed(2) : ''}" readonly tabindex="-1" style="background:var(--bg3);color:var(--green);font-weight:700" />
+  </div>
+</div>
+<div class="form-row">
+  <label class="field-label">Notes</label>
+  <input type="text" id="mile-notes" value="${escA(d?.notes||'')}" placeholder="Optional — start/end location, odometer, etc." />
+</div>`;
+}
+
+function updateMileageDedDisplay() {
+  const miles = parseFloat(document.getElementById('mile-miles')?.value) || 0;
+  const rate  = parseFloat(document.getElementById('mile-rate')?.value) || 0;
+  const el    = document.getElementById('mile-ded-display');
+  if (el) el.value = miles > 0 && rate > 0 ? '$' + (miles * rate).toFixed(2) : '';
+}
+
+function saveMileage(editId) {
+  const dateRaw = v('mile-date');
+  const miles   = vn('mile-miles');
+  const purpose = v('mile-purpose');
+  const rate    = vn('mile-rate');
+  if (!dateRaw) { showFormErr('Date is required.'); return; }
+  if (miles === null || miles <= 0) { showFormErr('Enter a valid mileage.'); return; }
+  if (!purpose) { showFormErr('Purpose is required (the IRS wants business reason logged).'); return; }
+  if (rate === null || rate < 0) { showFormErr('Enter a valid rate ($/mi).'); return; }
+
+  const date = dateRaw + 'T12:00:00Z';
+  const entry = {
+  date,
+  miles: parseFloat(miles.toFixed(2)),
+  purpose,
+  notes: v('mile-notes'),
+  rate: parseFloat(rate.toFixed(4))
+  };
+
+  if (editId) {
+  const idx = S.mileage.findIndex(x => x.id === editId);
+  if (idx >= 0) S.mileage[idx] = { ...S.mileage[idx], ...entry };
+  } else {
+  S.mileage.push({ id: genId(), ...entry });
+  }
+  saveState(); closeModal(); renderMileage();
+  notifyIfOutsidePeriod(date, 'trip');
+}
+
+function deleteMileage(id) {
+  appConfirm('Delete this trip?', 'Delete', () => {
+  closeModal();
+  S.mileage = S.mileage.filter(m => m.id !== id);
+  saveState(); renderMileage();
+  });
+}
+
 // ============================================================
 // TABLE SORT
 // ============================================================
@@ -2665,6 +2920,8 @@ function toggleSettings(e) {
   if (taxEl) taxEl.value = S.taxRate;
   const fedEl = document.getElementById('global-fed-tax-rate');
   if (fedEl) fedEl.value = S.fedTaxRate;
+  const milEl = document.getElementById('global-mileage-rate');
+  if (milEl) milEl.value = (S.mileageRate || 0).toFixed(3);
 }
 
 function updateTaxRate(val) {
@@ -2677,6 +2934,19 @@ function updateFedTaxRate(val) {
   if (!isNaN(r) && r >= 0 && r <= 50) {
   S.fedTaxRate = r;
   saveState();
+  if (S.tab === 'overview') renderOverview();
+  }
+}
+
+function updateMileageRate(val) {
+  const r = parseFloat(val);
+  if (!isNaN(r) && r >= 0 && r <= 5) {
+  S.mileageRate = r;
+  saveState();
+  // Only legacy entries (no per-entry rate) shift when the global rate
+  // changes; new entries lock in their rate at save time. Refresh views
+  // that depend on the rate either way.
+  if (S.tab === 'mileage')  renderMileage();
   if (S.tab === 'overview') renderOverview();
   }
 }
@@ -2699,11 +2969,14 @@ function exportData() {
   version: 1,
   businessName: S.businessName,
   taxRate: S.taxRate,
+  fedTaxRate: S.fedTaxRate,
+  mileageRate: S.mileageRate,
   squareSales: S.squareSales,
   cashSales: S.cashSales,
   inventory: S.inventory,
   singles: S.singles,
   costs: S.costs,
+  mileage: S.mileage,
   processedSaleIds: [...S.processedSaleIds]
   };
 
@@ -2743,11 +3016,14 @@ function importData(event) {
   appConfirm('Restore from backup dated ' + (backup.exportedAt ? fmtDate(backup.exportedAt) : 'unknown') + '? This will REPLACE all current data. Cannot be undone.', 'Restore', () => {
   S.businessName  = backup.businessName  || S.businessName;
   S.taxRate  = backup.taxRate  ?? S.taxRate;
+  S.fedTaxRate  = backup.fedTaxRate  ?? S.fedTaxRate;
+  S.mileageRate  = backup.mileageRate  ?? S.mileageRate;
   S.squareSales  = backup.squareSales  || [];
   S.cashSales  = backup.cashSales  || [];
   S.inventory  = backup.inventory  || [];
   S.singles  = backup.singles  || [];
   S.costs  = backup.costs  || [];
+  S.mileage  = backup.mileage  || [];
   S.processedSaleIds = new Set(backup.processedSaleIds || []);
   saveState();
   refreshCurrentTab();
@@ -3497,7 +3773,8 @@ function deleteSelected(section) {
   // Only the unified Sales table and the Costs table use this; the legacy
   // separate Square / Cash sub-tables (sq-tbl, cash-tbl) are gone.
   const map = {
-  costs: { tbl:'costs-tbl', bar:'bulk-bar-costs', cnt:'bulk-count-costs', arr:'costs' }
+  costs:   { tbl:'costs-tbl',   bar:'bulk-bar-costs',   cnt:'bulk-count-costs',   arr:'costs'   },
+  mileage: { tbl:'mileage-tbl', bar:'bulk-bar-mileage', cnt:'bulk-count-mileage', arr:'mileage' }
   };
   const m = map[section]; if (!m) return;
   const ids = getSelectedIds(m.tbl);
