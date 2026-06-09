@@ -3002,6 +3002,13 @@ function _parseOneAppleBlock(block) {
   const KNOWN_PREFIX = /^(scheduled|location|invitees|attendees|repeats|alert|alarm|url|notes|note|calendar|account|status)\s*:/i;
   let title = '';
   let date  = '';
+  // Apple Calendar's "Location:" line carries the venue name; the actual
+  // postal address shows up on the line(s) below. We want only the
+  // address for geocoding — venue names like "Mccook Athletic Exposition
+  // Center" return zero Nominatim hits even when the street address
+  // resolves cleanly. So: stash the inline text as a fallback, but only
+  // use the subsequent lines when they exist.
+  let venueText = '';
   const locLines = [];
   let inLocation = false;
   for (const line of lines) {
@@ -3014,7 +3021,7 @@ function _parseOneAppleBlock(block) {
   if (/^location\s*:/i.test(line)) {
   inLocation = true;
   const rest = line.replace(/^location\s*:\s*/i, '').trim();
-  if (rest) locLines.push(rest);
+  if (rest) venueText = rest; // stash venue name; only used if no address follows
   continue;
   }
   if (KNOWN_PREFIX.test(line)) {
@@ -3032,10 +3039,13 @@ function _parseOneAppleBlock(block) {
   // ignored — they're usually invitee names, status text, etc.
   }
   if (!date) return null;
+  // Prefer address lines; fall back to the venue text only when nothing
+  // followed the "Location:" prefix (someone typed a bare address inline).
+  const finalLocation = locLines.length ? locLines.join(', ').trim() : venueText;
   return {
   date,
   summary: title || '(no title)',
-  location: locLines.join(', ').trim(),
+  location: finalLocation,
   description: '',
   uid: ''
   };
