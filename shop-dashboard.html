@@ -2000,6 +2000,8 @@ function renderAllSalesTable() {
   el.innerHTML =
   '<div class="bulk-bar" id="bulk-bar-all">' +
   '<span class="sel-count" id="bulk-count-all">0 selected</span>' +
+  '<button class="btn btn-secondary btn-sm" onclick="retagSelectedSales(true)" title="Mark all selected sales as reported on taxes (clears any partial amount)">→ Reported</button>' +
+  '<button class="btn btn-secondary btn-sm" onclick="retagSelectedSales(false)" title="Mark all selected sales as not reported on taxes">→ Unreported</button>' +
   '<button class="btn btn-danger btn-sm" onclick="deleteSelectedAll()">Delete Selected</button>' +
   '<button class="btn btn-secondary btn-sm" onclick="clearSelection(\'all-tbl\',\'bulk-bar-all\',\'bulk-count-all\')">✕ Clear</button>' +
   '</div>' +
@@ -2127,6 +2129,43 @@ function deleteSelectedAll() {
   if (cashIds.size) S.cashSales  = S.cashSales.filter(x => !cashIds.has(x.id));
   saveState(); refreshCurrentTab();
   });
+}
+
+// Bulk-set the reported flag on every selected sale in the unified table.
+// Used by the '→ Reported' / '→ Unreported' buttons in the sales bulk bar.
+// Also clears any per-sale reportedAmount so the toggle leaves a clean state
+// (full net when reported, $0 when not).
+function retagSelectedSales(makeReported) {
+  const tbl = document.getElementById('all-tbl');
+  if (!tbl) return;
+  const checked = [...tbl.querySelectorAll('input.row-cb:checked')];
+  if (!checked.length) return;
+  const sqIds  = new Set(checked.filter(c => c.dataset.src === 'square').map(c => c.dataset.id));
+  const cashIds = new Set(checked.filter(c => c.dataset.src === 'cash').map(c => c.dataset.id));
+  const reported = !!makeReported;
+  let changed = 0;
+  for (const s of S.squareSales) {
+  if (sqIds.has(s.id) && (s.reported !== reported || s.reportedAmount !== undefined)) {
+  s.reported = reported;
+  delete s.reportedAmount;
+  changed++;
+  }
+  }
+  for (const s of S.cashSales) {
+  if (cashIds.has(s.id) && (s.reported !== reported || s.reportedAmount !== undefined)) {
+  s.reported = reported;
+  delete s.reportedAmount;
+  changed++;
+  }
+  }
+  saveState();
+  refreshCurrentTab();
+  const status = document.getElementById('sync-status');
+  if (status) {
+  const label = reported ? 'reported' : 'unreported';
+  status.innerHTML = '<span style="color:var(--green)">✓ Marked ' + changed + ' sale' + (changed === 1 ? '' : 's') + ' as ' + label + '</span>';
+  setTimeout(() => { if (status) status.textContent = ''; }, 4000);
+  }
 }
 
 // ============================================================
