@@ -1473,10 +1473,13 @@ function renderOverview() {
   if (t.inventoryCosts > 0) {
   metrics.push({ label: 'Inventory Bought', value: fmtMoney(t.inventoryCosts), cls: 'muted', muted: true,
     sub: 'counts toward taxes only when sold' });
-  // Quick read: did this period's sales cover what you spent restocking?
-  const revAfterInv = parseFloat((t.totalNet - t.inventoryCosts).toFixed(2));
-  metrics.push({ label: 'Revenue − Inventory Spend', value: fmtMoney(revAfterInv), cls: revAfterInv >= 0 ? 'green' : 'red',
-    sub: revAfterInv >= 0 ? 'left over after restocking' : 'spent more on stock than you earned' });
+  }
+  // Gross profit on sold inventory: revenue minus the cost basis of items
+  // actually sold. Skipped when COGS = 0 (would just equal Total Revenue).
+  if (t.cogs > 0) {
+  const grossProfit = parseFloat((t.totalNet - t.cogs).toFixed(2));
+  metrics.push({ label: 'Revenue − COGS', value: fmtMoney(grossProfit), cls: grossProfit >= 0 ? 'green' : 'red',
+    sub: grossProfit >= 0 ? 'gross profit before other expenses' : 'sold inventory for less than it cost' });
   }
   metrics.push({ label: 'Inventory Retail Value', value: fmtMoney(invRetail), cls: 'green',
     sub: invUnits + ' item' + (invUnits === 1 ? '' : 's') + ' in stock' });
