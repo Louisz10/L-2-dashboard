@@ -454,19 +454,19 @@ input[type=checkbox].row-cb{width:16px;height:16px;accent-color:var(--accent);cu
 <div id="setup-screen">
   <div class="setup-box">
   <h1>Pokemon Card Shop Dashboard</h1>
-  <p class="subtitle">Track your card shop revenue, inventory, and costs. Import Square sales via CSV, log cash sales manually, and export PDF reports.</p>
+  <p class="subtitle">Track sales, inventory, costs, and mileage. Estimate your taxes. Everything stays in your browser.</p>
   <div id="setup-first-run">
   <div class="setup-step">
   <div class="setup-num">1</div>
-  <p>Enter your business name below — used on PDF reports.</p>
+  <p>Pick a business name (used on PDF reports).</p>
   </div>
   <div class="setup-step">
   <div class="setup-num">2</div>
-  <p>After setup, import your Square sales from <a href="https://squareup.com/dashboard/sales/transactions" target="_blank" style="color:var(--accent);font-weight:800">squareup.com/dashboard/sales/transactions</a> → set date range → Export → Transactions CSV.</p>
+  <p>Import Square sales from <a href="https://squareup.com/dashboard/sales/transactions" target="_blank" style="color:var(--accent);font-weight:800">your Square Dashboard</a> → Export → Transactions CSV.</p>
   </div>
   <div class="setup-step">
   <div class="setup-num">3</div>
-  <p>Log cash sales manually in the <strong>Sales</strong> tab. All data is saved in your browser.</p>
+  <p>Log cash sales by hand in the <strong>Sales</strong> tab.</p>
   </div>
   <hr class="divider">
   </div>
@@ -511,14 +511,14 @@ input[type=checkbox].row-cb{width:16px;height:16px;accent-color:var(--accent);cu
   <span class="text-muted">%</span>
   </div>
   </div>
-  <div class="settings-item" style="gap:8px" title="Federal income tax bracket used by the Estimated Income Tax tile. SE tax (15.3%) is calculated automatically.">
+  <div class="settings-item" style="gap:8px" title="Your federal income tax bracket. 12% covers most small sellers.">
   <span>Federal Tax Bracket</span>
   <div class="flex-gap" style="gap:4px">
   <input type="number" id="global-fed-tax-rate" style="width:55px;text-align:right;-webkit-appearance:textfield;-moz-appearance:textfield;appearance:textfield" step="any" min="0" max="50" onchange="updateFedTaxRate(this.value)" />
   <span class="text-muted">%</span>
   </div>
   </div>
-  <div class="settings-item" style="gap:8px" title="IRS standard business mileage rate. Default: $0.725/mi. New mileage entries default to this rate; per-entry rate is locked in at save time, so changing this won't shift historical entries.">
+  <div class="settings-item" style="gap:8px" title="IRS standard mileage rate. Each trip locks in this rate when you save it.">
   <span>Mileage Rate</span>
   <div class="flex-gap" style="gap:4px">
   <span class="text-muted">$</span>
@@ -526,31 +526,24 @@ input[type=checkbox].row-cb{width:16px;height:16px;accent-color:var(--accent);cu
   <span class="text-muted">/mi</span>
   </div>
   </div>
-  <div class="settings-item" style="gap:8px" title="Cost basis of your inventory at the start of the tax year. Used in the COGS formula: Beginning + Purchases − Ending. Leave at 0 if you started this year from scratch.">
+  <div class="settings-item" style="gap:8px" title="What your stock was worth at the start of the tax year. Use $0 if you started fresh.">
   <span>Beginning Inventory</span>
   <div class="flex-gap" style="gap:4px">
   <span class="text-muted">$</span>
   <input type="number" id="global-begin-inv" style="width:80px;text-align:right;-webkit-appearance:textfield;-moz-appearance:textfield;appearance:textfield" step="0.01" min="0" onchange="updateBeginningInv(this.value)" />
   </div>
   </div>
-  <div class="settings-item" style="gap:8px" title="Your typical buy price as a percentage of sell price. Used to estimate the cost basis of current inventory (Ending Inventory in the COGS formula). 80% = you buy at 80¢ on the dollar.">
-  <span>Inventory Cost %</span>
+  <div class="settings-item" style="gap:8px" title="What you typically pay vs what you sell for. 80% means you buy at 80¢ per $1 of retail.">
+  <span>Buy Price vs Sell</span>
   <div class="flex-gap" style="gap:4px">
   <input type="number" id="global-inv-cost-ratio" style="width:60px;text-align:right;-webkit-appearance:textfield;-moz-appearance:textfield;appearance:textfield" step="1" min="1" max="100" onchange="updateInvCostRatio(this.value)" />
-  <span class="text-muted">% of sell</span>
-  </div>
-  </div>
-  <div class="settings-item" style="gap:8px" title="Your average cost as a percentage of retail. 80% means you pay 80¢ per $1 of sell price. Applied to inventory purchases AND to inventory items where the per-unit cost is blank (falls back to sellPrice × this ratio). Set to 100% if you log at actual cost.">
-  <span>Cost Ratio (vs retail)</span>
-  <div class="flex-gap" style="gap:4px">
-  <input type="number" id="global-inv-ratio" style="width:60px;text-align:right;-webkit-appearance:textfield;-moz-appearance:textfield;appearance:textfield" step="1" min="1" max="200" onchange="updateInvCostRatio(this.value)" />
   <span class="text-muted">%</span>
   </div>
   </div>
-  <div class="settings-item" style="flex-direction:column;align-items:stretch;gap:6px" title="Starting point for auto-calculated mileage. Stored locally in this browser only.">
+  <div class="settings-item" style="flex-direction:column;align-items:stretch;gap:6px" title="Used as the starting point for auto-calculated mileage. Stored in this browser only.">
   <span>Home / Shop Address</span>
   <input type="text" id="global-home-address" placeholder="e.g. 123 Main St, Madison, WI 53703" style="padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:12px;width:100%;box-sizing:border-box" onchange="updateHomeAddress(this.value)" />
-  <span class="text-muted" style="font-size:10px;line-height:1.4">Used by the 🧭 button in mileage forms. Geocoding via OpenStreetMap; routes via OSRM. Results cached locally.</span>
+  <span class="text-muted" style="font-size:10px;line-height:1.4">Used by the 🧭 button to auto-calculate trip mileage. Never sent anywhere except OpenStreetMap.</span>
   </div>
   <div class="settings-item">
   <button class="link" onclick="exportData()" style="color:var(--green)">⬇ Export Backup (.json)</button>
@@ -897,9 +890,9 @@ input[type=checkbox].row-cb{width:16px;height:16px;accent-color:var(--accent);cu
   <div class="modal-body">
 
   <div class="alert alert-info" style="margin-bottom:14px;font-size:12px;line-height:1.7">
-  In Apple Calendar, click an event and press <strong>⌘C</strong>, then paste below. The format looks like:<br>
+  Click an event in Apple Calendar, press <strong>⌘C</strong>, then paste below. The pasted text should look like this:<br>
   <code style="display:block;background:var(--bg);padding:8px;border-radius:6px;margin-top:6px;font-size:11px;line-height:1.5;color:var(--text2)">Break Time Card Show<br>Scheduled: May 23, 2026 at 9:00 AM to 4:00 PM, CDT<br>Location: Mccook Athletic Exposition Center<br>4750 S Vernon Ave, McCook, IL 60525, United States</code>
-  Round-trip mileage from your <strong>Home Address</strong> (Settings) is auto-calculated.
+  Round-trip miles are calculated automatically from the <strong>Home Address</strong> you set in Settings.
   </div>
 
   <div class="form-row">
@@ -1449,47 +1442,46 @@ function renderOverview() {
   metrics.push({ label: 'Total Revenue',   value: fmtMoney(t.totalNet),    cls: 'green',
     sub: totalTx + ' transaction' + (totalTx === 1 ? '' : 's') });
   metrics.push({ label: 'Net Profit',      value: fmtMoney(t.netProfit),   cls: t.netProfit >= 0 ? 'green' : 'red',
-    sub: 'tax basis — unsold stock not counted' });
+    sub: 'profit before tax' });
   metrics.push({ label: 'Reported Profit', value: fmtMoney(t.reportedNetProfit), cls: t.reportedNetProfit >= 0 ? 'green' : 'red',
-    sub: 'reported sales − expenses − COGS − mileage' });
+    sub: 'only the sales you marked reportable' });
   metrics.push({ label: 'Est. Income Tax', value: fmtMoney(t.estTax),      cls: 'red', sub: taxSub });
 
   // 2 — Revenue breakdown (fees folded into Square Sales sub — no need for a separate tile)
   metrics.push({ label: 'Square Sales',    value: fmtMoney(t.sqNet),       cls: 'green',
-    sub: t.sqCount + ' txn' + (t.sqCount === 1 ? '' : 's') + ' · ' + fmtMoney(t.sqFees) + ' in fees' });
+    sub: t.sqCount + ' sale' + (t.sqCount === 1 ? '' : 's') + ' · ' + fmtMoney(t.sqFees) + ' Square fees' });
   metrics.push({ label: 'Cash / Other Sales', value: fmtMoney(t.cashNet), cls: 'green',
-    sub: t.cashCount + ' entr' + (t.cashCount === 1 ? 'y' : 'ies') });
+    sub: t.cashCount + ' sale' + (t.cashCount === 1 ? '' : 's') });
 
   // 3 — Reported / unreported (only when user has flagged something off)
   if (t.unreportedNet > 0) {
   metrics.push({ label: 'Reported Revenue',   value: fmtMoney(t.reportedNet),   cls: 'green',
-    sub: 'feeds the tax estimate' });
+    sub: 'counts toward your taxes' });
   metrics.push({ label: 'Unreported Revenue', value: fmtMoney(t.unreportedNet), cls: 'muted', muted: true,
-    sub: 'excluded from tax estimate' });
+    sub: 'left off your taxes' });
   }
 
   // 4 — Tax-deductible stack
   metrics.push({ label: 'Business Expenses',      value: fmtMoney(t.expenseCosts), cls: 'red',
-    sub: 'tables, gas, supplies — deductible now' });
-  metrics.push({ label: 'Est. Cost of Goods Sold', value: fmtMoney(t.cogs),       cls: 'red',
-    sub: 'Beg ' + fmtMoney(t.cogsBeg) + ' + Buys ' + fmtMoney(t.cogsPurchases)
-    + ' − End ' + fmtMoney(t.cogsEnd) + ' (' + Math.round(t.cogsRatio * 100) + '% of retail)' });
+    sub: 'tables, gas, supplies, etc.' });
+  metrics.push({ label: 'Cost of Goods Sold', value: fmtMoney(t.cogs),       cls: 'red',
+    sub: 'inventory you actually sold this period' });
   metrics.push({ label: 'Mileage Deduction',       value: fmtMoney(t.mileageDeduction), cls: 'red',
     sub: t.totalMiles ? t.totalMiles.toFixed(1) + ' mi · ' + t.mileageCount + ' trip' + (t.mileageCount === 1 ? '' : 's') : 'no trips logged' });
 
   // 5 — Inventory + alt profit view (inventory purchases only show when there are any)
   if (t.inventoryCosts > 0) {
-  metrics.push({ label: 'Inventory Purchases',   value: fmtMoney(t.inventoryCosts), cls: 'muted', muted: true,
-    sub: 'not deductible until sold (see COGS)' });
+  metrics.push({ label: 'Inventory Bought', value: fmtMoney(t.inventoryCosts), cls: 'muted', muted: true,
+    sub: 'counts toward taxes only when sold' });
   }
   metrics.push({ label: 'Inventory Retail Value', value: fmtMoney(invRetail), cls: 'green',
-    sub: invUnits + ' unit' + (invUnits === 1 ? '' : 's') + ' in stock' });
-  metrics.push({ label: 'Net Cash Flow',          value: fmtMoney(t.netCash),     cls: t.netCash >= 0 ? 'green' : 'red',
-    sub: 'every $ out incl. inventory buys' });
+    sub: invUnits + ' item' + (invUnits === 1 ? '' : 's') + ' in stock' });
+  metrics.push({ label: 'Cash Flow', value: fmtMoney(t.netCash), cls: t.netCash >= 0 ? 'green' : 'red',
+    sub: 'money in minus money out' });
 
   // 6 — Pass-throughs
-  metrics.push({ label: 'WI Tax Collected', value: fmtMoney(t.totalTax), cls: 'red',
-    sub: 'owed to WI DOR' });
+  metrics.push({ label: 'Sales Tax Collected', value: fmtMoney(t.totalTax), cls: 'red',
+    sub: 'owed to the state' });
 
   const grid = document.getElementById('overview-metrics');
   if (grid) {
@@ -1998,7 +1990,7 @@ function renderAllSalesTable() {
   const filterActive = q || srcFilterActive;
   el.innerHTML = emptyHTML(
   filterActive ? 'No sales match your filters' : 'No sales this period',
-  filterActive ? 'Try clearing the search or source filter.' : 'Import a Square CSV or click "+ Add Sale" to record a cash transaction.'
+  filterActive ? 'Try clearing the filters.' : 'Import a Square CSV or click "+ Add Cash Sale" to start.'
   );
   const totBar = document.getElementById('sales-total-bar');
   if (totBar) totBar.style.display = 'none';
@@ -2382,11 +2374,11 @@ function renderCosts() {
   : _costsView === 'expense' ? 'business expenses'
   : 'costs';
   el.innerHTML = emptyHTML(
-  q ? 'No ' + viewLabel + ' match "' + q + '"' : 'No ' + viewLabel + ' logged',
-  q ? 'Try clearing the search or pick a different keyword.'
+  q ? 'No ' + viewLabel + ' match "' + q + '"' : 'No ' + viewLabel + ' yet',
+  q ? 'Try clearing the search.'
   : (_costsView === 'inventory'
-  ? 'Click "+ Inventory Purchase" to log a buy. Inventory cost flows to taxable income via Cost of Goods Sold when items sell — not when bought.'
-  : 'Click "+ Expense" to track deductibles like table fees, gas, shipping, and supplies.')
+  ? 'Click "+ Inventory Purchase" to log a buy. These count toward taxes only after the items sell.'
+  : 'Click "+ Expense" for things like table fees, gas, shipping, and supplies.')
   );
   if (totEl) totEl.style.display = 'none';
   return;
@@ -2470,8 +2462,8 @@ function renderMileage() {
 
   if (!rows.length) {
   el.innerHTML = emptyHTML(
-  q ? 'No trips match "' + q + '"' : 'No mileage logged',
-  q ? 'Try clearing the search or pick a different keyword.' : 'Click "+ Add Trip" to log business miles. Each trip multiplies miles × IRS rate to produce a tax deduction.'
+  q ? 'No trips match "' + q + '"' : 'No trips yet',
+  q ? 'Try clearing the search.' : 'Click "+ Add Trip" to log business miles. Miles × IRS rate becomes a tax deduction.'
   );
   if (totEl) totEl.style.display = 'none';
   return;
@@ -2576,10 +2568,10 @@ function generateReport() {
   ${pRow('↳ Square Sales (' + t.sqCount + ' transactions)', fmtMoney(t.sqGross))}
   ${pRow('↳ Cash Sales (' + t.cashCount + ' entries)', fmtMoney(t.cashGross))}
   ${pRow('Less: Square Processing Fees', '(' + fmtMoney(t.sqFees) + ')', false, true)}
-  ${pRow('Net Profit (tax basis)', fmtMoney(t.netProfit), true, t.netProfit < 0)}
-  ${pRow('Net Cash Flow (incl. inventory buys)', fmtMoney(t.netCash), false, t.netCash < 0)}
+  ${pRow('Net Profit (for taxes)', fmtMoney(t.netProfit), true, t.netProfit < 0)}
+  ${pRow('Cash Flow (money in − money out)', fmtMoney(t.netCash), false, t.netCash < 0)}
 </table>
-<p style="font-size:9pt;color:#888;margin-top:6px">Net Profit excludes unsold inventory purchases per Schedule C; only items actually sold are deducted via COGS. Cash Flow is informational — what hit the bank.</p>
+<p style="font-size:9pt;color:#888;margin-top:6px">Net Profit counts inventory only after it sells. Cash Flow shows every dollar that left the bank, including stock you haven't sold yet.</p>
 
 <h2 style="font-size:13pt;border-bottom:1px solid #ccc;padding-bottom:5px;margin:24px 0 10px">2 — Wisconsin Tax Summary</h2>
 <table style="width:100%;border-collapse:collapse;font-size:10.5pt">
@@ -2659,7 +2651,7 @@ ${costs.length ? `
   <tr style="background:#f0f0f0;font-weight:bold"><td colspan="2" style="padding:6px 8px;border:1px solid #ddd">TOTAL — INVENTORY PURCHASES</td><td style="padding:6px 8px;border:1px solid #ddd;text-align:right">${fmtMoney(t.inventoryCosts)}</td><td style="border:1px solid #ddd"></td></tr>
   </tbody>
 </table>
-<p style="font-size:9pt;color:#888;margin-top:6px">Inventory purchases are not deductible until sold — see Cost of Goods Sold below.</p>` : '<p style="color:#777;font-size:10pt">No expenses for this period.</p>'}
+<p style="font-size:9pt;color:#888;margin-top:6px">Inventory purchases only count toward taxes once the items sell — see Cost of Goods Sold below.</p>` : '<p style="color:#777;font-size:10pt">No expenses for this period.</p>'}
 
 <h2 style="font-size:13pt;border-bottom:1px solid #ccc;padding-bottom:5px;margin:24px 0 10px">5b — Business Mileage</h2>
 ${mileage.length ? `
@@ -2893,13 +2885,13 @@ function buildCashForm(d) {
 <div class="form-row" style="margin-top:4px">
   <label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
   <input type="checkbox" id="cf-reported" ${reported ? 'checked' : ''} onchange="onCfReportedToggle()" style="width:16px;height:16px;cursor:pointer" />
-  <span>Reported for taxes</span>
-  <span class="text-muted" style="font-size:11px">(off = $0 to Reported Revenue)</span>
+  <span>Report this sale on my taxes</span>
+  <span class="text-muted" style="font-size:11px">(off = skipped on the tax estimate)</span>
   </label>
 </div>
 <div class="form-row" id="cf-reported-amt-row" style="margin-top:4px${reported ? '' : ';display:none'}">
-  <label class="field-label">Amount to report ($) — leave blank to report full net</label>
-  <input type="number" id="cf-reported-amount" value="${typeof d?.reportedAmount === 'number' ? d.reportedAmount : ''}" placeholder="full net amount" step="0.01" min="0" />
+  <label class="field-label">Amount to report ($)</label>
+  <input type="number" id="cf-reported-amount" value="${typeof d?.reportedAmount === 'number' ? d.reportedAmount : ''}" placeholder="leave blank to report the full sale" step="0.01" min="0" />
 </div>
 <div class="form-row">
   <label class="field-label">Notes</label>
@@ -2967,14 +2959,14 @@ function buildCostForm(d, presetType) {
   <input type="radio" name="cost-type" value="expense" ${type === 'expense' ? 'checked' : ''} />
   <div>
   <div style="font-weight:700;font-size:13px">Business Expense</div>
-  <div class="text-muted" style="font-size:11px">Deductible now — table fees, gas, supplies</div>
+  <div class="text-muted" style="font-size:11px">Tables, gas, supplies — counts now</div>
   </div>
   </label>
   <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:8px 12px;background:var(--bg2);border:2px solid var(--border);border-radius:8px;flex:1;min-width:160px">
   <input type="radio" name="cost-type" value="inventory" ${type === 'inventory' ? 'checked' : ''} />
   <div>
   <div style="font-weight:700;font-size:13px">Inventory Purchase</div>
-  <div class="text-muted" style="font-size:11px">Deductible only when sold (via COGS)</div>
+  <div class="text-muted" style="font-size:11px">Sealed boxes, singles — counts when sold</div>
   </div>
   </label>
   </div>
@@ -2990,8 +2982,8 @@ function buildCostForm(d, presetType) {
   </div>
 </div>
 <div class="form-row">
-  <label class="field-label">Name * (e.g. Table fee — Chicago show, or "Sealed box buy — Surging Sparks")</label>
-  <input type="text" id="cost-name" value="${escA(d?.name||'')}" placeholder="Short description of the cost" />
+  <label class="field-label">Name *</label>
+  <input type="text" id="cost-name" value="${escA(d?.name||'')}" placeholder="e.g. Table fee — Chicago show" />
 </div>
 <div class="form-row">
   <label class="field-label">Notes</label>
@@ -4904,13 +4896,13 @@ function buildSqSaleEditForm(s) {
 <div class="form-row" style="margin-top:6px">
   <label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
   <input type="checkbox" id="sq-edit-reported" ${reported ? 'checked' : ''} onchange="onSqEditReportedToggle()" style="width:16px;height:16px;cursor:pointer" />
-  <span>Reported for taxes</span>
-  <span class="text-muted" style="font-size:11px">(off = $0 to Reported Revenue)</span>
+  <span>Report this sale on my taxes</span>
+  <span class="text-muted" style="font-size:11px">(off = skipped on the tax estimate)</span>
   </label>
 </div>
 <div class="form-row" id="sq-edit-reported-amt-row" style="margin-top:4px${reported ? '' : ';display:none'}">
-  <label class="field-label">Amount to report ($) — leave blank to report full net</label>
-  <input type="number" id="sq-edit-reported-amount" value="${typeof s?.reportedAmount === 'number' ? s.reportedAmount : ''}" placeholder="full net amount" step="0.01" min="0" />
+  <label class="field-label">Amount to report ($)</label>
+  <input type="number" id="sq-edit-reported-amount" value="${typeof s?.reportedAmount === 'number' ? s.reportedAmount : ''}" placeholder="leave blank to report the full sale" step="0.01" min="0" />
 </div>
 <p class="text-muted mt8" style="font-size:11px">Changing Source will move this record to the correct category. Fee is ignored for Cash sales.</p>`;
 }
