@@ -1473,6 +1473,10 @@ function renderOverview() {
   if (t.inventoryCosts > 0) {
   metrics.push({ label: 'Inventory Bought', value: fmtMoney(t.inventoryCosts), cls: 'muted', muted: true,
     sub: 'counts toward taxes only when sold' });
+  // Quick read: did this period's sales cover what you spent restocking?
+  const revAfterInv = parseFloat((t.totalNet - t.inventoryCosts).toFixed(2));
+  metrics.push({ label: 'Revenue − Inventory Spend', value: fmtMoney(revAfterInv), cls: revAfterInv >= 0 ? 'green' : 'red',
+    sub: revAfterInv >= 0 ? 'left over after restocking' : 'spent more on stock than you earned' });
   }
   metrics.push({ label: 'Inventory Retail Value', value: fmtMoney(invRetail), cls: 'green',
     sub: invUnits + ' item' + (invUnits === 1 ? '' : 's') + ' in stock' });
