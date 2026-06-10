@@ -1028,7 +1028,7 @@ function loadState() {
   S.businessName = localStorage.getItem('biz_name') || 'Pokemon Card Shop';
   // Chart series — array of enabled keys. Migrate from legacy 'chart_source'
   // (single-string: 'all'|'square'|'cash') if present, else use saved array.
-  const validKeys = ['combined','square','cash','spending'];
+  const validKeys = ['combined','square','cash','spending','inventory'];
   const seriesRaw = localStorage.getItem('chart_series');
   const legacy = localStorage.getItem('chart_source');
   if (seriesRaw) {
@@ -1534,12 +1534,13 @@ function renderOverview() {
 // independently, so each gets a distinct color (Combined was sharing green
 // with Square — when both are on the lines need to be tellable apart).
 const CHART_SERIES_META = {
-  combined: { label: 'Combined Revenue', color: '#ffc840' },
-  square:   { label: 'Square Revenue',   color: '#4fbd7e' },
-  cash:     { label: 'Cash Revenue',     color: '#44aaff' },
-  spending: { label: 'Spending',         color: '#e02020' }
+  combined:  { label: 'Combined Revenue', color: '#ffc840' },
+  square:    { label: 'Square Revenue',   color: '#4fbd7e' },
+  cash:      { label: 'Cash Revenue',     color: '#44aaff' },
+  spending:  { label: 'Spending',         color: '#e02020' },
+  inventory: { label: 'Inventory Buys',   color: '#ff8c40' }
 };
-const CHART_SERIES_ORDER = ['combined','square','cash','spending'];
+const CHART_SERIES_ORDER = ['combined','square','cash','spending','inventory'];
 
 function isSeriesOn(key) { return Array.isArray(S.chartSeries) && S.chartSeries.includes(key); }
 
@@ -1566,14 +1567,20 @@ function drawRevenueChart() {
   const showSq    = isSeriesOn('square');
   const showCash    = isSeriesOn('cash');
   const showSpend   = isSeriesOn('spending');
+  const showInv     = isSeriesOn('inventory');
   // Combined draws from BOTH revenue sources, so we need both arrays.
   const sqSales   = (showSq   || showCombined) ? filteredSqSales()   : [];
   const cashSales = (showCash || showCombined) ? filteredCashSales() : [];
 
   let { start, end } = getDateRange();
-  const costs    = showSpend ? filteredCosts() : [];
+  // Spending = all cost entries; Inventory = inventory-typed only. Fetch
+  // the full list once if either series is on, then split on type.
+  const costs    = (showSpend || showInv) ? filteredCosts() : [];
+  const invCosts = showInv ? costs.filter(c => c.type === 'inventory') : [];
 
-  // For "all time", derive range from actual data (only the enabled series)
+  // For "all time", derive range from actual data (only the enabled series).
+  // `costs` already covers both Spending and Inventory series — no need to
+  // include invCosts separately.
   if (S.period === 'all') {
   const allDates = [
   ...sqSales.map(s => s.date),
@@ -1604,15 +1611,17 @@ function drawRevenueChart() {
 
   if (!days.length) { renderLegend(); return; }
 
-  // Per-source daily totals so Square and Cash can be plotted as separate lines.
+  // Per-source daily totals so each series can be plotted as a separate line.
   const sqByDay  = {};
   const cashByDay = {};
   const costByDay = {};
+  const invByDay  = {};
   sqSales.forEach(s   => { const d = s.dateStr || s.date.slice(0,10); sqByDay[d]  = (sqByDay[d]  ||0) + (s.gross  || 0); });
   cashSales.forEach(s => { const d = s.date.slice(0,10);              cashByDay[d] = (cashByDay[d]||0) + (s.amount || 0); });
   costs.forEach(c     => { const d = c.date.slice(0,10);              costByDay[d] = (costByDay[d]||0) + (c.amount || 0); });
+  invCosts.forEach(c  => { const d = c.date.slice(0,10);              invByDay[d]  = (invByDay[d] ||0) + (c.amount || 0); });
 
-  let labels, sqVals, cashVals, combinedVals, spendVals, fullLabels;
+  let labels, sqVals, cashVals, combinedVals, spendVals, invVals, fullLabels;
 
   if (days.length > 90) {
   // Aggregate by week
@@ -1622,10 +1631,11 @@ function drawRevenueChart() {
   const wkStart = new Date(dt);
   wkStart.setDate(dt.getDate() - dt.getDay());
   const key = wkStart.toISOString().slice(0,10);
-  if (!weeks[key]) weeks[key] = { sq: 0, cash: 0, spend: 0 };
+  if (!weeks[key]) weeks[key] = { sq: 0, cash: 0, spend: 0, inv: 0 };
   weeks[key].sq   += sqByDay[day]   || 0;
   weeks[key].cash += cashByDay[day] || 0;
   weeks[key].spend += costByDay[day] || 0;
+  weeks[key].inv  += invByDay[day]  || 0;
   });
   const wkKeys = Object.keys(weeks).sort();
   labels  = wkKeys.map(k => { const d = new Date(k+'T00:00:00'); return (d.getMonth()+1)+'/'+d.getDate(); });
@@ -1634,6 +1644,7 @@ function drawRevenueChart() {
   cashVals   = wkKeys.map(k => weeks[k].cash);
   combinedVals = wkKeys.map(k => weeks[k].sq + weeks[k].cash);
   spendVals  = wkKeys.map(k => weeks[k].spend);
+  invVals    = wkKeys.map(k => weeks[k].inv);
   } else if (days.length > 30) {
   labels  = days.map(d => { const dt = new Date(d+'T00:00:00'); return (dt.getMonth()+1)+'/'+dt.getDate(); });
   fullLabels = days.map(d => fmtDate(d + 'T12:00:00Z'));
@@ -1641,6 +1652,7 @@ function drawRevenueChart() {
   cashVals   = days.map(d => cashByDay[d] || 0);
   combinedVals = days.map(d => (sqByDay[d] || 0) + (cashByDay[d] || 0));
   spendVals  = days.map(d => costByDay[d] || 0);
+  invVals    = days.map(d => invByDay[d]  || 0);
   } else {
   labels  = days.map(d => { const dt = new Date(d+'T00:00:00'); return String(dt.getDate()); });
   fullLabels = days.map(d => fmtDate(d + 'T12:00:00Z'));
@@ -1648,6 +1660,7 @@ function drawRevenueChart() {
   cashVals   = days.map(d => cashByDay[d] || 0);
   combinedVals = days.map(d => (sqByDay[d] || 0) + (cashByDay[d] || 0));
   spendVals  = days.map(d => costByDay[d] || 0);
+  invVals    = days.map(d => invByDay[d]  || 0);
   }
 
   const w = canvas.parentElement ? canvas.parentElement.clientWidth - 32 : 600;
@@ -1657,10 +1670,11 @@ function drawRevenueChart() {
   // Build the dataset list dynamically based on which series are enabled.
   // Combined / Square / Cash / Spending are independent — any subset can plot.
   const datasets = [];
-  if (showCombined) datasets.push({ label: CHART_SERIES_META.combined.label, data: combinedVals, color: CHART_SERIES_META.combined.color });
-  if (showSq)    datasets.push({ label: CHART_SERIES_META.square.label,   data: sqVals,    color: CHART_SERIES_META.square.color   });
-  if (showCash)   datasets.push({ label: CHART_SERIES_META.cash.label,     data: cashVals,   color: CHART_SERIES_META.cash.color    });
-  if (showSpend)  datasets.push({ label: CHART_SERIES_META.spending.label, data: spendVals,  color: CHART_SERIES_META.spending.color });
+  if (showCombined) datasets.push({ label: CHART_SERIES_META.combined.label,  data: combinedVals, color: CHART_SERIES_META.combined.color });
+  if (showSq)    datasets.push({ label: CHART_SERIES_META.square.label,    data: sqVals,    color: CHART_SERIES_META.square.color   });
+  if (showCash)   datasets.push({ label: CHART_SERIES_META.cash.label,      data: cashVals,   color: CHART_SERIES_META.cash.color    });
+  if (showSpend)  datasets.push({ label: CHART_SERIES_META.spending.label,  data: spendVals,  color: CHART_SERIES_META.spending.color });
+  if (showInv)    datasets.push({ label: CHART_SERIES_META.inventory.label, data: invVals,    color: CHART_SERIES_META.inventory.color });
 
   const ctx = canvas.getContext('2d');
   if (datasets.length) {
