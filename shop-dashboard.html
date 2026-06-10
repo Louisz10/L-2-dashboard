@@ -398,7 +398,7 @@ hr.divider{border:none;border-top:2px dashed var(--border);margin:14px 0}
 
 /* ── COSTS TOTAL ── */
 .costs-total-bar{padding:14px 18px;border-bottom:2px dashed var(--border);text-align:right;background:var(--bg2)}
-.cv-btn.active-view{background:var(--accent);color:#1a0e3c;border-color:var(--accent);font-weight:700}
+.cv-btn.active-view,.rv-btn.active-view{background:var(--accent);color:#1a0e3c;border-color:var(--accent);font-weight:700}
 
 /* ── PASTE TYPE BUTTONS ── */
 .paste-type-btn.active{background:var(--accent);border-color:var(--accent2);color:#000;box-shadow:3px 3px 0 #880e0e}
@@ -709,6 +709,13 @@ input[type=checkbox].row-cb{width:16px;height:16px;accent-color:var(--accent);cu
   <label class="src-pill"><input type="checkbox" id="sf-cash"   checked onchange="renderAllSalesTable()" /><span>Cash</span></label>
   </div>
   <button class="btn btn-secondary btn-sm" onclick="clearSalesFilters()">Clear</button>
+  </div>
+  <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:8px 18px;border-bottom:2px dashed var(--border);font-size:12px">
+  <span class="text-muted" style="margin-right:4px">Reporting:</span>
+  <button class="btn btn-secondary btn-sm rv-btn" data-view="all"        onclick="setSalesReportedView('all')">All</button>
+  <button class="btn btn-secondary btn-sm rv-btn" data-view="reported"   onclick="setSalesReportedView('reported')">Reported</button>
+  <button class="btn btn-secondary btn-sm rv-btn" data-view="partial"    onclick="setSalesReportedView('partial')">Partial</button>
+  <button class="btn btn-secondary btn-sm rv-btn" data-view="unreported" onclick="setSalesReportedView('unreported')">Unreported</button>
   </div>
   <div id="sales-total-bar" class="costs-total-bar" style="display:none"></div>
   <div id="all-sales-table"></div>
@@ -1249,6 +1256,31 @@ function mileageDeductionOf(m) {
 // choice and matches what most users would expect after the upgrade.
 function isReported(sale) { return sale && sale.reported !== false; }
 
+// Effective net amount of a sale that hits Reported Revenue. Precedence:
+//   1. reported === false  → 0 (the toggle off wins, full stop)
+//   2. explicit numeric reportedAmount (clamped to [0, net])
+//   3. fall back to the sale's full net amount
+function getReportedNetOf(sale, net) {
+  if (!sale) return 0;
+  if (sale.reported === false) return 0;
+  if (typeof sale.reportedAmount === 'number' && !isNaN(sale.reportedAmount)) {
+  return Math.max(0, Math.min(net, sale.reportedAmount));
+  }
+  return net;
+}
+
+// Classify a sale for the Sales-tab reporting filter / status badge.
+//   'none'    → nothing flowing to reported revenue
+//   'partial' → only some of the net is reported
+//   'full'    → every dollar of net is reported
+function getReportStatus(sale, net) {
+  if (!sale || sale.reported === false) return 'none';
+  if (typeof sale.reportedAmount === 'number' && sale.reportedAmount < net - 0.005) {
+  return sale.reportedAmount <= 0 ? 'none' : 'partial';
+  }
+  return 'full';
+}
+
 // IRS Schedule SE simplification used by the Overview tax tile:
 //   Net SE earnings = (reported net revenue − business expenses)
 //   SE tax          = max(0, Net SE × 0.9235 × 0.153)
@@ -1302,13 +1334,13 @@ function calcTotals() {
   // come out ahead this period" sanity-checking, NOT for tax filing.
   const netCash   = parseFloat((totalNet - totalCosts - mileageDeduction).toFixed(2));
 
-  // Reported vs unreported split, computed on net (what actually counts
-  // as taxable income — tax pass-through and processor fees stripped out).
-  const sumSqNet   = arr => arr.reduce((s, x) => s + ((x.gross || 0) - (x.fee || 0) - (x.tax || 0)), 0);
-  const sumCashNet = arr => arr.reduce((s, x) => s + ((x.amount || 0) - (x.tax || 0)), 0);
-  const reportedNet = parseFloat(
-    (sumSqNet(sq.filter(isReported)) + sumCashNet(cash.filter(isReported))).toFixed(2)
-  );
+  // Reported vs unreported split, computed on net (tax pass-through and
+  // processor fees stripped out). Per-sale reportedAmount lets the user
+  // dial in partial reporting — e.g. report $60 of a $100 sale.
+  const reportedNet = parseFloat((
+  sq.reduce((s, x) => s + getReportedNetOf(x, (x.gross || 0) - (x.fee || 0) - (x.tax || 0)), 0) +
+  cash.reduce((s, x) => s + getReportedNetOf(x, (x.amount || 0) - (x.tax || 0)), 0)
+  ).toFixed(2));
   const unreportedNet = parseFloat((totalNet - reportedNet).toFixed(2));
 
   // Reported Profit — same tax-basis formula as netProfit, but using only
@@ -1885,8 +1917,12 @@ function renderAllSalesTable() {
   const el = document.getElementById('all-sales-table');
   if (!el) return;
 
-  // Merge Square + Cash, tag each with source, sort newest first
-  const sqSales  = filteredSqSales().map(s => ({
+  // Merge Square + Cash, tag each with source, sort newest first.
+  // reportStatus is 'full' | 'partial' | 'none'; reportedAmount is the
+  // dollar figure that hits Reported Revenue for this row.
+  const sqSales  = filteredSqSales().map(s => {
+  const net = s.net || ((s.gross || 0) - (s.fee || 0) - (s.tax || 0));
+  return {
   _src: 'square', _id: s.id,
   date: s.date,
   desc: normalizeSqDesc(s.description || (s.items && s.items.length
@@ -1896,12 +1932,16 @@ function renderAllSalesTable() {
   fee:  s.fee || 0,
   feeEst: !!s.feeEstimated,
   tax:  s.tax || 0,
-  net:  s.net || 0,
+  net,
   note:  '',
   paymentMethod: s.paymentMethod || 'Card',
-  reported: isReported(s)
-  }));
-  const cashSales = filteredCashSales().map(s => ({
+  reportStatus:   getReportStatus(s, net),
+  reportedAmount: getReportedNetOf(s, net)
+  };
+  });
+  const cashSales = filteredCashSales().map(s => {
+  const net = (s.amount || 0) - (s.tax || 0);
+  return {
   _src: 'cash', _id: s.id,
   date: s.date,
   desc: s.category || '—',
@@ -1909,10 +1949,12 @@ function renderAllSalesTable() {
   fee:  0,
   feeEst: false,
   tax:  s.tax || 0,
-  net:  (s.amount || 0) - (s.tax || 0),
+  net,
   note:  s.notes || '',
-  reported: isReported(s)
-  }));
+  reportStatus:   getReportStatus(s, net),
+  reportedAmount: getReportedNetOf(s, net)
+  };
+  });
 
   const allUnfiltered = [...sqSales, ...cashSales].sort((a, b) => new Date(b.date) - new Date(a.date));
 
@@ -1929,10 +1971,19 @@ function renderAllSalesTable() {
   const hay = ((s.desc || '') + ' ' + (s.note || '')).toLowerCase();
   if (!hay.includes(q)) return false;
   }
+  // Reporting view filter
+  if (_salesReportedView === 'reported'   && s.reportStatus === 'none')    return false;
+  if (_salesReportedView === 'partial'    && s.reportStatus !== 'partial') return false;
+  if (_salesReportedView === 'unreported' && s.reportStatus !== 'none')    return false;
   if (s._src === 'square' && s.paymentMethod !== 'Cash') return showSqCard;
   if (s._src === 'square' && s.paymentMethod === 'Cash') return showSqCash;
   if (s._src === 'cash') return showCash;
   return true;
+  });
+
+  // Highlight the active reporting-view button
+  document.querySelectorAll('.rv-btn').forEach(b => {
+  b.classList.toggle('active-view', b.dataset.view === _salesReportedView);
   });
 
   const lbl = document.getElementById('all-sales-count');
@@ -1978,8 +2029,12 @@ function renderAllSalesTable() {
   ? '<span class="tag tag-amber">Square · Cash</span>'
   : '<span class="tag tag-blue">Square · Card</span>')
   : '<span class="tag tag-green">Cash</span>';
-  const unreportedTag = s.reported ? '' :
-  ' <span class="tag" title="Excluded from Reported Revenue and the tax estimate" style="font-size:9px;padding:1px 6px;background:transparent;color:var(--text3);border:1px dashed var(--border)">unreported</span>';
+  let reportTag = '';
+  if (s.reportStatus === 'none') {
+  reportTag = ' <span class="tag" title="Excluded from Reported Revenue and the tax estimate" style="font-size:9px;padding:1px 6px;background:transparent;color:var(--text3);border:1px dashed var(--border)">unreported</span>';
+  } else if (s.reportStatus === 'partial') {
+  reportTag = ' <span class="tag tag-amber" title="Reporting ' + fmtMoney(s.reportedAmount) + ' of ' + fmtMoney(s.net) + ' net" style="font-size:9px;padding:1px 6px">partial · ' + fmtMoney(s.reportedAmount) + '</span>';
+  }
   const feeCell = s._src === 'square'
   ? fmtMoney(s.fee) + (s.feeEst ? '<span title="Estimated" style="color:var(--text3);font-size:10px;margin-left:3px">est</span>' : '')
   : '<span style="color:var(--text3)">—</span>';
@@ -1994,7 +2049,7 @@ function renderAllSalesTable() {
   '<td class="right red">' + feeCell + '</td>' +
   '<td class="right">' + fmtMoney(s.tax) + '</td>' +
   '<td class="right">' + fmtMoney(s.net) + '</td>' +
-  '<td>' + srcTag + unreportedTag + '</td>' +
+  '<td>' + srcTag + reportTag + '</td>' +
   '<td>' + editBtn + '</td>' +
   '</tr>';
   }).join('') +
@@ -2054,6 +2109,18 @@ let _costsView = 'all';
 function setCostsView(view) {
   _costsView = (view === 'expense' || view === 'inventory') ? view : 'all';
   renderCosts();
+}
+
+// View mode for the Sales tab reporting filter:
+//   'all'        — show everything (default)
+//   'reported'   — anything contributing > 0 to Reported Revenue
+//   'partial'    — sales reporting only some of their net
+//   'unreported' — sales contributing 0
+let _salesReportedView = 'all';
+function setSalesReportedView(view) {
+  const ok = ['all', 'reported', 'partial', 'unreported'];
+  _salesReportedView = ok.includes(view) ? view : 'all';
+  renderAllSalesTable();
 }
 
 function deleteSelectedAll() {
@@ -2825,15 +2892,25 @@ function buildCashForm(d) {
 </div>
 <div class="form-row" style="margin-top:4px">
   <label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
-  <input type="checkbox" id="cf-reported" ${reported ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer" />
+  <input type="checkbox" id="cf-reported" ${reported ? 'checked' : ''} onchange="onCfReportedToggle()" style="width:16px;height:16px;cursor:pointer" />
   <span>Reported for taxes</span>
-  <span class="text-muted" style="font-size:11px">(off = excluded from the Reported Revenue / income tax tiles)</span>
+  <span class="text-muted" style="font-size:11px">(off = $0 to Reported Revenue)</span>
   </label>
+</div>
+<div class="form-row" id="cf-reported-amt-row" style="margin-top:4px${reported ? '' : ';display:none'}">
+  <label class="field-label">Amount to report ($) — leave blank to report full net</label>
+  <input type="number" id="cf-reported-amount" value="${typeof d?.reportedAmount === 'number' ? d.reportedAmount : ''}" placeholder="full net amount" step="0.01" min="0" />
 </div>
 <div class="form-row">
   <label class="field-label">Notes</label>
   <input type="text" id="cf-notes" value="${escA(d?.notes||'')}" placeholder="e.g. Card show — Milwaukee" />
 </div>`;
+}
+
+function onCfReportedToggle() {
+  const row = document.getElementById('cf-reported-amt-row');
+  const cb  = document.getElementById('cf-reported');
+  if (row) row.style.display = (cb && cb.checked) ? '' : 'none';
 }
 
 const SKU_TYPES = ['Collection Box', 'ETB', 'Booster Bundle', 'Booster Pack', 'Booster Box', 'Tin', 'Other'];
@@ -2951,6 +3028,12 @@ function saveCashSale(editId) {
   // Reported-for-taxes: default true if the checkbox is missing.
   const reportedEl = document.getElementById('cf-reported');
   const reported = reportedEl ? reportedEl.checked : true;
+  // Partial reporting: blank input → undefined (defaults to full net).
+  // A typed value sticks even if it equals net — keeps the user's intent.
+  const reportedAmtRaw = document.getElementById('cf-reported-amount')?.value;
+  const reportedAmount = (reported && reportedAmtRaw !== '' && reportedAmtRaw != null)
+  ? Math.max(0, parseFloat(reportedAmtRaw) || 0)
+  : undefined;
   if (!date)  { showFormErr('Date is required.'); return; }
   if (!cat)  { showFormErr('Description is required.'); return; }
   if (amtRaw === null || amtRaw <= 0) { showFormErr('Enter a valid sale amount.'); return; }
@@ -2966,13 +3049,13 @@ function saveCashSale(editId) {
   // Move/save as Square sale
   if (editId) S.cashSales = S.cashSales.filter(x => x.id !== editId);
   const fee = parseFloat((amtRaw * 0.026 + 0.15).toFixed(2));
-  S.squareSales.push({ id: editId || genId(), date: dateISO, description: cat, gross: amtRaw, fee, tax, net: parseFloat((amtRaw - fee - tax).toFixed(2)), feeEstimated: true, items: [{ name: cat, qty: 1, price: amtRaw }], status: 'COMPLETED', source: 'manual', reported });
+  S.squareSales.push({ id: editId || genId(), date: dateISO, description: cat, gross: amtRaw, fee, tax, net: parseFloat((amtRaw - fee - tax).toFixed(2)), feeEstimated: true, items: [{ name: cat, qty: 1, price: amtRaw }], status: 'COMPLETED', source: 'manual', reported, reportedAmount });
   } else {
   if (editId) {
   const idx = S.cashSales.findIndex(x => x.id === editId);
-  if (idx >= 0) S.cashSales[idx] = { ...S.cashSales[idx], date: dateISO, category: cat, amount: amtRaw, tax, taxCharged, notes: v('cf-notes'), reported };
+  if (idx >= 0) S.cashSales[idx] = { ...S.cashSales[idx], date: dateISO, category: cat, amount: amtRaw, tax, taxCharged, notes: v('cf-notes'), reported, reportedAmount };
   } else {
-  S.cashSales.push({ id: genId(), date: dateISO, category: cat, amount: amtRaw, tax, taxCharged, notes: v('cf-notes'), reported });
+  S.cashSales.push({ id: genId(), date: dateISO, category: cat, amount: amtRaw, tax, taxCharged, notes: v('cf-notes'), reported, reportedAmount });
   const inv = S.inventory.find(i => i.name && i.name.toLowerCase().trim() === cat.toLowerCase().trim());
   if (inv) inv.qty = Math.max(0, (inv.qty || 0) - 1);
   }
@@ -4820,12 +4903,22 @@ function buildSqSaleEditForm(s) {
 </div>
 <div class="form-row" style="margin-top:6px">
   <label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
-  <input type="checkbox" id="sq-edit-reported" ${reported ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer" />
+  <input type="checkbox" id="sq-edit-reported" ${reported ? 'checked' : ''} onchange="onSqEditReportedToggle()" style="width:16px;height:16px;cursor:pointer" />
   <span>Reported for taxes</span>
-  <span class="text-muted" style="font-size:11px">(off = excluded from the Reported Revenue / income tax tiles)</span>
+  <span class="text-muted" style="font-size:11px">(off = $0 to Reported Revenue)</span>
   </label>
 </div>
+<div class="form-row" id="sq-edit-reported-amt-row" style="margin-top:4px${reported ? '' : ';display:none'}">
+  <label class="field-label">Amount to report ($) — leave blank to report full net</label>
+  <input type="number" id="sq-edit-reported-amount" value="${typeof s?.reportedAmount === 'number' ? s.reportedAmount : ''}" placeholder="full net amount" step="0.01" min="0" />
+</div>
 <p class="text-muted mt8" style="font-size:11px">Changing Source will move this record to the correct category. Fee is ignored for Cash sales.</p>`;
+}
+
+function onSqEditReportedToggle() {
+  const row = document.getElementById('sq-edit-reported-amt-row');
+  const cb  = document.getElementById('sq-edit-reported');
+  if (row) row.style.display = (cb && cb.checked) ? '' : 'none';
 }
 
 function sqEditRecalc() {
@@ -4846,6 +4939,10 @@ function saveSqSaleEdit(id) {
   const tax  = parseFloat(document.getElementById('sq-edit-tax')?.value  || 0);
   const reportedEl = document.getElementById('sq-edit-reported');
   const reported = reportedEl ? reportedEl.checked : true;
+  const reportedAmtRaw = document.getElementById('sq-edit-reported-amount')?.value;
+  const reportedAmount = (reported && reportedAmtRaw !== '' && reportedAmtRaw != null)
+  ? Math.max(0, parseFloat(reportedAmtRaw) || 0)
+  : undefined;
   if (!date)  { showFormErr('Date is required.'); return; }
   if (!gross) { showFormErr('Amount is required.'); return; }
   const net  = parseFloat((gross - fee - tax).toFixed(2));
@@ -4854,10 +4951,10 @@ function saveSqSaleEdit(id) {
   if (src === 'cash') {
   // Move/save as cash sale
   if (id) S.squareSales = S.squareSales.filter(x => x.id !== id);
-  S.cashSales.push({ id: id || genId(), date: dateISO, category: desc || 'Sale', amount: gross, tax, notes: '', source: 'manual', reported });
+  S.cashSales.push({ id: id || genId(), date: dateISO, category: desc || 'Sale', amount: gross, tax, notes: '', source: 'manual', reported, reportedAmount });
   } else {
   // Save as square sale
-  const newRec = { id: id || genId(), date: dateISO, description: desc, gross, fee, tax, net, feeEstimated: false, items: desc ? [{ name: desc, qty: 1, price: gross }] : [], status: 'COMPLETED', source: 'manual', paymentMethod: pm, reported };
+  const newRec = { id: id || genId(), date: dateISO, description: desc, gross, fee, tax, net, feeEstimated: false, items: desc ? [{ name: desc, qty: 1, price: gross }] : [], status: 'COMPLETED', source: 'manual', paymentMethod: pm, reported, reportedAmount };
   if (id) {
   const idx = S.squareSales.findIndex(x => x.id === id);
   if (idx >= 0) S.squareSales[idx] = newRec; else S.squareSales.push(newRec);
