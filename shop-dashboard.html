@@ -1336,11 +1336,15 @@ function calcTotals() {
   ).toFixed(2));
   const unreportedNet = parseFloat((totalNet - reportedNet).toFixed(2));
 
-  // Reported Profit — same formula as netProfit, but using only the
-  // reported share of revenue. Excludes business expenses to match
-  // Net Profit's new semantics.
+  // Reported Profit — the tax-basis profit picture: reported revenue
+  // minus every deduction that flows to Schedule C (business expenses,
+  // COGS, and mileage). Unclamped so a negative result is visible
+  // (the Est. Income Tax tile separately clamps to zero before applying
+  // SE/federal rates). This deliberately includes business expenses,
+  // unlike Net Profit, because for tax filing the full deduction stack
+  // matters.
   const reportedNetProfit = parseFloat(
-    (reportedNet - cogs - mileageDeduction).toFixed(2)
+    (reportedNet - expenseCosts - cogs - mileageDeduction).toFixed(2)
   );
 
   // Estimated tax — reported revenue minus deductible expenses, COGS, and mileage.
@@ -1443,7 +1447,7 @@ function renderOverview() {
   metrics.push({ label: 'Net Profit',      value: fmtMoney(t.netProfit),   cls: t.netProfit >= 0 ? 'green' : 'red',
     sub: 'before business expenses' });
   metrics.push({ label: 'Reported Profit', value: fmtMoney(t.reportedNetProfit), cls: t.reportedNetProfit >= 0 ? 'green' : 'red',
-    sub: 'reported sales, before expenses' });
+    sub: 'reported sales minus all deductions' });
   metrics.push({ label: 'Est. Income Tax', value: fmtMoney(t.estTax),      cls: 'red', sub: taxSub });
 
   // 2 — Revenue breakdown (fees folded into Square Sales sub — no need for a separate tile)
