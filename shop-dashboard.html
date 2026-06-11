@@ -1490,6 +1490,35 @@ function refreshCurrentTab() { renderTab(S.tab); }
 // ============================================================
 // RENDER: OVERVIEW
 // ============================================================
+// Sales tax collected during the previous calendar month — deliberately
+// independent of the active period filter, so when the user sits down at
+// the start of a month to file, the number to remit is right there.
+function lastMonthSalesTax() {
+  const now = new Date();
+  const prevY = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+  const prevM = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
+  const ymd = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  const startKey = ymd(new Date(prevY, prevM, 1));
+  const endKey   = ymd(new Date(prevY, prevM + 1, 0)); // day 0 of next month = last day of prev
+  const inPrevMonth = dateStr => {
+  if (!dateStr) return false;
+  let k = String(dateStr).slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(k)) {
+  const d = new Date(dateStr);
+  if (isNaN(d)) return false;
+  k = ymd(d);
+  }
+  return k >= startKey && k <= endKey;
+  };
+  const tax =
+  S.squareSales.reduce((s, x) => s + (inPrevMonth(x.date) ? (x.tax || 0) : 0), 0) +
+  S.cashSales.reduce((s, x) => s + (inPrevMonth(x.date) ? (x.tax || 0) : 0), 0);
+  return {
+  tax: parseFloat(tax.toFixed(2)),
+  monthLabel: new Date(prevY, prevM, 1).toLocaleDateString('en-US', { month: 'long' })
+  };
+}
+
 // Count-up animation for the Overview money tiles. Animates each value
 // from its previously displayed number (cached by label) to the new one,
 // so period switches feel like the numbers are rolling, not flashing.
@@ -1591,6 +1620,11 @@ function renderOverview() {
   // 6 — Pass-throughs
   metrics.push({ label: 'Sales Tax Collected', value: fmtMoney(t.totalTax), cls: 'red',
     sub: 'owed to the state' });
+  // Last calendar month's sales tax — ignores the period filter so the
+  // number to remit is always visible when filing at the start of a month.
+  const lastMo = lastMonthSalesTax();
+  metrics.push({ label: 'Last Month’s Sales Tax', value: fmtMoney(lastMo.tax), cls: 'red',
+    sub: lastMo.monthLabel + ' total — for your monthly filing' });
 
   const grid = document.getElementById('overview-metrics');
   if (grid) {
