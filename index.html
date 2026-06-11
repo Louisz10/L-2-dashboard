@@ -1318,10 +1318,10 @@ function calcTotals() {
   const cashNet = parseFloat((cashGross - cashTax).toFixed(2));
   const totalNet = parseFloat((sqNet + cashNet).toFixed(2));
 
-  // Net Profit — TAX BASIS. Unsold inventory purchases don't reduce this;
-  // only the cost of items actually sold (COGS) does. This is what
-  // Schedule C considers your net business income.
-  const netProfit = parseFloat((totalNet - expenseCosts - cogs - mileageDeduction).toFixed(2));
+  // Net Profit — revenue after the cost of items actually sold and mileage.
+  // Excludes business expenses (table fees, gas, supplies, etc.) so the
+  // user can see the inventory-side margin distinct from operating costs.
+  const netProfit = parseFloat((totalNet - cogs - mileageDeduction).toFixed(2));
   // Net Cash Flow — every dollar that left the bank during the period,
   // including stock you bought but haven't sold yet. Useful for "did I
   // come out ahead this period" sanity-checking, NOT for tax filing.
@@ -1336,12 +1336,11 @@ function calcTotals() {
   ).toFixed(2));
   const unreportedNet = parseFloat((totalNet - reportedNet).toFixed(2));
 
-  // Reported Profit — same tax-basis formula as netProfit, but using only
-  // reported revenue. Unclamped (can go negative) so the user sees how
-  // far underwater their reported activity is; the Est. Income Tax tile
-  // separately clamps to zero before applying SE/federal rates.
+  // Reported Profit — same formula as netProfit, but using only the
+  // reported share of revenue. Excludes business expenses to match
+  // Net Profit's new semantics.
   const reportedNetProfit = parseFloat(
-    (reportedNet - expenseCosts - cogs - mileageDeduction).toFixed(2)
+    (reportedNet - cogs - mileageDeduction).toFixed(2)
   );
 
   // Estimated tax — reported revenue minus deductible expenses, COGS, and mileage.
@@ -1442,9 +1441,9 @@ function renderOverview() {
   metrics.push({ label: 'Total Revenue',   value: fmtMoney(t.totalNet),    cls: 'green',
     sub: totalTx + ' transaction' + (totalTx === 1 ? '' : 's') });
   metrics.push({ label: 'Net Profit',      value: fmtMoney(t.netProfit),   cls: t.netProfit >= 0 ? 'green' : 'red',
-    sub: 'profit before tax' });
+    sub: 'before business expenses' });
   metrics.push({ label: 'Reported Profit', value: fmtMoney(t.reportedNetProfit), cls: t.reportedNetProfit >= 0 ? 'green' : 'red',
-    sub: 'only the sales you marked reportable' });
+    sub: 'reported sales, before expenses' });
   metrics.push({ label: 'Est. Income Tax', value: fmtMoney(t.estTax),      cls: 'red', sub: taxSub });
 
   // 2 — Revenue breakdown (fees folded into Square Sales sub — no need for a separate tile)
@@ -2628,10 +2627,10 @@ function generateReport() {
   ${pRow('↳ Square Sales (' + t.sqCount + ' transactions)', fmtMoney(t.sqGross))}
   ${pRow('↳ Cash Sales (' + t.cashCount + ' entries)', fmtMoney(t.cashGross))}
   ${pRow('Less: Square Processing Fees', '(' + fmtMoney(t.sqFees) + ')', false, true)}
-  ${pRow('Net Profit (for taxes)', fmtMoney(t.netProfit), true, t.netProfit < 0)}
+  ${pRow('Net Profit (before business expenses)', fmtMoney(t.netProfit), true, t.netProfit < 0)}
   ${pRow('Cash Flow (money in − money out)', fmtMoney(t.netCash), false, t.netCash < 0)}
 </table>
-<p style="font-size:9pt;color:#888;margin-top:6px">Net Profit counts inventory only after it sells. Cash Flow shows every dollar that left the bank, including stock you haven't sold yet.</p>
+<p style="font-size:9pt;color:#888;margin-top:6px">Net Profit = revenue − COGS − mileage. Business expenses are tracked separately below. Cash Flow shows every dollar that left the bank, including stock you haven't sold yet.</p>
 
 <h2 style="font-size:13pt;border-bottom:1px solid #ccc;padding-bottom:5px;margin:24px 0 10px">2 — Wisconsin Tax Summary</h2>
 <table style="width:100%;border-collapse:collapse;font-size:10.5pt">
