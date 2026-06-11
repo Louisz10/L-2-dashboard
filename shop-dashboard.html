@@ -106,7 +106,7 @@ nav{
   font-family:inherit;
 }
 .nav-tab:hover{color:var(--text);background:rgba(255,255,255,0.05);border-radius:10px 10px 0 0}
-.nav-tab.active{color:var(--accent);border-bottom-color:var(--accent);text-shadow:0 0 12px rgba(255,229,0,0.4)}
+.nav-tab.active{color:var(--accent);border-bottom-color:var(--accent);text-shadow:0 0 12px rgba(224,32,32,0.45)}
 .nav-badge{background:var(--poke-red);color:#fff;border-radius:999px;padding:1px 7px;font-size:10px;font-weight:800;box-shadow:2px 2px 0 #880e0e;border:1px solid #f06060}
 .nav-actions{display:flex;align-items:center;gap:8px;padding:8px 0 8px 12px;border-left:2px dashed var(--border);margin-left:8px;flex-shrink:0}
 #sync-status{font-size:11px;color:var(--text3);max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -206,7 +206,7 @@ thead th{
 thead th:hover{color:var(--text)}
 thead th.sort-asc::after{content:' ↑';color:var(--accent)}
 thead th.sort-desc::after{content:' ↓';color:var(--accent)}
-tbody tr{border-bottom:1px solid rgba(90,47,160,0.4);transition:background 0.1s}
+tbody tr{border-bottom:1px solid rgba(255,255,255,0.07);transition:background 0.1s}
 tbody tr:hover{background:rgba(255,255,255,0.04)}
 tbody tr:last-child{border-bottom:none}
 td{padding:10px 13px;color:var(--text);vertical-align:middle}
@@ -237,7 +237,7 @@ input[type="text"],input[type="number"],input[type="date"],input[type="password"
   font-family:inherit;
   font-weight:600;
 }
-input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(255,229,0,0.15)}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(224,32,32,0.18)}
 input[type="checkbox"]{width:auto;accent-color:var(--accent);cursor:pointer}
 .field-label{display:block;color:var(--text2);font-size:10px;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.7px;font-weight:800}
 .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:12px}
@@ -354,7 +354,73 @@ canvas{display:block}
   display:none;
   box-shadow:6px 6px 0 #000000;
 }
-.settings-panel.open{display:block}
+.settings-panel.open{display:block;animation:popIn 0.18s cubic-bezier(.34,1.3,.64,1);transform-origin:top right}
+@keyframes popIn{from{transform:scale(0.88);opacity:0}to{transform:scale(1);opacity:1}}
+
+/* ── TOASTS ── */
+#toast-wrap{position:fixed;bottom:20px;right:20px;z-index:600;display:flex;flex-direction:column;gap:10px;pointer-events:none;max-width:min(380px,calc(100vw - 40px))}
+.toast{
+  background:var(--bg2);
+  border:2px solid var(--border);
+  border-radius:16px;
+  padding:11px 16px;
+  font-size:13px;
+  font-weight:700;
+  color:var(--text);
+  box-shadow:4px 4px 0 rgba(0,0,0,0.5);
+  display:flex;align-items:center;gap:9px;
+  animation:toastIn 0.25s cubic-bezier(.34,1.3,.64,1);
+  pointer-events:auto;
+}
+.toast.out{animation:toastOut 0.25s ease forwards}
+.toast-success{border-color:rgba(79,189,126,0.55)}
+.toast-success .toast-icon{color:var(--green)}
+.toast-error{border-color:rgba(224,32,32,0.55)}
+.toast-error .toast-icon{color:var(--red)}
+.toast-info{border-color:rgba(107,159,212,0.55)}
+.toast-info .toast-icon{color:var(--blue)}
+@keyframes toastIn{from{transform:translateX(40px);opacity:0}to{transform:none;opacity:1}}
+@keyframes toastOut{to{transform:translateX(40px);opacity:0}}
+
+/* ── MOTION ── */
+.modal-overlay.open .modal{animation:modalIn 0.22s cubic-bezier(.34,1.35,.64,1)}
+@keyframes modalIn{from{transform:scale(0.93) translateY(14px);opacity:0}to{transform:none;opacity:1}}
+.tab-content.active{animation:tabIn 0.22s ease}
+@keyframes tabIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* ── CLICKABLE METRIC TILES ── */
+.metric-card[data-nav]{cursor:pointer}
+.metric-card[data-nav]:hover{border-color:var(--accent)}
+.metric-card[data-nav]::after{
+  content:'→';
+  position:absolute;top:10px;right:13px;
+  color:var(--accent);
+  font-weight:900;font-size:13px;
+  opacity:0;transform:translateX(-5px);
+  transition:opacity 0.15s,transform 0.15s;
+}
+.metric-card[data-nav]:hover::after{opacity:1;transform:none}
+
+/* ── METRIC GROUP LABELS ── */
+.metric-group-label{
+  grid-column:1/-1;
+  font-size:10px;font-weight:800;
+  text-transform:uppercase;letter-spacing:1.2px;
+  color:var(--text3);
+  display:flex;align-items:center;gap:10px;
+  margin:6px 2px -4px;
+}
+.metric-group-label::after{content:'';flex:1;border-top:2px dashed var(--border)}
+
+/* ── SCROLLBARS ── */
+*::-webkit-scrollbar{width:10px;height:10px}
+*::-webkit-scrollbar-track{background:transparent}
+*::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:999px;border:2px solid var(--bg1)}
+*::-webkit-scrollbar-thumb:hover{background:var(--border)}
+
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+}
 .settings-item{padding:9px 8px;border-bottom:1px dashed var(--border);display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--text2)}
 .settings-item:last-child{border-bottom:none}
 .settings-item a,.settings-item button.link{color:var(--text2);background:none;border:none;cursor:pointer;font-size:13px;font-family:inherit;font-weight:700}
@@ -406,7 +472,7 @@ hr.divider{border:none;border-top:2px dashed var(--border);margin:14px 0}
 /* ── PASTE PREVIEW TABLE ── */
 .paste-preview-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:10px}
 .paste-preview-table th{padding:6px 10px;background:var(--bg3);color:var(--text3);font-size:10px;text-transform:uppercase;letter-spacing:0.5px;border-bottom:2px solid var(--border);white-space:nowrap}
-.paste-preview-table td{padding:6px 10px;border-bottom:1px solid rgba(90,47,160,0.3);color:var(--text)}
+.paste-preview-table td{padding:6px 10px;border-bottom:1px solid rgba(255,255,255,0.07);color:var(--text)}
 .paste-preview-table tr:last-child td{border-bottom:none}
 .col-map-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:13px}
 .col-map-row label{color:var(--text2);width:130px;flex-shrink:0;font-weight:700}
@@ -1424,6 +1490,34 @@ function refreshCurrentTab() { renderTab(S.tab); }
 // ============================================================
 // RENDER: OVERVIEW
 // ============================================================
+// Count-up animation for the Overview money tiles. Animates each value
+// from its previously displayed number (cached by label) to the new one,
+// so period switches feel like the numbers are rolling, not flashing.
+// Non-money values and reduced-motion users get instant text.
+const _metricPrev = {};
+function animateMetricValues(grid) {
+  const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  grid.querySelectorAll('.metric-value[data-money]').forEach(el => {
+  const txt = el.dataset.money;
+  const m = txt.match(/^(-?)\$([\d,]+(?:\.\d+)?)$/);
+  const label = el.parentElement?.querySelector('.metric-label')?.textContent || txt;
+  if (!m || reduce) { _metricPrev[label] = m ? parseFloat(m[1] + m[2].replace(/,/g, '')) : 0; return; }
+  const target = parseFloat(m[1] + m[2].replace(/,/g, ''));
+  const from = _metricPrev[label] ?? 0;
+  _metricPrev[label] = target;
+  if (from === target) return;
+  const t0 = performance.now(), dur = 450;
+  const step = now => {
+  const p = Math.min(1, (now - t0) / dur);
+  const eased = 1 - Math.pow(1 - p, 3); // ease-out cubic
+  el.textContent = fmtMoney(from + (target - from) * eased);
+  if (p < 1) requestAnimationFrame(step);
+  else el.textContent = txt; // land exactly on the formatted value
+  };
+  requestAnimationFrame(step);
+  });
+}
+
 function renderOverview() {
   const t = calcTotals();
 
@@ -1439,11 +1533,13 @@ function renderOverview() {
   //   4. Tax-deductible costs  (what reduces taxable income)
   //   5. Inventory snapshot    (book value + alternative profit view)
   //   6. Pass-throughs         (WI sales tax — pass to state)
+  // Each tile may carry `nav` (click → jump to that tab) and rows may be
+  // `{ group: '...' }` markers that render as full-width section labels.
   const metrics = [];
 
   // 1 — Headline
   metrics.push({ label: 'Total Revenue',   value: fmtMoney(t.totalNet),    cls: 'green',
-    sub: totalTx + ' transaction' + (totalTx === 1 ? '' : 's') });
+    sub: totalTx + ' transaction' + (totalTx === 1 ? '' : 's'), nav: 'sales' });
   metrics.push({ label: 'Net Profit',      value: fmtMoney(t.netProfit),   cls: t.netProfit >= 0 ? 'green' : 'red',
     sub: 'before business expenses' });
   metrics.push({ label: 'Reported Profit', value: fmtMoney(t.reportedNetProfit), cls: t.reportedNetProfit >= 0 ? 'green' : 'red',
@@ -1451,31 +1547,34 @@ function renderOverview() {
   metrics.push({ label: 'Est. Income Tax', value: fmtMoney(t.estTax),      cls: 'red', sub: taxSub });
 
   // 2 — Revenue breakdown (fees folded into Square Sales sub — no need for a separate tile)
+  metrics.push({ group: 'Revenue' });
   metrics.push({ label: 'Square Sales',    value: fmtMoney(t.sqNet),       cls: 'green',
-    sub: t.sqCount + ' sale' + (t.sqCount === 1 ? '' : 's') + ' · ' + fmtMoney(t.sqFees) + ' Square fees' });
+    sub: t.sqCount + ' sale' + (t.sqCount === 1 ? '' : 's') + ' · ' + fmtMoney(t.sqFees) + ' Square fees', nav: 'sales' });
   metrics.push({ label: 'Cash / Other Sales', value: fmtMoney(t.cashNet), cls: 'green',
-    sub: t.cashCount + ' sale' + (t.cashCount === 1 ? '' : 's') });
+    sub: t.cashCount + ' sale' + (t.cashCount === 1 ? '' : 's'), nav: 'sales' });
 
   // 3 — Reported / unreported (only when user has flagged something off)
   if (t.unreportedNet > 0) {
   metrics.push({ label: 'Reported Revenue',   value: fmtMoney(t.reportedNet),   cls: 'green',
-    sub: 'counts toward your taxes' });
+    sub: 'counts toward your taxes', nav: 'sales' });
   metrics.push({ label: 'Unreported Revenue', value: fmtMoney(t.unreportedNet), cls: 'muted', muted: true,
-    sub: 'left off your taxes' });
+    sub: 'left off your taxes', nav: 'sales' });
   }
 
   // 4 — Tax-deductible stack
+  metrics.push({ group: 'Tax Deductions' });
   metrics.push({ label: 'Business Expenses',      value: fmtMoney(t.expenseCosts), cls: 'red',
-    sub: 'tables, gas, supplies, etc.' });
+    sub: 'tables, gas, supplies, etc.', nav: 'costs' });
   metrics.push({ label: 'Cost of Goods Sold', value: fmtMoney(t.cogs),       cls: 'red',
     sub: 'inventory you actually sold this period' });
   metrics.push({ label: 'Mileage Deduction',       value: fmtMoney(t.mileageDeduction), cls: 'red',
-    sub: t.totalMiles ? t.totalMiles.toFixed(1) + ' mi · ' + t.mileageCount + ' trip' + (t.mileageCount === 1 ? '' : 's') : 'no trips logged' });
+    sub: t.totalMiles ? t.totalMiles.toFixed(1) + ' mi · ' + t.mileageCount + ' trip' + (t.mileageCount === 1 ? '' : 's') : 'no trips logged', nav: 'mileage' });
 
   // 5 — Inventory + alt profit view (inventory purchases only show when there are any)
+  metrics.push({ group: 'Inventory & Cash' });
   if (t.inventoryCosts > 0) {
   metrics.push({ label: 'Inventory Bought', value: fmtMoney(t.inventoryCosts), cls: 'muted', muted: true,
-    sub: 'counts toward taxes only when sold' });
+    sub: 'counts toward taxes only when sold', nav: 'costs' });
   }
   // Gross profit on sold inventory: revenue minus the cost basis of items
   // actually sold. Skipped when COGS = 0 (would just equal Total Revenue).
@@ -1485,7 +1584,7 @@ function renderOverview() {
     sub: grossProfit >= 0 ? 'gross profit before other expenses' : 'sold inventory for less than it cost' });
   }
   metrics.push({ label: 'Inventory Retail Value', value: fmtMoney(invRetail), cls: 'green',
-    sub: invUnits + ' item' + (invUnits === 1 ? '' : 's') + ' in stock' });
+    sub: invUnits + ' item' + (invUnits === 1 ? '' : 's') + ' in stock', nav: 'inventory' });
   metrics.push({ label: 'Cash Flow', value: fmtMoney(t.netCash), cls: t.netCash >= 0 ? 'green' : 'red',
     sub: 'money in minus money out' });
 
@@ -1495,25 +1594,31 @@ function renderOverview() {
 
   const grid = document.getElementById('overview-metrics');
   if (grid) {
-  grid.innerHTML = metrics.map(m => `
-  <div class="metric-card${m.muted ? ' metric-card-muted' : ''}">
+  grid.innerHTML = metrics.map(m => {
+  if (m.group) return '<div class="metric-group-label">' + esc(m.group) + '</div>';
+  const navAttrs = m.nav
+  ? ' data-nav="' + m.nav + '" onclick="showTab(\'' + m.nav + '\')" title="Open ' + m.nav.charAt(0).toUpperCase() + m.nav.slice(1) + ' tab"'
+  : '';
+  return `
+  <div class="metric-card${m.muted ? ' metric-card-muted' : ''}"${navAttrs}>
   <div class="metric-label">${esc(m.label)}</div>
-  <div class="metric-value ${m.cls || ''}">${m.value}</div>
+  <div class="metric-value ${m.cls || ''}" data-money="${escA(m.value)}">${m.value}</div>
   ${m.sub ? '<div class="metric-sub">' + esc(m.sub) + '</div>' : ''}
-  </div>
-  `).join('');
+  </div>`;
+  }).join('');
+  animateMetricValues(grid);
   }
 
   requestAnimationFrame(() => drawRevenueChart());
 
-  // Recent combined sales
+  // Recent combined sales — (count-up handled by animateMetricValues above)
   const sqRecent  = filteredSqSales().map(s => ({ date: s.date, desc: normalizeSqDesc(s.description || (s.items && s.items.length ? s.items.map(i=>normalizeSqDesc(i.name)).join(', ') : '—')), amount: s.gross, net: s.net, src: 'Square' }));
   const cashRecent = filteredCashSales().map(s => ({ date: s.date, desc: s.category || '—', amount: s.amount, net: s.amount - (s.tax||0), src: 'Cash' }));
   const recent = [...sqRecent, ...cashRecent].sort((a,b) => new Date(b.date)-new Date(a.date)).slice(0, 10);
   const elRecent = document.getElementById('ov-recent-sales');
   if (elRecent) {
   if (!recent.length) {
-  elRecent.innerHTML = emptyHTML('No sales this period', 'Import a Square CSV or click "+ Add Sale" in the Sales tab.');
+  elRecent.innerHTML = emptyHTML('No sales this period', 'Import a Square CSV or click "+ Add Sale" in the Sales tab.', '🧾');
   } else {
   elRecent.innerHTML = '<div class="table-wrap"><table>' +
   '<thead><tr><th>Date</th><th>Description</th><th>Gross</th><th>Net</th><th>Source</th></tr></thead><tbody>' +
@@ -2014,7 +2119,8 @@ function renderAllSalesTable() {
   const filterActive = q || srcFilterActive;
   el.innerHTML = emptyHTML(
   filterActive ? 'No sales match your filters' : 'No sales this period',
-  filterActive ? 'Try clearing the filters.' : 'Import a Square CSV or click "+ Add Cash Sale" to start.'
+  filterActive ? 'Try clearing the filters.' : 'Import a Square CSV or click "+ Add Cash Sale" to start.',
+  '🧾'
   );
   const totBar = document.getElementById('sales-total-bar');
   if (totBar) totBar.style.display = 'none';
@@ -2184,12 +2290,8 @@ function retagSelectedSales(makeReported) {
   }
   saveState();
   refreshCurrentTab();
-  const status = document.getElementById('sync-status');
-  if (status) {
   const label = reported ? 'reported' : 'unreported';
-  status.innerHTML = '<span style="color:var(--green)">✓ Marked ' + changed + ' sale' + (changed === 1 ? '' : 's') + ' as ' + label + '</span>';
-  setTimeout(() => { if (status) status.textContent = ''; }, 4000);
-  }
+  showToast('Marked ' + changed + ' sale' + (changed === 1 ? '' : 's') + ' as ' + label, 'success');
 }
 
 // ============================================================
@@ -2235,12 +2337,12 @@ function renderSealedTable() {
   }
 
   if (!S.inventory.length) {
-  el.innerHTML = emptyHTML('No inventory items', 'Click "+ Add Item" to add your first sealed product.');
+  el.innerHTML = emptyHTML('No inventory items', 'Click "+ Add Item" to add your first sealed product.', '📦');
   return;
   }
 
   if (!filtered.length) {
-  el.innerHTML = emptyHTML('No items match your filters', 'Try clearing the search or SKU filter.');
+  el.innerHTML = emptyHTML('No items match your filters', 'Try clearing the search or SKU filter.', '📦');
   return;
   }
 
@@ -2441,7 +2543,8 @@ function renderCosts() {
   q ? 'Try clearing the search.'
   : (_costsView === 'inventory'
   ? 'Click "+ Inventory Purchase" to log a buy. These count toward taxes only after the items sell.'
-  : 'Click "+ Expense" for things like table fees, gas, shipping, and supplies.')
+  : 'Click "+ Expense" for things like table fees, gas, shipping, and supplies.'),
+  '💸'
   );
   if (totEl) totEl.style.display = 'none';
   return;
@@ -2526,7 +2629,8 @@ function renderMileage() {
   if (!rows.length) {
   el.innerHTML = emptyHTML(
   q ? 'No trips match "' + q + '"' : 'No trips yet',
-  q ? 'Try clearing the search.' : 'Click "+ Add Trip" to log business miles. Miles × IRS rate becomes a tax deduction.'
+  q ? 'Try clearing the search.' : 'Click "+ Add Trip" to log business miles. Miles × IRS rate becomes a tax deduction.',
+  '🚗'
   );
   if (totEl) totEl.style.display = 'none';
   return;
@@ -3646,12 +3750,8 @@ function confirmIcsImport() {
   saveState();
   closeIcsModal();
   if (S.tab !== 'mileage') showTab('mileage'); else renderMileage();
-  const status = document.getElementById('sync-status');
-  if (status) {
   const note = skippedNoMiles ? ` (skipped ${skippedNoMiles} with no miles)` : '';
-  status.innerHTML = `<span style="color:var(--green)">✓ Imported ${added} trip${added === 1 ? '' : 's'}${note}</span>`;
-  setTimeout(() => { if (status) status.textContent = ''; }, 5000);
-  }
+  showToast(`Imported ${added} trip${added === 1 ? '' : 's'}${note}`, 'success');
 }
 
 // ============================================================
@@ -4110,11 +4210,7 @@ function importData(event) {
   S.processedSaleIds = new Set(backup.processedSaleIds || []);
   saveState();
   refreshCurrentTab();
-  const status = document.getElementById('sync-status');
-  if (status) {
-  status.innerHTML = '<span style="color:var(--green)">✓ Backup restored successfully</span>';
-  setTimeout(() => { if (status) status.textContent = ''; }, 4000);
-  }
+  showToast('Backup restored successfully', 'success');
   });
   } catch(err) {
   alert('Failed to read backup file: ' + err.message);
@@ -4296,11 +4392,7 @@ function importSquareCSV(event) {
   renderSales();
   refreshCurrentTab();
 
-  const status = document.getElementById('sync-status');
-  if (status) {
-  status.innerHTML = '<span style="color:var(--green)">✓ Imported ' + imported + ' new' + (updated ? ', ' + updated + ' updated' : '') + (skipped ? ', ' + skipped + ' skipped' : '') + '</span>';
-  setTimeout(() => { if (status) status.textContent = ''; }, 5000);
-  }
+  showToast('Imported ' + imported + ' new' + (updated ? ', ' + updated + ' updated' : '') + (skipped ? ', ' + skipped + ' skipped' : ''), 'success');
 
   } catch(err) {
   setInlineError('sq-sync-error', 'Failed to parse CSV: ' + err.message);
@@ -4888,13 +4980,8 @@ function retagSelectedCosts(newType) {
   }
   saveState();
   refreshCurrentTab();
-  // Brief feedback in the existing sync-status slot.
-  const status = document.getElementById('sync-status');
-  if (status) {
   const label = type === 'inventory' ? 'inventory purchase' : 'business expense';
-  status.innerHTML = '<span style="color:var(--green)">✓ Re-tagged ' + changed + ' row' + (changed === 1 ? '' : 's') + ' as ' + label + '</span>';
-  setTimeout(() => { if (status) status.textContent = ''; }, 4000);
-  }
+  showToast('Re-tagged ' + changed + ' row' + (changed === 1 ? '' : 's') + ' as ' + label, 'success');
 }
 
 // ============================================================
@@ -5122,10 +5209,45 @@ function escA(s) {
   return String(s).replace(/"/g,'&quot;').replace(/'/g,'&#x27;');
 }
 
-function emptyHTML(title, desc) {
-  return '<div class="empty-state"><div class="empty-icon"></div>' +
+function emptyHTML(title, desc, icon) {
+  return '<div class="empty-state"><div class="empty-icon">' + (icon || '📭') + '</div>' +
   '<h3>' + esc(title) + '</h3><p>' + esc(desc) + '</p></div>';
 }
+
+// Floating toast notifications (bottom-right). Replaces the old pattern of
+// stuffing feedback into the tiny #sync-status nav span where it was easy
+// to miss. type: 'success' | 'error' | 'info'.
+function showToast(msg, type) {
+  let wrap = document.getElementById('toast-wrap');
+  if (!wrap) {
+  wrap = document.createElement('div');
+  wrap.id = 'toast-wrap';
+  document.body.appendChild(wrap);
+  }
+  const icons = { success: '✓', error: '✕', info: 'ℹ' };
+  const t = document.createElement('div');
+  t.className = 'toast toast-' + (type || 'info');
+  t.innerHTML = '<span class="toast-icon" style="font-weight:900">' + (icons[type] || icons.info) + '</span><span>' + esc(msg) + '</span>';
+  t.onclick = () => dismiss();
+  wrap.appendChild(t);
+  let gone = false;
+  const dismiss = () => {
+  if (gone) return;
+  gone = true;
+  t.classList.add('out');
+  setTimeout(() => t.remove(), 260);
+  };
+  setTimeout(dismiss, 4000);
+}
+
+// Escape closes whatever overlay is open (modals, settings panel).
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  closeModal();
+  closePasteModal();
+  closeIcsModal();
+  document.getElementById('settings-panel')?.classList.remove('open');
+});
 
 function clearEl(id) {
   const el = document.getElementById(id);
