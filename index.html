@@ -648,7 +648,13 @@ input[type=checkbox].row-cb{width:16px;height:16px;accent-color:var(--accent);cu
   <div class="chart-wrap">
   <div class="flex-between" style="margin-bottom:10px;flex-wrap:wrap;gap:10px">
   <div class="fw600 fs12" style="text-transform:uppercase;letter-spacing:0.5px;color:var(--text2)">Revenue vs Spending</div>
+  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+  <button type="button" id="weekend-toggle" class="legend-toggle legend-item" onclick="toggleChartWeekends()" title="Shade weekend days on the chart (daily views only)">
+  <span class="legend-dot" style="background:rgba(255,255,255,0.18);border-color:rgba(255,255,255,0.35)"></span>
+  <span>Weekends</span>
+  </button>
   <div id="revenue-legend" class="chart-legend" title="Click any item to toggle its line"></div>
+  </div>
   </div>
   <canvas id="revenue-chart" style="width:100%;height:380px"></canvas>
   <div id="chart-tooltip"></div>
@@ -1020,6 +1026,7 @@ const S = {
   customStart: '',
   customEnd: '',
   chartSeries: ['square', 'cash', 'spending'], // which lines to plot on the revenue chart (subset of combined/square/cash/spending)
+  chartShowWeekends: true, // shade weekend columns on the daily revenue chart
   tab: 'overview',
   lastSync: null,
   businessName: 'Pokemon Card Shop',
@@ -1049,6 +1056,7 @@ function saveState() {
   localStorage.setItem('inv_cost_ratio', String(S.inventoryCostRatio || 0.80));
   localStorage.setItem('biz_name', S.businessName);
   localStorage.setItem('chart_series', JSON.stringify(S.chartSeries));
+  localStorage.setItem('chart_weekends', S.chartShowWeekends ? '1' : '0');
   localStorage.removeItem('chart_source'); // clean up legacy single-source key
   localStorage.setItem('period', S.period || 'all');
   localStorage.setItem('custom_start', S.customStart || '');
@@ -1105,6 +1113,7 @@ function loadState() {
   } else if (legacy === 'square') S.chartSeries = ['square','spending'];
   else if (legacy === 'cash')   S.chartSeries = ['cash','spending'];
   else                S.chartSeries = ['square','cash','spending'];
+  S.chartShowWeekends = localStorage.getItem('chart_weekends') !== '0'; // default on
   // Restore period selection so the active filter survives a reload.
   const savedPeriod = localStorage.getItem('period');
   const validPeriods = ['today','week','month','year','all','custom'];
@@ -1703,6 +1712,9 @@ function drawRevenueChart() {
   '<span>' + m.label + '</span>' +
   '</button>';
   }).join('');
+  // Reflect the weekend-shading toggle's on/off state too.
+  const wkBtn = document.getElementById('weekend-toggle');
+  if (wkBtn) wkBtn.classList.toggle('off', !S.chartShowWeekends);
   };
 
   const showCombined = isSeriesOn('combined');
@@ -1764,6 +1776,11 @@ function drawRevenueChart() {
   invCosts.forEach(c  => { const d = c.date.slice(0,10);              invByDay[d]  = (invByDay[d] ||0) + (c.amount || 0); });
 
   let labels, sqVals, cashVals, combinedVals, spendVals, invVals, fullLabels;
+  // Weekend flag per x-position (Sat/Sun). Only meaningful for the daily
+  // views; the weekly-aggregated view (>90 days) leaves it null so no
+  // shading is drawn there. Gated on the user's toggle.
+  let weekendFlags = null;
+  const isWeekendDay = ymd => { const dow = new Date(ymd + 'T00:00:00').getDay(); return dow === 0 || dow === 6; };
 
   if (days.length > 90) {
   // Aggregate by week
@@ -1795,6 +1812,7 @@ function drawRevenueChart() {
   combinedVals = days.map(d => (sqByDay[d] || 0) + (cashByDay[d] || 0));
   spendVals  = days.map(d => costByDay[d] || 0);
   invVals    = days.map(d => invByDay[d]  || 0);
+  if (S.chartShowWeekends) weekendFlags = days.map(isWeekendDay);
   } else {
   labels  = days.map(d => { const dt = new Date(d+'T00:00:00'); return String(dt.getDate()); });
   fullLabels = days.map(d => fmtDate(d + 'T12:00:00Z'));
@@ -1803,6 +1821,7 @@ function drawRevenueChart() {
   combinedVals = days.map(d => (sqByDay[d] || 0) + (cashByDay[d] || 0));
   spendVals  = days.map(d => costByDay[d] || 0);
   invVals    = days.map(d => invByDay[d]  || 0);
+  if (S.chartShowWeekends) weekendFlags = days.map(isWeekendDay);
   }
 
   const w = canvas.parentElement ? canvas.parentElement.clientWidth - 32 : 600;
@@ -1820,7 +1839,7 @@ function drawRevenueChart() {
 
   const ctx = canvas.getContext('2d');
   if (datasets.length) {
-  renderLineChart(ctx, canvas.width, canvas.height, labels, datasets, fullLabels);
+  renderLineChart(ctx, canvas.width, canvas.height, labels, datasets, fullLabels, weekendFlags);
   attachChartHover(canvas);
   } else {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -1843,13 +1862,37 @@ function toggleChartSeries(key) {
   drawRevenueChart();
 }
 
-function renderLineChart(ctx, w, h, labels, datasets, fullLabels) {
+function toggleChartWeekends() {
+  S.chartShowWeekends = !S.chartShowWeekends;
+  saveState();
+  drawRevenueChart();
+}
+
+function renderLineChart(ctx, w, h, labels, datasets, fullLabels, weekendFlags) {
   const pad = { top: 24, right: 18, bottom: 56, left: 78 };
   const cw = w - pad.left - pad.right;
   const ch = h - pad.top - pad.bottom;
   const n  = labels.length;
 
   ctx.clearRect(0, 0, w, h);
+
+  // Weekend shading — vertical bands behind the grid/lines. Each band is
+  // centered on a Sat/Sun x-position and spans one column width, so a
+  // Sat+Sun pair reads as one continuous shaded weekend block.
+  if (weekendFlags && weekendFlags.length === n && n > 1) {
+  const xStepW = cw / (n - 1);
+  ctx.fillStyle = 'rgba(255,255,255,0.05)';
+  weekendFlags.forEach((isWknd, i) => {
+  if (!isWknd) return;
+  const cx = pad.left + i * xStepW;
+  let left  = cx - xStepW / 2;
+  let right = cx + xStepW / 2;
+  // Clamp to the plot area so edge weekends don't bleed past the axes.
+  left  = Math.max(pad.left, left);
+  right = Math.min(pad.left + cw, right);
+  ctx.fillRect(left, pad.top, right - left, ch);
+  });
+  }
 
   // Y-axis max = the actual highest data point (no niceNum rounding-up).
   // Top of chart literally equals the largest value so the peak line touches it.
