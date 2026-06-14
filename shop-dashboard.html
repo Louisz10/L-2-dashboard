@@ -1576,10 +1576,10 @@ function renderOverview() {
   const metrics = [];
 
   // 1 — Headline
+  // (Net Profit tile removed — it duplicated 'Revenue − COGS' below
+  // whenever mileage was $0. Revenue − COGS now carries that number.)
   metrics.push({ label: 'Total Revenue',   value: fmtMoney(t.totalNet),    cls: 'green',
     sub: totalTx + ' transaction' + (totalTx === 1 ? '' : 's'), nav: 'sales' });
-  metrics.push({ label: 'Net Profit',      value: fmtMoney(t.netProfit),   cls: t.netProfit >= 0 ? 'green' : 'red',
-    sub: 'before business expenses' });
   metrics.push({ label: 'Reported Profit', value: fmtMoney(t.reportedNetProfit), cls: t.reportedNetProfit >= 0 ? 'green' : 'red',
     sub: 'reported sales minus all deductions' });
   metrics.push({ label: 'Est. Income Tax', value: fmtMoney(t.estTax),      cls: 'red', sub: taxSub });
